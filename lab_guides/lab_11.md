@@ -488,41 +488,8 @@ Index(['usernames_with_failures', 'day_of_week_0',
       dtype='object')
 ```
 
-
-
 Isolation forest
 ----------------
-
-The **isolation forest** algorithm uses splitting techniques to isolate
-outliers from the rest of the data; therefore, it can be used for
-anomaly detection. Under the hood, it is a random forest
-where the splits are made on randomly chosen
-features. A random value of that feature between its maximum and its
-minimum is selected to split on. Note that this
-range is from the range of the feature at that node in the tree, not the
-starting data.
-
-A single tree in the forest will look something like the following:
-
-
-![](./images/Figure_11.9_B16834.jpg)
-
-
-
-
-The average length of the path that must be traveled from the top of
-each tree in the forest to the leaf containing a given point is used to
-score a point as an outlier or inlier. The outliers
-have much shorter paths, since they will be one
-of the few on a given side of a split and have
-less in common with other points. Conversely, points with many
-dimensions in common will take more splits to separate.
-
-Important note
-
-More information on this algorithm can be found
-at
-<https://scikit-learn.org/stable/modules/outlier_detection.html#isolation-forest>.
 
 Let\'s implement an isolation forest with a pipeline that first
 standardizes our data:
@@ -571,22 +538,6 @@ that we will discuss in this lab.
 
 Local outlier factor
 --------------------
-
-While inliers are typically located in denser regions of the dataset
-(32-dimensional here), outliers tend to be
-located in sparser, more isolated regions with few neighboring points.
-The **local outlier factor** (**LOF**) algorithm
-looks for these sparsely populated regions to
-identify outliers. It scores all points based on the ratio of the
-density around each point to that of its nearest neighbors. Points that
-are considered normal will have similar densities to their neighbors;
-those with few others nearby will be considered abnormal.
-
-Important note
-
-More information on this algorithm can be found
-at
-<https://scikit-learn.org/stable/modules/outlier_detection.html#local-outlier-factor>.
 
 Let\'s build another pipeline, but swap out the isolation forest for
 LOF. Note that we have to guess the best value for the

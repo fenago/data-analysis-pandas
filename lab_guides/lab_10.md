@@ -351,9 +351,8 @@ if we want to use a method other than the default of k-fold for
 regression or stratified k-fold for classification. For example, when
 working with time series, we can use `TimeSeriesSplit` as the
 cross-validation object to work with successive samples and avoid
-shuffling. Scikit-learn shows how the cross-validation classes compare
-at
-<https://scikit-learn.org/stable/auto_examples/model_selection/plot_cv_indices.html>.
+shuffling.
+
 
 Let\'s test out
 `RepeatedStratifiedKFold` on the red wine quality model
@@ -406,8 +405,7 @@ We can use `GridSearchCV` to search for the best parameters
 for any step in our pipeline. For example, let\'s use grid search with a
 pipeline of preprocessing and linear regression
 on the planets data (similar to when we
-modeled planet year length in *Lab 9*,
-*Getting Started with Machine Learning in Python*) while minimizing
+modeled planet year length in *Lab 9*, while minimizing
 **mean absolute error** (**MAE**) instead of the default
 R[2]{.superscript}:
 
@@ -483,49 +481,9 @@ try 10 random combinations in the search space (by default) and find the
 best estimator (model). We can change this number with the
 `n_iter` argument.
 
-Important note
-
-Since the process of tuning hyperparameters requires us to train our
-model multiple times, we must consider the time complexity of our
-models. Models that take a long time to train will be very costly to use
-with cross-validation. This will likely cause us to shrink our search
-space.
-
-
-
-
 
 Interaction terms and polynomial features
 -----------------------------------------
-
-We discussed the use of dummy variables back in the *Preprocessing data*
-section of *Lab 9*, *Getting Started with Machine Learning in
-Python*; however, we merely considered the effect of that variable on
-its own. In our model that tries to predict red wine
-quality using chemical properties, we are
-considering each property separately. However, it is important
-to consider whether the interaction between these
-properties has an effect. Perhaps when the levels of citric acid and
-fixed acidity are both high or both low, the wine quality is different
-than if one is high and one is low. In order to capture the effect of
-this, we need to add an **interaction term**, which will be the product
-of the features.
-
-We may also be interested in increasing the
-effect of a feature in the model through feature construction; we can
-achieve this by adding **polynomial features** made from this feature.
-This involves adding higher degrees of the original feature, so we could
-have *citric acid*, *citric acid*[2]{.superscript}, *citric
-acid*[3]{.superscript}, and so on in the model.
-
-Tip
-
-We can generalize linear models by using interaction terms and
-polynomial features because they allow us to model the linear
-relationship of non-linear terms. Since linear models tend to
-underperform in the presence of multiple or non-linear decision
-boundaries (the surface or hypersurface that separates the classes),
-this can improve performance.
 
 Scikit-learn provides the `PolynomialFeatures` class in the
 `preprocessing` module for easily creating interaction terms
@@ -574,9 +532,6 @@ of these values:
 
 ![](./images/Figure_10.3_B16834.jpg)
 
-
-
-created
 
 If we are only interested in the interaction variables (*citric acid ×
 fixed acidity*, here), we can specify `interaction_only=True`.
@@ -645,14 +600,6 @@ data.
 Dimensionality reduction
 ------------------------
 
-**Dimensionality reduction** shrinks the number of features we train our
-model on. This is done to reduce the
-computational complexity of training the model
-without sacrificing much performance. We could just choose to train on a
-subset of the features (feature selection); however, if we think there
-is value in those features, albeit small, we may look for ways to
-extract the information we need from them.
-
 One common strategy for feature selection is to discard features with
 low variance. These features aren\'t very informative since they are
 mostly the same value throughout the data. Scikit-learn provides the
@@ -706,21 +653,6 @@ much:
    macro avg       0.98      0.97      0.97      1625
 weighted avg       0.98      0.98      0.98      1625
 ```
-
-Tip
-
-Check out the other feature selection options in
-the `feature_selection` module at
-<https://scikit-learn.org/stable/modules/classes.html#module-sklearn.feature_selection>.
-
-If we believe there is value in all the features,
-we may decide to use feature extraction rather than discarding them
-entirely. **Principal component analysis** (**PCA**) performs feature
-extraction by projecting high-dimensional data
-into lower dimensions, thereby reducing the dimensionality. In return,
-we get the *n* components that maximize explained variance. This will be
-sensitive to the scale of the data, so we need to do some preprocessing
-beforehand.
 
 Let\'s take a look at the `pca_scatter()` function in the
 `ml_utils.pca` module, which will help us visualize our data
@@ -1211,83 +1143,12 @@ why. The first four splits are all based on the semi-major axis:
 ![](./images/Figure_10.10_B16834.jpg)
 
 
-
-
 Decision trees can be **pruned** after being grown to maximum depth, or
 provided with a max depth before training, to
-limit growth and thus avoid overfitting. The `scikit-learn`
-documentation provides tips to address overfitting and other potential
-issues when using decision trees at
-<https://scikit-learn.org/stable/modules/tree.html#tips-on-practical-use>.
-Keep this in mind as we discuss ensemble methods.
-
-
-Ensemble methods
-================
-
-
-**Ensemble methods** combine many models (often
-weak ones) to create a stronger one that will either minimize the
-average error between observed and predicted values (the **bias**) or
-improve how well it generalizes to unseen data (minimize the
-**variance**). We have to strike a balance between complex models that
-may increase variance, as they tend to overfit, and simple models that
-may have high bias, as these tend to underfit.
-This is called the **bias-variance trade-off**, which is illustrated in
-the following subplots:
-
-
-![](./images/Figure_10.11_B16834.jpg)
-
-
-
-
-Ensemble methods can be broken down into three
-categories: **boosting**, **bagging**, and **stacking**. **Boosting**
-trains many weak learners, which learn from each
-other\'s mistakes to reduce bias, making a stronger learner.
-**Bagging**, on the other hand, uses **bootstrap
-aggregation** to train many models on bootstrap
-samples of the data and aggregate the results together (using voting for
-classification, and the average for regression) to reduce variance. We
-can also combine many different model types together with voting.
-**Stacking** is an ensemble technique where we
-combine many different model types using the outputs of some as the
-inputs to others; this is done to improve predictions. We saw an example
-of stacking when we combined PCA and logistic regression in the
-*Dimensionality reduction* section earlier in this lab.
-
-
+limit growth and thus avoid overfitting.
 
 Random forest
 -------------
-
-Decision trees have a tendency to overfit,
-especially if we don\'t set limits on how far
-they can grow (with the `max_depth` and
-`min_samples_leaf` parameters). We can address this
-overfitting issue with a **random forest**, which is a bagging algorithm
-where we train many decision trees in parallel using bootstrap samples
-of our data and aggregate the output. In addition, we have the option of
-scoring each tree on the data in the training set that it didn\'t
-receive in its bootstrap sample, called
-**out-of-bag samples**, with the `oob_score` parameter.
-
-Important note
-
-The `min_samples_leaf` parameter requires a minimum number of
-samples to be on the final nodes in the tree (or leaves); this prevents
-the trees from being fit until they only have a single observation at
-each leaf.
-
-Each of the trees also gets a subset of the features (random feature
-selection), which defaults to the square root of the number of features
-(the `max_features` parameter). This can help address the
-curse of dimensionality. As a consequence, however, the random
-forest can\'t be as easily interpreted as
-the decision trees that make it up. We can,
-however, extract feature importances from the random forest, just as we
-did with the decision tree.
 
 Let\'s use the `RandomForestClassifier` class from the
 `ensemble` module to build a random forest (with
@@ -1322,33 +1183,6 @@ this dramatic improvement.
 
 Gradient boosting
 -----------------
-
-Boosting looks to improve upon the mistakes of previous models. One way
-of doing this is to move in the direction of the
-steepest reduction in the loss function for the model. Since the
-**gradient** (the multi-variable generalization of the derivative) is
-the direction of steepest ascent, this can be
-done by calculating the negative gradient, which yields the direction of
-steepest descent, meaning the best improvement in
-the loss function from the current result. This
-technique is called **gradient descent**.
-
-Important note
-
-Although gradient descent sounds great, there are some potential issues
-with it. It\'s possible to end up in a local minimum (a minimum in a
-certain region of the cost function); the algorithm will stop, thinking
-that we have the optimal solution, when in fact we don\'t, because we
-would like the global minimum (the minimum over the whole region).
-
-Scikit-learn\'s `ensemble` module provides the
-`GradientBoostingClassifier` and
-`GradientBoostingRegressor` classes for gradient boosting
-using decision trees. These trees will boost their performance through
-gradient descent. Note that gradient boosted trees are more sensitive to
-noisy training data than the random forest. In addition, we must
-consider the additional time required to build all the trees in series,
-unlike the parallel training we can benefit from with the random forest.
 
 Let\'s use grid search and gradient boosting to
 train another model for classifying the red wine quality data. In
@@ -1651,41 +1485,6 @@ performance, we need to address the class imbalance.
 Addressing class imbalance
 ==========================
 
-
-When faced with a class imbalance in our data, we may want to try to
-balance the training data before we build a model
-around it. In order to do this, we can use one of the following
-imbalanced sampling techniques:
-
--   Over-sample the minority class.
--   Under-sample the majority class.
-
-In the case of **over-sampling**, we pick a larger proportion from the
-minority class in order to get closer to the
-amount of the majority class; this may involve a technique such as
-bootstrapping or generating new data similar to the values in the
-existing data (using machine learning algorithms such as nearest
-neighbors). **Under-sampling**, on the other hand, will take less data
-overall by reducing the amount taken from the
-majority class. The decision to use over-sampling or under-sampling will
-depend on the amount of data we started with, and in some cases,
-computational costs. In practice, we wouldn\'t try either of these
-without first trying to build the model with the class imbalance. It\'s
-important not to try to optimize things
-prematurely; not to mention that by building the
-model first, we have a baseline to compare our imbalanced sampling
-attempts against.
-
-Important note
-
-Huge performance issues can arise if the minority class that we have in
-the data isn\'t truly representative of the full spectrum present in the
-population. For this reason, our method of collecting the data in the
-first place should be both known to us and carefully evaluated before
-proceeding to modeling. If we aren\'t careful, we could easily build a
-model that can\'t generalize to new data, regardless of how we handle
-the class imbalance.
-
 Before we explore any imbalanced sampling techniques, let\'s create a
 baseline model using **k-nearest neighbors** (**k-NN**) classification,
 which will classify observations according to the
@@ -1762,11 +1561,7 @@ try out imbalanced sampling. We will be using the `imblearn`
 package, which is provided by the `scikit-learn` community. It
 provides implementations for over- and under-sampling using various
 strategies, and it is just as easy to use as `scikit-learn`,
-since they both follow the same API conventions. For reference, the
-documentation can be found at
-<https://imbalanced-learn.readthedocs.io/en/stable/api.html>.
-
-
+since they both follow the same API conventions.
 
 Under-sampling
 --------------
@@ -1855,14 +1650,6 @@ using the k-NN algorithm. By doing this, we are making a big assumption
 that the data we have collected about the chemical properties of the red
 wine does influence the quality rating of the wine.
 
-Important note
-
-The SMOTE implementation in `imblearn` comes from this paper:
-
-*N. V. Chawla, K. W. Bowyer, L. O.Hall, W. P. Kegelmeyer, SMOTE:
-synthetic minority over-sampling technique, Journal of Artificial
-Intelligence Research, 321-357, 2002*, available at
-<https://arxiv.org/pdf/1106.1813.pdf>.
 
 Let\'s use SMOTE with the five nearest
 neighbors to over-sample the high-quality red
@@ -1998,8 +1785,7 @@ Exercises
 
 
 Complete the following exercises to practice the skills covered in this
-lab. Be sure to consult the *Machine learning workflow* section in
-the *Appendix* as a refresher on the process of building models:
+lab.
 
 1.  Predict star temperature with elastic net linear regression as
     follows:

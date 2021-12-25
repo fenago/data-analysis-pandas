@@ -850,15 +850,6 @@ array([2.28055906e-05, 1.24474091e-01, 5.33472803e-01,
        1.50201619e-04, 0.00000000e+00, 6.59028789e-06])
 ```
 
-Tip
-
-Another 
-class, which uses the median and IQR for robust
-to outliers scaling. There is an example of this in the notebook. More
-preprocessing classes can be found at
-<https://scikit-learn.org/stable/modules/classes.html#module-sklearn.preprocessing>.
-
-
 
 Encoding data
 -------------
@@ -1688,17 +1679,6 @@ following, based on what they are used for:
 
 
 
-
-Now that we have built a few models, we are ready
-for the next step: quantifying their performance.
-The `metrics` module in `scikit-learn` contains
-various metrics for evaluating model performance across clustering,
-regression, and classification tasks; the API lists the functions at
-<https://scikit-learn.org/stable/modules/classes.html#module-sklearn.metrics>.
-Let\'s discuss how to evaluate an unsupervised clustering model next.
-
-
-
 Evaluating clustering results
 -----------------------------
 
@@ -1779,13 +1759,6 @@ clusters:
 ... )
 21207.276781867335
 ```
-
-For a complete list of clustering evaluation metrics offered by
-`scikit-learn` (including supervised clustering) and when to
-use them, check out the *Clustering performance evaluation* section of
-their guide at
-<https://scikit-learn.org/stable/modules/clustering.html#clustering-evaluation>.
-
 
 Regression
 ==========
@@ -2302,50 +2275,11 @@ negative, which prevents us from using this. Negative predictions happen
 when the semi-major axis is very small (less than 1) since that is the
 only portion of the regression equation with a positive coefficient. If
 the semi-major axis isn\'t large enough to balance out the rest of our
-equation, the prediction will be negative and, thus, automatically
-incorrect. For a complete list of regression
-metrics offered by `scikit-learn`, check out
-<https://scikit-learn.org/stable/modules/classes.html#regression-metrics>.
-
-
-Classification
-==============
-
-
-The goal of classification is to determine how to
-label data using a set of discrete labels. This probably sounds similar
-to supervised clustering; however, in this case, we don\'t care how
-close members of the groups are spatially. Instead, we concern ourselves
-with classifying them with the correct class label. Remember, in
-[*Lab
-8*,
-*Rule-Based Anomaly Detection*, when we classified the IP addresses as
-valid user or attacker? We didn\'t care how well-defined clusters of IP
-addresses were---we just wanted to find the attackers.
-
-Just as with regression, `scikit-learn` provides many
-algorithms for classification tasks. These are
-spread across modules, but will usually say *Classifier* at the end for
-classification tasks, as opposed to *Regressor* for regression tasks.
-Some common methods are logistic regression,
-**support vector machines** (**SVMs**), k-NN, decision trees, and random
-forests; here, we will discuss logistic regression.
-
+equation, the prediction will be negative and, thus, automatically incorrect.
 
 
 Logistic regression
 -------------------
-
-Logistic regression is a way to use linear
-regression to solve classification tasks. However, it uses the logistic
-sigmoid function to return probabilities in the range \[0, 1\] that can
-be mapped to class labels:
-
-
-![](./images/Figure_9.26_B16834.jpg)
-
-
-
 
 Let\'s use logistic regression to classify red wines as high or low
 quality and to classify wines as red or white based on their chemical
@@ -2355,15 +2289,6 @@ module in `scikit-learn`. Just like the linear regression
 problem, we will be using a supervised method, so
 we have to split our data into testing and training sets.
 
-Tip
-
-While the examples discussed in this section are both binary
-classification problems (two classes), `scikit-learn` provides
-support for multiclass problems as well. The process of building
-multiclass models will be nearly identical to the binary case but may
-require passing an additional parameter to let the model know that there
-are more than two classes. You will have a chance to build a multiclass
-classification model in the exercises at the end of this lab.
 
 ### Predicting red wine quality
 
@@ -2502,38 +2427,6 @@ problems.
 
 ### Confusion matrix
 
-As we discussed in *Lab 8*,
-*Rule-Based Anomaly Detection*, a classification problem
-can be evaluated by comparing the predicted
-labels to the actual labels using a **confusion matrix**:
-
-
-![](./images/Figure_9.27_B16834.jpg)
-
-
-
-
-Each prediction can be one of four outcomes,
-based on how it matches up to the actual value:
-
--   **True Positive (TP)**: Correctly predicted to be the positive class
-
--   **False Positive (FP)**: Incorrectly predicted to be the positive
-    class
-
--   **True Negative (TN)**: Correctly predicted to not be the positive
-    class
-
--   **False Negative (FN)**: Incorrectly predicted to not be the
-    positive class
-
-    Important note
-
-    False positives are also referred to as
-    **type I errors**, while false negatives are
-    **type II errors**. Given a certain classifier, an effort to reduce
-    one will cause an increase in the other.
-
 Scikit-learn provides the `confusion_matrix()` function, which
 we can pair with the `heatmap()` function from
 `seaborn` to visualize our confusion matrix. In the
@@ -2620,12 +2513,8 @@ predicted the wine type:
 It looks like this model had a much easier time,
 with very few incorrect predictions:
 
-\`
-
 
 ![](./images/Figure_9.29_B16834.jpg)
-
-
 
 
 Now that we understand the composition of the confusion matrix, we can
@@ -2654,10 +2543,7 @@ percentage of correctly classified values:
 The `accuracy_score()` function in `sklearn.metrics`
 will calculate the accuracy as per the formula; however, the
 `score()` method of our model will also give us the accuracy
-(this isn\'t always the case, as we will see with grid search in
-[*Lab
-10*,
-*Making Better Predictions -- Optimizing Models*):
+(this isn\'t always the case, as we will see with grid search in *Lab 10*):
 
 ```
 >>> red_quality_lr.score(r_X_test, r_y_test)

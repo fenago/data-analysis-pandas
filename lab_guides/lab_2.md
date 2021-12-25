@@ -1993,26 +1993,6 @@ Then, like we did previously, we combine the two conditions with the
 (df.place.str.contains('Alaska')) & (df.alert.notnull())
 ```
 
-
-Note that we aren\'t limited to checking if each row contains text; we
-can use regular expressions as well. **Regular expressions** (often
-called *regex*, for short) are very powerful
-because they allow us to define a search pattern
-rather than the exact content we want to find. This means that we can do
-things such as find all the words or digits in a string without having
-to know what all the words or digits are beforehand (or go through one
-character at a time). To do so, we simply pass in a string preceded by
-an `r` character outside the quotes; this lets Python know it
-is a **raw string**, which means that we can
-include backslash (`\`) characters in the string without
-Python thinking we are trying to escape the character immediately
-following it (such as when we use `\n` to mean a new line
-character instead of the letter `n`). This makes it perfect
-for use with regular expressions. The `re` module in the
-Python standard library (<https://docs.python.org/3/library/re.html>)
-handles regular expression operations; however, `pandas` lets
-us use regular expressions directly.
-
 Using a regular expression, let\'s select all the earthquakes in
 California that have magnitudes of at least 3.8. We need to select
 entries in the `place` column that end in `CA` or
