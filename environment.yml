@@ -1,0 +1,13 @@
+channels:
+  - defaults
+dependencies:
+  - ipython
+  - ipywidgets
+  - matplotlib
+  - numpy
+  - scipy
+  - pandas
+  - seaborn
+  - scikit-learn
+  - xlrd
+  - statsmodels
