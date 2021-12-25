@@ -3,7 +3,7 @@
 <img align="right" src="./logo.png">
 
 
-Lab 8: Data Wrangling with Pandas
+Lab 3: Data Wrangling with Pandas
 ====================================
 
 
@@ -51,9 +51,7 @@ discussing wide versus long format data. Then, we will collect daily
 temperature data from the NCEI API, which can be found at
 <https://www.ncdc.noaa.gov/cdo-web/webservices/v2>, in the
 `2-using_the_weather_api.ipynb` notebook. The
-documentation for the **Global Historical
-Climatology Network -- Daily** (**GHCND**) dataset we will be using can
-be found at
+documentation for the **Global Historical Climatology Network -- Daily** (**GHCND**) dataset we will be using can be found at
 <https://www1.ncdc.noaa.gov/pub/data/cdo/documentation/GHCND_documentation.pdf>.
 
 In the `3-cleaning_data.ipynb` notebook, we will learn how to
@@ -631,24 +629,6 @@ middle entry to test, we are moving closer to the value we seek (see
 ...               f'status: {response.status_code}')
 ```
 
-
-This is a **recursive** implementation of the
-algorithm, meaning that we call the function
-itself from inside; we must be
-very careful when we do this to define a **base
-condition** so that it will eventually stop and
-not enter an infinite loop. It is possible to implement this
-iteratively. See the *Further reading* section at the end of this
-lab for additional reading on binary search and **recursion**.
-
-**Important note:**
-
-In a traditional implementation of binary search,
-it is trivial to find the length of the list that we are searching. With
-the API, we have to make one request to get the count; therefore, we
-must ask for the first entry (offset of 1) to orient ourselves. This
-means that we make an extra request here compared to what we would have
-needed if we knew how many locations were in the list before starting.
 
 Now, let\'s use the binary search implementation to find the ID for New
 York City, which will be the value we will use for
@@ -2409,7 +2389,7 @@ they should be, so it\'s probably best to leave them alone or not look
 at this column:
 
 
-](./images/Figure_3.48_B16834.jpg)
+![](./images/Figure_3.48_B16834.jpg)
 
 
 

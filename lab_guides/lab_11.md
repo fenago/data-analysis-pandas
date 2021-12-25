@@ -17,8 +17,7 @@ users or a nefarious party.
 Our company has been expanding and, since data breaches seem to be in
 the news every day, has created an information security department to
 monitor the traffic. The CEO saw our rule-based approach to identifying
-hackers from [*Lab
-8*],
+hackers from *Lab 8*,
 *Rule-Based Anomaly Detection*, and was intrigued by our initiative, but
 wants us to move beyond using rules and thresholds for such a vital
 task. We have been tasked with developing a machine learning model for
@@ -74,8 +73,7 @@ data from `hackers_2018.csv` and `hackers_2019.csv`.
 
 The parameters of the simulation vary per month, and in most months, the
 hackers are varying their IP addresses for each username they attempt to
-log in with. This will make our method from [*Lab
-8*],
+log in with. This will make our method from *Lab 8*,
 *Rule-Based Anomaly Detection*, useless because we were looking for IP
 addresses with many attempts and high failure rates. If the hackers now
 vary their IP addresses, we won\'t have many attempts associated with
@@ -116,8 +114,7 @@ Exploring the simulated login attempts data
 
 We don\'t have labeled data yet, but we can still
 examine the data to see whether there is something that stands out. This
-data is different from the data in [*Lab
-8*],
+data is different from the data in *Lab 8*,
 *Rule-Based Anomaly Detection*. The hackers are smarter in this
 simulation---they don\'t always try as many users or stick with the same
 IP address every time. Let\'s see whether we can come up with some
@@ -173,8 +170,7 @@ Our data looks like this:
 
 Figure 11.2 -- Login attempt logs for 2018
 
-Our data types will be the same as in [*Lab
-8*],
+Our data types will be the same as in *Lab 8*,
 *Rule-Based Anomaly Detection*, with the exception of the
 `success` column. SQLite doesn\'t support Boolean values, so
 this column was converted to the binary
@@ -239,8 +235,7 @@ max              NaN      NaN     1.000000      �
 ```
 
 We can look at the unique usernames with
-attempted logins per IP address, as in [*Lab
-8*],
+attempted logins per IP address, as in *Lab 8*,
 *Rule-Based Anomaly Detection*, which shows us that most of the IP
 addresses have a few usernames, but there is at least one with many:
 
@@ -302,8 +297,7 @@ There appear to be a few points at the bottom that don\'t belong, but
 notice the scales on the axes don\'t perfectly line up. The majority of
 the points are along a line that is slightly less than a 1:1
 relationship of attempts to successes. Recall that this lab\'s
-simulation is more realistic than the one we used in [*Lab
-8*],
+simulation is more realistic than the one we used in *Lab 8*,
 *Rule-Based Anomaly Detection*; as such, if we compare *Figure 8.11* to
 this plot, we can observe that it is much more difficult to separate
 valid from malicious activity here:
@@ -658,8 +652,7 @@ Comparing models
 
 LOF indicates fewer outliers than the isolation
 forest, but perhaps they don\'t even agree with each other. As we
-learned in [*Lab
-10*],
+learned in *Lab 10*,
 *Making Better Predictions -- Optimizing Models*, we can use the
 `cohen_kappa_score()` function from
 `sklearn.metrics` to check their level of agreement:
@@ -954,31 +947,7 @@ have predictive value. We will build two such models:
 
 ### Dummy classifier
 
-A dummy classifier will give us a model that is
-equivalent to the baseline we have been drawing on our ROC curves. The
-results will be poor on purpose. We will never use this classifier to
-actually make predictions; rather, we can use it
-to see whether the models we are building are better than random
-guessing strategies. In the `dummy` module,
-`scikit-learn` provides the `DummyClassifier` class
-precisely for this purpose.
-
-Using the `strategy` parameter, we can specify how the dummy
-classifier will make its predictions. Some
-interesting options are as follows:
-
--   `uniform`: The classifier will guess each time whether or
-    not the observation belongs to a hacking attempt.
--   `most_frequent`: The classifier will always predict the
-    most frequent label, which, in our case, will result in never
-    marking anything as nefarious. This will achieve high accuracy, but
-    be useless since the minority class is the class of interest.
--   `stratified`: The classifier will use the class
-    distribution from the training data and maintain that ratio with its
-    guesses.
-
-Let\'s build a dummy classifier with the `stratified`
-strategy:
+Let\'s build a dummy classifier with the `stratified` strategy:
 
 ```
 >>> from sklearn.dummy import DummyClassifier
@@ -1056,117 +1025,10 @@ weighted avg       1.00      1.00      1.00     39963
 
 ### Naive Bayes
 
-Our last baseline model will be a Naive Bayes
-classifier. Before we discuss this model, we need to
-review a few concepts of probability. The first
-is conditional probability. When dealing with two events, *A* and *B*,
-the probability of event *A* happening *given* that event *B* happened
-is the **conditional probability** and is written
-as *P(A\|B)*. When events *A* and *B* are independent, meaning *B*
-happening doesn\'t tell us anything about *A* happening and vice versa,
-*P(A\|B)* is *P(A)*.
-
-The conditional probability is defined as the
-**joint probability** of both *A* and *B* occurring (which is the
-intersection of these events), written as *P(A* *∩* *B)*, divided by the
-probability of *B* occurring (provided this is not zero):
-
-
-![](./images/Formula_11_001.jpg)
-
-
-This equation can be rearranged as follows:
-
-
-![](./images/Formula_11_002.png)
-
-
-The joint probability of *A* *∩* *B* is equivalent to *B* *∩* *A*;
-therefore, we get the following equation:
-
-
-![](./images/Formula_11_003.jpg)
-
-
-It then follows that we can change the first equation to use conditional
-probabilities instead of the joint probability. This gives us **Bayes\'
-theorem**:
-
-
-![](./images/Formula_11_004.jpg)
-
-
-When working with the previous equation, *P(A)*
-is referred to as the **prior probability**, or initial degree of belief
-that event *A* will happen. After accounting for event *B* occurring,
-this initial belief gets updated; this is represented as *P(A\|B)* and
-is called the **posterior probability**. The
-**likelihood** of event *B* given event *A* is *P(B\|A)*. The support
-that event *B* occurring gives to our belief of observing event *A* is
-the following:
-
-
-![](./images/Formula_11_005.jpg)
-
-
-Let\'s take a look at an example---say we are building a spam filter,
-and we find that 10% of emails are spam. This 10% is our prior, or
-*P(spam)*. We want to know the probability an email we
-just received is spam given that it contains the
-word *free*---we want to find *P(spam\|free)*. In order to find this, we
-need the probability that the word *free* is in
-an email given that it is spam, or
-*P(free\|spam)*, and the probability of the word *free* being in an
-email, or *P(free)*.
-
-Suppose we learned that 12% of emails contained the word *free* and 20%
-of the emails that were determined to be spam contained the word *free*.
-Plugging all this into the equation from before, we see that once we
-know an email contains the word *free*, our belief that it is spam
-increases from 10% to 16.7%, which is our posterior probability:
-
-
-![](./images/Formula_11_006.jpg)
-
-
-Bayes\' theorem can be leveraged in a type of classifier called **Naive
-Bayes**. Depending on the assumptions we make of the data, we get a
-different member of the Naive Bayes family of classifiers. These models
-are very fast to train because they make a simplifying assumption of
-conditional independence of each pair of the `X` features,
-given the `y` variable (meaning
-*P(x*[i]{.subscript}*\|y,x*[1]{.subscript}*\...x*[n]{.subscript}*)* is
-equivalent to *P(x*[i]{.subscript}*\|y)*). They are called *naive*
-because this assumption is often incorrect; however, these classifiers
-have traditionally worked well in building spam filters.
-
-Let\'s say we also find multiple dollar signs in the email and the word
-*prescription*, and we want to know the probability of it being spam.
-While some of these features may depend on each other, the Naive Bayes
-model will treat them as conditionally independent. This means our
-equation for the posterior probability is now the following:
-
-
-![](./images/Formula_11_007_New.jpg)
-
-
-Suppose we find out that 5% of spam emails
-contain multiple dollar signs, 55% of spam emails contain the word
-*prescription*, 25% of emails contain multiple
-dollar signs, and the word *prescription* is
-found in 2% of emails overall. This means that our belief of the email
-being spam, given that it has the words *free* and *prescription* and
-multiple dollar signs, increases from 10% to 91.7%:
-
-
-![](./images/Formula_11_008.jpg)
-
-
-Now that we understand the basics of the algorithm, let\'s build a Naive
+Our last baseline model will be a Naive Bayes classifier. Let\'s build a Naive
 Bayes classifier. Note that `scikit-learn` provides various
 Naive Bayes classifiers that differ by the assumed distributions of the
-likelihoods of the features, which we defined as
-*P(x*[i]{.subscript}*\|y,x*[1]{.subscript}*\...x*[n]{.subscript}*)*. We
+likelihoods of the features, which we defined as `P(xi|y,x1...xn)`. We
 will use the version that assumes they are normally distributed,
 `GaussianNB`:
 
@@ -1250,8 +1112,7 @@ Since logistic regression is another
 simple model, let\'s try it out next. We used
 logistic regression in *Lab 9*, *Getting Started with Machine
 Learning in Python*, for classification problems, so we already know how
-it works. As we learned in [*Lab
-10*],
+it works. As we learned in *Lab 10*,
 *Making Better Predictions -- Optimizing Models*, we will use a grid
 search to find a good value for the regularization hyperparameter in our
 desired search space, using `recall_macro` for scoring.
@@ -1348,52 +1209,10 @@ incorporate this (and future) new data. In the next section, we will
 discuss how to do this.
 
 
-Incorporating a feedback loop with online learning
-==================================================
-
-
-There are some big issues with the models we have built so far. Unlike
-the data we worked with in *Lab 9*, *Getting Started with Machine
-Learning in Python*, and [*Lab
-10*],
-*Making Better Predictions -- Optimizing Models*, we wouldn\'t expect
-the attacker behavior to be static over time. There is also a limit to
-how much data we can hold in memory, which limits
-how much data we can train our model on.
-Therefore, we will now build an online learning model to flag anomalies
-in usernames with failures per minute. An
-**online learning** model is constantly getting updated (in near real
-time via streaming, or in batches). This allows us to learn from new
-data as it comes and then get rid of it (to keep space in memory).
-
-In addition, the model can evolve over time and adapt to changes in the
-underlying distribution of the data. We will also be providing our model
-with feedback as it learns so that we are able to
-make sure it stays robust to changes in the hacker behavior over time.
-This is called **active learning**. Not all models in
-`scikit-learn` support this kind of behavior; so, we are
-limited to the models that offer a `partial_fit()` method
-(models without this need to be trained from scratch with new data).
-
-Tip
-
-Scikit-learn refers to models implementing the
-`partial_fit()` method as **incremental learners**. More
-information, including which models support this, can be found at
-<https://scikit-learn.org/stable/computing/scaling_strategies.html#incremental-learning>.
-
-Our data is currently being rolled up to the minute and then passed to
-the model, so this will be batch learning, not streaming; however, note
-that if we were to put this into production, we could update our model
-each minute, if desired.
-
-
-
 Creating the PartialFitPipeline subclass
 ----------------------------------------
 
-We saw in *Lab 9*, *Getting Started with Machine Learning in
-Python*, that the `Pipeline` class made
+We saw in *Lab 9* that the `Pipeline` class made
 streamlining our machine learning processes a cinch, but unfortunately,
 we can\'t use it with the `partial_fit()` method. To get
 around this, we can create our own `PartialFitPipeline` class,
@@ -1404,7 +1223,7 @@ module.
 
 We simply inherit from
 `sklearn.pipeline.Pipeline` and define a single new
-method---`partial_fit()`---which will call
+method ---`partial_fit()`--- which will call
 `fit_transform()` on all the steps except the last one, and
 `partial_fit()` on the last step:
 
@@ -1437,52 +1256,7 @@ select a model capable of online learning.
 Stochastic gradient descent classifier
 --------------------------------------
 
-Our logistic regression model performed well---it met the requirements
-for recall and precision. However, the `LogisticRegression`
-class does not support online learning because
-the method it uses to calculate the coefficients is a closed-form
-solution. We have the option of using an optimization algorithm, such as
-gradient descent, to determine the coefficients instead; this will be
-capable of online learning.
-
-Rather than use a different incremental learner, we can train a new
-logistic regression model with the `SGDClassifier` class. It
-uses **stochastic gradient descent** (**SGD**) to optimize the loss
-function of our choice. For this example, we will be using log loss,
-which gives us a logistic regression where the coefficients are found
-using SGD.
-
-Whereas standard gradient descent optimization looks at all the samples
-or batches to estimate the gradient, SGD reduces the computational cost
-by selecting samples at random (stochastically). How much the model
-learns from each sample is determined by the **learning rate**, with
-earlier updates having more of an effect than later ones. A single
-iteration of SGD is carried out as follows:
-
-1.  Shuffle the training data.
-2.  For each sample in the training data, estimate the gradient and
-    update the model with decreasing strength as determined by the
-    learning rate.
-3.  Repeat *step 2* until all samples have been used.
-
-In machine learning, we use **epochs** to refer to the number of times
-the full training set is used. The process of SGD
-we just outlined is for a single epoch. When we train for multiple
-epochs, we repeat the preceding steps for the desired number of epochs,
-continuing each time from where we left off.
-
-Now that we understand how SGD works, we are
-ready to build our model. Here\'s an overview of the process we will
-follow before presenting it to the SOC:
-
-
-![](./images/Figure_11.16_B16834.jpg)
-
-
-Figure 11.16 -- Process for preparing our online learning model
-
-Let\'s now turn to the `5-online_learning.ipynb` notebook to
-build our online learning model.
+Let\'s now turn to the `5-online_learning.ipynb` notebook to build our online learning model.
 
 ### Building our initial model
 

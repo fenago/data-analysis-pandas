@@ -2,7 +2,7 @@
 <img align="right" src="./logo.png">
 
 
-Lab 10: Visualizing Data with Pandas and Matplotlib
+Lab 5: Visualizing Data with Pandas and Matplotlib
 =====================================================
 
 

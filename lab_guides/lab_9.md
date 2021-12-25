@@ -59,17 +59,15 @@ similar planet groups. We will use the
 `preprocessing.ipynb` notebook for the section on
 preprocessing.
 
-Back in [*Lab
-1*],
+Back in *Lab 1*,
 *Introduction to Data Analysis*, when we set up our environment, we
 installed a package from GitHub called `ml_utils`. This
 package contains utility functions and classes that we will use for our
 three labs on machine learning. Unlike the last two labs, we
 won\'t be discussing how to make this package; however, those interested
 can look through the code at
-https://github.com/stefmolin/ml-utils/tree/2nd\_edition and follow the
-instructions from [*Lab
-7*],
+https://github.com/fenago/ml-utils/tree/2nd_edition and follow the
+instructions from *Lab 7*,
 *Financial Analysis -- Bitcoin and the Stock Market*, to install it in
 editable mode.
 
@@ -370,15 +368,12 @@ distribution for a variable is very different between classes, that
 variable may be very useful to include in our model. It is essential
 that we perform an in-depth exploration of our
 data before moving on to modeling. Be sure to use the visualizations we
-covered in [*Lab
-5*],
-*Visualizing Data with Pandas and Matplotlib*, and [*Lab
-6*],
+covered in *Lab 5*,
+*Visualizing Data with Pandas and Matplotlib*, and *Lab 6*,
 *Plotting with Seaborn and Customization Techniques*, as they will prove
 invaluable for this process.
 
-We will come back to this visualization in [*Lab
-10*],
+We will come back to this visualization in *Lab 10*,
 *Making Better Predictions -- Optimizing Models*, when we examine
 incorrect predictions made by our model. Now, let\'s take a look at the
 other dataset we will be working with.
@@ -720,8 +715,7 @@ Important note
 
 When building models that require tuning, we split the data into
 training, validation, and testing sets. We will introduce validation
-sets in [*Lab
-10*],
+sets in *Lab 10*,
 *Making Better Predictions -- Optimizing Models*.
 
 Let\'s take a look at the dimensions of our training and testing sets
@@ -795,11 +789,9 @@ We\'ve seen that our dataframes had columns with very different scales;
 if we want to use any model that calculates a
 distance metric (such as k-means, which we will
 discuss in this lab, or **k-nearest neighbors** (**k-NN**), which we
-will discuss briefly in [*Lab
-10*],
+will discuss briefly in *Lab 10*,
 *Making Better Predictions -- Optimizing Models*), we will need to scale
-these. As we discussed back in [*Lab
-1*],
+these. As we discussed back in *Lab 1*,
 *Introduction to Data Analysis*, we have quite a few options for doing
 so. Scikit-learn provides options in the `preprocessing`
 module for standardizing (scaling by calculating Z-scores) and min-max
@@ -1096,8 +1088,7 @@ with `fill_value`). None of these is really appropriate for
 us; however, `scikit-learn` also provides the
 `KNNImputer` class for imputing missing values based on
 similar observations. By default, it uses the five nearest neighbors and
-runs k-NN, which we will discuss in [*Lab
-10*],
+runs k-NN, which we will discuss in *Lab 10*,
 *Making Better Predictions -- Optimizing Models*, using the features
 that aren\'t missing:
 
@@ -1399,7 +1390,7 @@ Alternatively, clustering can be used in a supervised fashion if we know
 the group labels for some of the data for
 training purposes. Say we collected data on login activity, like in
 [*Lab
-8*],
+8*,
 *Rule-Based Anomaly Detection*, but we had some examples of what
 attacker activity looks like; we could gather those data points for all
 activity and then use a clustering algorithm to assign to the valid
@@ -1412,10 +1403,6 @@ align these groups to their true group.
 k-means
 -------
 
-The clustering algorithms offered by
-`scikit-learn` can be found in the `cluster`
-module\'s documentation at
-<https://scikit-learn.org/stable/modules/classes.html#module-sklearn.cluster>.
 We will take a look at **k-means**, which iteratively
 assigns points to the nearest group using the
 distance from the **centroid** of the group (center point), making *k*
@@ -1423,18 +1410,6 @@ groups. Since this model uses distance
 calculations, it is imperative that we understand the effect scale will
 have on our results beforehand; we can then decide which columns, if
 any, to scale.
-
-Important note
-
-There are many ways to measure the distance between points in space.
-Often, Euclidean distance, or straight-line distance, is the default;
-however, another common one is Manhattan distance, which can be thought
-of as city-block distance.
-
-When we plotted out the period versus the semi-major axis for all the
-planets using a log scale for the period, we saw a nice separation of
-the planets along an arc. We are going to use k-means to find groups of
-planets with similar orbits along that arc.
 
 ### Grouping planets by orbit characteristics
 
@@ -1871,7 +1846,7 @@ partial derivatives) to determine which coefficients
 to try next (see the link in the *Further
 reading* section for more information). We will use gradient descent in
 [*Lab
-11*],
+11*,
 *Machine Learning Anomaly Detection*.
 
 Important note
@@ -2081,8 +2056,7 @@ these aspects.
 
 Whenever we work with linear regression, we
 should visualize our **residuals**, or the discrepancies between the
-actual values and the model\'s predictions; as we learned in [*Lab
-7*],
+actual values and the model\'s predictions; as we learned in *Lab 7*,
 *Financial Analysis -- Bitcoin and the Stock Market*, they should
 be centered around zero and homoskedastic
 (similar variance throughout). We can use a kernel density estimate to
@@ -2238,8 +2212,7 @@ R[2]{.superscript} value:
 Unfortunately, R[2]{.superscript} (and adjusted R[2]{.superscript})
 values don\'t tell us anything about our prediction error or
 even whether we specified our model correctly.
-Think back to when we discussed Anscombe\'s quartet in [*Lab
-1*],
+Think back to when we discussed Anscombe\'s quartet in *Lab 1*,
 *Introduction to Data Analysis*. These four different datasets have the
 same summary statistics. They also have the same R[2]{.superscript} when
 fit with a linear regression line (0.67), despite some of them not
@@ -2346,7 +2319,7 @@ to supervised clustering; however, in this case, we don\'t care how
 close members of the groups are spatially. Instead, we concern ourselves
 with classifying them with the correct class label. Remember, in
 [*Lab
-8*],
+8*,
 *Rule-Based Anomaly Detection*, when we classified the IP addresses as
 valid user or attacker? We didn\'t care how well-defined clusters of IP
 addresses were---we just wanted to find the attackers.
@@ -2437,8 +2410,7 @@ wrong predictions for each class. By selecting
 balanced weights, wrong predictions on smaller classes will carry more
 weight, where the weight will be inversely proportional to the frequency
 of the class in the data. These weights are used for regularization,
-which we will discuss more in [*Lab
-10*],
+which we will discuss more in *Lab 10*,
 *Making Better Predictions -- Optimizing Models*.
 
 Once we have our pipeline, we can fit it to the data with the
@@ -2531,8 +2503,7 @@ problems.
 
 ### Confusion matrix
 
-As we discussed in [*Lab
-8*],
+As we discussed in *Lab 8*,
 *Rule-Based Anomaly Detection*, a classification problem
 can be evaluated by comparing the predicted
 labels to the actual labels using a **confusion matrix**:
@@ -2686,7 +2657,7 @@ will calculate the accuracy as per the formula; however, the
 `score()` method of our model will also give us the accuracy
 (this isn\'t always the case, as we will see with grid search in
 [*Lab
-10*],
+10*,
 *Making Better Predictions -- Optimizing Models*):
 
 ```
@@ -3136,8 +3107,7 @@ It\'s clear that we need to strike an acceptable balance between false
 positives and false negatives. To do so, we need to quantify this
 trade-off between the two extremes in terms of what matters to us more.
 Then, we can use the precision-recall curve to find a threshold that
-meets our precision and recall targets. In [*Lab
-11*],
+meets our precision and recall targets. In *Lab 11*,
 *Machine Learning Anomaly Detection*, we will work through an example of
 this.
 
@@ -3164,10 +3134,7 @@ As we saw with the red wine quality model, AUPR works very well with
 class imbalance. However, it can\'t be compared
 across datasets, is expensive to compute, and is hard to optimize. Note
 that this was just a subset of the metrics we can use to evaluate
-classification problems. All the classification metrics offered by
-`scikit-learn` can be found at
-<https://scikit-learn.org/stable/modules/classes.html#classification-metrics>.
-
+classification problems.
 
 Summary
 =======
@@ -3181,9 +3148,7 @@ This gave us some ideas about what kinds of models we would want to
 build. A thorough exploration of the data is essential before attempting
 to build a model.
 
-Next, we learned how to prepare our data for use in machine learning
-models and the importance of splitting the data into training and
-testing sets before modeling. In order to prepare our data efficiently,
+In order to prepare our data efficiently,
 we used pipelines in `scikit-learn` to package up everything
 from our preprocessing through our model.
 
@@ -3195,21 +3160,8 @@ planet using its semi-major axis, eccentricity of orbit, and mass. We
 learned how to interpret the model coefficients and how to evaluate the
 model\'s predictions. Finally, we turned to classification to identify
 high-quality red wines (which had a class imbalance) and distinguish
-between red and white wine by their chemical properties. Using
-precision, recall, F[1]{.subscript} score, confusion matrices, ROC
-curves, and precision-recall curves, we discussed how to evaluate
-classification models.
+between red and white wine by their chemical properties.
 
-It\'s important to remember that machine learning models make
-assumptions about the underlying data, and while this wasn\'t a lab
-on the mathematics of machine learning, we should make sure that we
-understand that there are consequences for violating these assumptions.
-In practice, when looking to build models, it\'s crucial that we have a
-solid understanding of statistics and domain-level expertise. We saw
-that there is a multitude of metrics for evaluating our models. Each
-metric has its strengths and weaknesses, and, depending on the problem,
-some are better than others; we must take care to choose the appropriate
-metrics for the task at hand.
 
 In the next lab, we will learn how to tune our models to improve
 their performance, so make sure to complete the exercises to practice

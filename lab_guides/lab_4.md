@@ -3,7 +3,7 @@
 <img align="right" src="./logo.png">
 
 
-Lab 9: Aggregating Pandas DataFrames
+Lab 4: Aggregating Pandas DataFrames
 =====================================
 
 The following topics will be covered in this lab:
@@ -333,7 +333,7 @@ determining the availability of data per station, so getting null values
 isn\'t necessarily an issue:
 
 
-](./images/Figure_4.8_B16834.jpg)
+![](./images/Figure_4.8_B16834.jpg)
 
 
 
@@ -614,11 +614,6 @@ the union to see the number of stations we will keep:
 Index(['GHCND:US1CTFR0022', ..., 'GHCND:USW00094789'],
       dtype='object', length=279)
 ```
-
-
-The *Further reading* section at the end of this lab contains some
-resources on set operations and how `pandas` compares to SQL.
-For now, let\'s move on to data enrichment.
 
 
 Using DataFrame operations to enrich data
@@ -1965,7 +1960,7 @@ This makes it easy to see the months when high volumes of Facebook stock
 were traded:
 
 
-](./images/Figure_4.44_B16834.jpg)
+![](./images/Figure_4.44_B16834.jpg)
 
 
 
@@ -2022,7 +2017,7 @@ down the rightmost column, we have the total snow
 observations in 2018 per station:
 
 
-](./images/Figure_4.46_B16834.jpg)
+![](./images/Figure_4.46_B16834.jpg)
 
 
 Just by looking at a few stations, we can see that, despite all of them
@@ -2258,7 +2253,7 @@ per day. Volume traded will be the daily sum:
 This rolls the data up to a daily frequency:
 
 
-](./images/Figure_4.51_B16834.jpg)
+![](./images/Figure_4.51_B16834.jpg)
 
 
 The next two methods we will discuss help us select data based on the
@@ -2378,7 +2373,7 @@ following day):
 This gives us the days that were most affected by after-hours trading:
 
 
-](./images/Figure_4.54_B16834.jpg)
+![](./images/Figure_4.54_B16834.jpg)
 
 
 
@@ -2522,7 +2517,7 @@ Facebook\'s stock price declined in all but the
 second quarter:
 
 
-](./images/Figure_4.59_B16834.jpg)
+![](./images/Figure_4.59_B16834.jpg)
 
 
 
@@ -2561,7 +2556,7 @@ select it after calling `ohlc()`, which is pivoting our data.
 Otherwise, we will have a hierarchical index in the columns:
 
 
-](./images/Figure_4.61_B16834.jpg)
+![](./images/Figure_4.61_B16834.jpg)
 
 
 

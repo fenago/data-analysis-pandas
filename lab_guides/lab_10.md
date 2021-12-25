@@ -35,8 +35,7 @@ database, at
 <https://github.com/OpenExoplanetCatalogue/open_exoplanet_catalogue/>,
 which provides data in XML format. The parsed planet data can be found
 in the `data/planets.csv` file. For the exercises, we will
-also be working with the star temperature data from [*Lab
-9*],
+also be working with the star temperature data from *Lab 9*,
 *Getting Started with Machine Learning in Python*, which can be found in
 the `data/stars.csv` file.
 
@@ -1543,8 +1542,7 @@ module to find the threshold that results in that false positive rate.
 Another way is to find a satisfactory spot along the precision-recall
 curve, and then get the threshold from the
 `precision_recall_curve()` function. We will work through an
-example in [*Lab
-11*],
+example in *Lab 11*,
 *Machine Learning Anomaly Detection*.
 
 Let\'s use `seaborn` to make a plot showing the distribution
@@ -2201,8 +2199,7 @@ the *Appendix* as a refresher on the process of building models:
     while one-hot encoding the wine type column (something like
     `is_red` and `is_white`, each with binary
     values), and then build the model. Note that we will discuss Naive
-    Bayes in [*Lab
-    11*],
+    Bayes in *Lab     11*,
     *Machine Learning Anomaly Detection*.
 
     d\) Run grid search on each pipeline except Naive Bayes (just run

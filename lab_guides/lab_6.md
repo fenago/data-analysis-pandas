@@ -1,7 +1,7 @@
 <img align="right" src="./logo.png">
 
 
-Lab 11: Plotting with Seaborn and Customization Techniques
+Lab 6: Plotting with Seaborn and Customization Techniques
 ================================================================
 
 
@@ -1226,13 +1226,6 @@ now contains integers in increments of three:
 
 
 ![](./images/fig_6.28.jpg)
-
-
-
-These were only three of the features provided with the
-`matplotlib.ticker` module, so I highly recommend you check
-out the documentation for more information. There is also a link in the
-*Further reading* section at the end of this lab.
 
 
 Customizing visualizations

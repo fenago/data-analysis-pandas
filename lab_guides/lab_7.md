@@ -3,7 +3,7 @@
 <img align="right" src="./logo.png">
 
 
-Lab 12: Financial Analysis -- Bitcoin and the Stock Market
+Lab 7: Financial Analysis -- Bitcoin and the Stock Market
 =============================================================
 
 Up until this point, we have been working with Python as more of a
@@ -102,8 +102,7 @@ To turn modules into a package, we follow these steps:
     run upon importing the package (this can be---and often is---empty).
 4.  Make a `setup.py` file at the same level as the package\'s
     top-level directory (`stock_analysis` here), which will
-    give `pip` instructions on how to install the package. See
-    the *Further reading* section for information on creating this.
+    give `pip` instructions on how to install the package.
 
 Once the aforementioned steps are complete, the
 package can be installed with `pip`. Note that, while our
@@ -939,7 +938,7 @@ is scale; bitcoin is not only much more volatile but is much higher in
 value than everything else:
 
 
-](./images/Figure_7.6_B16834.jpg)
+![](./images/Figure_7.6_B16834.jpg)
 
 
 If we don\'t want to look at the assets
@@ -1061,12 +1060,6 @@ vertical lines (and anything in between) using the
         ax.legend()
         return ax
 ```
-
-
-**Tip:** 
-
-See the *Further reading* section for more information on class methods,
-static methods, and abstract methods.
 
 The `shade_region()` static method for
 adding shaded regions to a plot is similar to the

@@ -2,7 +2,7 @@
 <img align="right" src="./logo.png">
 
 
-Lab 7: Working with Pandas DataFrames
+Lab 2: Working with Pandas DataFrames
 ========================================
 
 

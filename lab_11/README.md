@@ -16,7 +16,7 @@ We will work through five notebooks emulating a real-world scenario using the si
 - [`5-online_learning.ipynb`](./5-online_learning.ipynb): Jupyter notebook used to implement an online learning classifier
 - [`merge_logs.py`](./merge_logs.py): Python script for merging the logs of individually simulated months
 - [`run_simulations.sh`](./run_simulations.sh): Bash script for simulating and merging the log files (this is used to generate the data)
-- [`simulate.py`](./simulate.py): Python script for simulating the data using the [`login_attempt_simulator` package](https://github.com/stefmolin/login-attempt-simulator)
+- [`simulate.py`](./simulate.py): Python script for simulating the data using the [`login_attempt_simulator` package](https://github.com/fenago/login-attempt-simulator)
 
 
 The end-of-chapter exercises will use the data in the [`logs/`](./logs) directory to explore additional algorithms for machine learning anomaly detection; solutions to these exercises can be found in the repository's [`solutions/ch_11/`](../solutions/ch_11) directory.

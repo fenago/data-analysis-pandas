@@ -2,7 +2,7 @@
 <img align="right" src="./logo.png">
 
 
-Lab 13: Rule-Based Anomaly Detection
+Lab 8: Rule-Based Anomaly Detection
 =====================================
 
 The following topics will be covered in this lab:
@@ -2047,33 +2047,11 @@ points are outliers. The Z-score method is also affected by outliers
 because it uses the mean; however, with the trimmed data, we were able
 to achieve good performance with a modest cutoff of three:
 
-
 ![](./images/Figure_8.19_B16834.jpg)
 
 
-
-Ultimately, which method we use in practice will
-depend on how costly it is to have a false positive versus a false
-negative---is it worse to raise the alarm when nothing is wrong, or to
-be silent when something is? In this case, we would err on the side of
-minimizing false negatives since we don\'t want to miss anything.
-
-**Important note:**
-
-Another common use case for anomaly detection is in quality or process
-control in industrial settings, such as monitoring factory equipment
-performance and output. Process control uses threshold-based and
-pattern-based rules to determine whether systems are out of control.
-These can be used for things such as determining when the distribution
-of the underlying data has changed, which could
-be a precursor for later problems. **Western Electric rules** and
-**Nelson rules** are common ones. References for
-both can be found in the *Further reading*
-section at the end of this lab.
-
 Summary
 =======
-
 
 In our second application lab, we learned how to simulate events in
 Python and got additional exposure to writing packages. We also saw how
@@ -2081,7 +2059,6 @@ to write Python scripts that can be run from the command line, which we
 used to run our simulation of the login attempt data. Then, we performed
 some EDA on the simulated data to see whether we could figure out what
 would make hacker activity easy to spot.
-
 
 Finally, we set about creating rules that would flag the hacker IP
 addresses for their suspicious activity. First, we used
