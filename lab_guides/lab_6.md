@@ -757,28 +757,11 @@ subsets using the `sns.histplot()` function:
 For both locations, we can see that tsunamis occurred when the
 earthquake magnitude was 5.0 or greater:
 
-
 ![](./images/fig_6.15.jpg)
-
-
-
-This concludes our discussion of the plotting
-capabilities of `seaborn`; however, I encourage you to check
-out the API (<https://seaborn.pydata.org/api.html>) to see additional
-functionality. Also, be sure to consult the *Choosing the appropriate
-visualization* section in the *Appendix* as a reference when looking to
-plot some data.
 
 
 Formatting plots with matplotlib
 ================================
-
-
-A big part of making our visualizations
-presentable is choosing the right plot type and having them well labeled
-so they are easy to interpret. By carefully tuning
-the final appearance of our visualizations, we make them easier to read
-and understand.
 
 Let\'s now move to the `2-formatting_plots.ipynb` notebook,
 run the setup code to import the packages we need,

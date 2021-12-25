@@ -1844,16 +1844,8 @@ range):
 ![](./images/Figure_5.46_B16834.jpg)
 
 
-
-This was a sample of a few of the functions
-in the `pandas.plotting` module. For the
-full list, check out
-<https://pandas.pydata.org/pandas-docs/stable/reference/plotting.html>.
-
-
 Summary
 =======
-
 
 Now that we\'ve completed this lab, we are well-equipped to quickly
 create a variety of visualizations in Python using `pandas`
@@ -1861,9 +1853,7 @@ and `matplotlib`. We now understand the basics of how
 `matplotlib` works and the main components of a plot.
 Additionally, we discussed various plot types and the situations in
 which to use them --- a crucial component of data visualization is
-choosing the appropriate plot. Be sure to check out the *Choosing the
-appropriate visualization* section in the *Appendix* for future
-reference.
+choosing the appropriate plot.
 
 Exercises
 =========

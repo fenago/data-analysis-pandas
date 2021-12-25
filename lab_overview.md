@@ -1,24 +1,24 @@
 <img align="right" src="./logo.png">
 
 
-<h2><span style="color:red;">Machine Learning Essentials: Module 1</span></h2>
+<h2><span style="color:red;">Data Analysis with Pandas</span></h2>
 
 
 ### Objectives: 
 
-- Understand the broad classifications of data: quantitative vs qualitative. 
-- Understand the core statistics that underpin all data analysis 
-- Understand inferential and differential statistics and how they apply to data analysis.
-- Apply univariate and multivariate analysis to financial data sets
-- Demonstrate the ability to profile data (inspecting rows of data, and reading data sets)
-- Detect and remediate missing, miscoded and anomalous data.
-- Understand regression analysis.
-- Understand how numerical python and panel data can be used in big data analytics
-- Introduce the basics of the Pandas Series object and DataFrame
-- Develop simple summaries and exploratory graphs that optimize data visualization at various stages of data analysis
-- Explain how the fundamental variation of graphs and corresponding quantitative relationships can be paired with optimal visual components and techniques
-- Introduce a brief capstone project that utilizes several data analysis techniques
+Working in a hands-on learning environment, guided by our expert team, attendees will learn to:
 
+- Understand how data analysts and scientists gather and analyze data
+- Perform data analysis and data wrangling using Python
+- Combine, group, and aggregate data from multiple sources
+- Create data visualizations with pandas, matplotlib, and seaborn
+- Apply machine learning (ML) algorithms to identify patterns and make predictions
+- Use Python data science libraries to analyze real-world datasets
+- Use pandas to solve common data representation and analysis problems
+- Build Python scripts, modules, and packages for reusable analysis code
+- Perform efficient data analysis and manipulation tasks using pandas
+- Apply pandas to different real-world domains with the help of demonstrations
+- Get accustomed to using pandas as an effective data exploration tool.
 
 ### Labs
 
@@ -32,17 +32,6 @@ Labs for this course are available at path shared below.
 6. Plotting with Seaborn and Customization Techniques	
 7. Financial Analysis: Bitcoin and the Stock Market	
 8. Rule-Based Anomaly Detection
-		
-
-
-**What You Will Learn**
-
-- Understand how data analysts and scientists gather and analyze data
-- Perform data analysis and data wrangling in Python
-- Combine, group, and aggregate data from multiple sources
-- Create data visualizations with `pandas`, `matplotlib`, and `seaborn`
-- Apply machine learning algorithms with `sklearn`
-- Use Python data science libraries to analyze real-world datasets.
-- Use `pandas` to solve several common data representation and analysis problems
-- Collect data from APIs
-- Build Python scripts, modules, and packages for reusable analysis code.
+9. Getting Started with Machine Learning in Python
+10. Making Better Predictions -- Optimizing Models
+11. Machine Learning Anomaly Detection

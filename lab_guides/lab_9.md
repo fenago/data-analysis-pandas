@@ -150,7 +150,6 @@ quality score by looking at the chemical properties:
 ![](./images/Figure_9.1_B16834.jpg)
 
 
-Figure 9.1 -- Red wine dataset
 
 Let\'s see what the distribution of the `quality` column looks
 like:
@@ -190,7 +189,7 @@ higher):
 ![](./images/Figure_9.2_B16834.jpg)
 
 
-Figure 9.2 -- Distribution of red wine quality scores
+
 
 All of our data is numeric, so we
 don\'t have to worry about handling text values;
@@ -234,7 +233,7 @@ all on the same range:
 ![](./images/Figure_9.3_B16834.jpg)
 
 
-Figure 9.3 -- Summary statistics for the red wine dataset
+
 
 Lastly, let\'s use `pd.cut()` to bin our high-quality red
 wines (roughly 14% of the data) for later:
@@ -278,7 +277,7 @@ used seems to be pretty subjective:
 ![](./images/Figure_9.4_B16834.jpg)
 
 
-Figure 9.4 -- Distribution of white wine quality scores
+
 
 Both of these dataframes
 have the same columns, so we can combine them
@@ -304,7 +303,7 @@ wine dataset looks like this:
 ![](./images/Figure_9.5_B16834.jpg)
 
 
-Figure 9.5 -- Combined wine dataset
+
 
 Using `value_counts()`, we can see that
 we have many more white wines than red wines in the data:
@@ -357,7 +356,7 @@ distributed differently for red and white wines:
 ![](./images/Figure_9.6_B16834.jpg)
 
 
-Figure 9.6 -- Comparing red and white wine on a chemical level
+
 
 Tip
 
@@ -400,7 +399,7 @@ orbit period (how long a year is on a planet), in Earth days:
 ![](./images/Figure_9.7_B16834.jpg)
 
 
-Figure 9.7 -- Planets dataset
+
 
 We can build a correlation matrix heatmap to help find the best features
 to use:
@@ -425,7 +424,7 @@ planet travels around its star:
 ![](./images/Figure_9.8_B16834.jpg)
 
 
-Figure 9.8 -- Correlations between features in the planets dataset
+
 
 To predict `period`, we probably want to look at
 `semimajoraxis`, `mass`, and
@@ -436,7 +435,7 @@ orbit differs from a perfect circle:
 ![](./images/Figure_9.9_B16834.jpg)
 
 
-Figure 9.9 -- Understanding eccentricity
+
 
 Let\'s shapes
 the orbits we have are:
@@ -457,7 +456,7 @@ which we would expect since these are planets:
 ![](./images/Figure_9.10_B16834.jpg)
 
 
-Figure 9.10 -- Distribution of orbit eccentricities
+
 
 An ellipse, being an elongated circle, has two axes: *major* and *minor*
 for the longest and shortest ones, respectively.
@@ -474,7 +473,7 @@ path):
 ![](./images/Figure_9.11_B16834.jpg)
 
 
-Figure 9.11 -- Understanding the semi-major axis
+
 
 Now that we understand what these columns mean, let\'s do some more EDA.
 This data isn\'t as clean as our wine data was---it\'s certainly much
@@ -535,7 +534,7 @@ others:
 ![](./images/Figure_9.12_B16834.jpg)
 
 
-Figure 9.12 -- Summary statistics for the planets dataset
+
 
 We could also look at some scatter plots. Note that there is a
 `list` column for the group the planet belongs to, such as
@@ -561,7 +560,7 @@ their star:
 ![](./images/Figure_9.13_B16834.jpg)
 
 
-Figure 9.13 -- Planet period versus semi-major axis
+
 
 Unfortunately, we can see that the scale of `period` is making
 this pretty difficult to read, so we could try a log transformation on
@@ -599,7 +598,7 @@ planets with years shorter than Mercury\'s 88 Earth-day year now:
 ![](./images/Figure_9.14_B16834.jpg)
 
 
-Figure 9.14 -- Our solar system compared to exoplanets
+
 
 Now that we have a feel for the data we will be working with, let\'s
 learn how to prepare it for use in a machine learning model.
@@ -983,7 +982,7 @@ appeared in the data:
 ![](./images/Figure_9.15_B16834.jpg)
 
 
-Figure 9.15 -- One-hot encoding
+
 
 As we discussed previously, one of these columns is redundant because
 the values in the remaining ones can be used to determine the value for
@@ -1004,7 +1003,7 @@ but we can still determine that all but the last row were in the
 ![](./images/Figure_9.16_B16834.jpg)
 
 
-Figure 9.16 -- Dropping redundant columns after one-hot encoding
+
 
 Note that we can obtain a similar result by using the
 `LabelBinarizer` class and its `fit_transform()`
@@ -1356,7 +1355,7 @@ behavior:
 ![](./images/Figure_9.17_B16834.jpg)
 
 
-Figure 9.17 -- Clustering website users into three groups
+
 
 Since we can use clustering for unsupervised
 learning, we will need to interpret the groups that are created and then
@@ -1478,7 +1477,7 @@ clusters, while Neptune and Pluto share a cluster:
 ![](./images/Figure_9.18_B16834.jpg)
 
 
-Figure 9.18 -- Eight clusters of planets identified by k-means
+
 
 We picked eight clusters arbitrarily here, since this is the number of
 planets in our solar system. Ideally, we would have some domain
@@ -1564,7 +1563,7 @@ an appropriate *k*, which may be around two or three here:
 ![](./images/Figure_9.19_B16834.jpg)
 
 
-Figure 9.19 -- Interpreting an elbow point plot
+
 
 If we create just two clusters, we divide the planets into a group with
 most of the planets (orange) and a second group with only a few in the
@@ -1574,7 +1573,7 @@ upper-right (blue), which are likely to be outliers:
 ![](./images/Figure_9.20_B16834.jpg)
 
 
-Figure 9.20 -- Two clusters of planets identified by k-means
+
 
 Note that while this may have been an appropriate
 amount of clusters, it doesn\'t tell us as much as the previous attempt.
@@ -1674,7 +1673,7 @@ second cluster:
 ![](./images/Figure_9.21_B16834.jpg)
 
 
-Figure 9.21 -- Visualizing the planets in the cluster distance space
+
 
 So far, we have been using
 `transform()` or combination methods,
@@ -1688,7 +1687,7 @@ following, based on what they are used for:
 ![](./images/Figure_9.22_B16834.jpg)
 
 
-Figure 9.22 -- General reference for the scikit-learn model API
+
 
 Now that we have built a few models, we are ready
 for the next step: quantifying their performance.
@@ -2016,7 +2015,7 @@ actual values and follow a similar pattern:
 ![](./images/Figure_9.23_B16834.jpg)
 
 
-Figure 9.23 -- Predictions versus actual values
+
 
 Tip
 
@@ -2105,7 +2104,7 @@ longer than the actual year:
 ![](./images/Figure_9.24_B16834.jpg)
 
 
-Figure 9.24 -- Examining the residuals
+
 
 Tip
 
@@ -2222,7 +2221,7 @@ indicating a linear relationship:
 ![](./images/Figure_9.25_B16834.jpg)
 
 
-Figure 9.25 -- R[2]{.superscript} can be misleading
+
 
 Another metric offered by
 `scikit-learn` is the **explained variance score**, which
@@ -2346,7 +2345,7 @@ be mapped to class labels:
 ![](./images/Figure_9.26_B16834.jpg)
 
 
-Figure 9.26 -- The logistic sigmoid function
+
 
 Let\'s use logistic regression to classify red wines as high or low
 quality and to classify wines as red or white based on their chemical
@@ -2512,7 +2511,7 @@ labels to the actual labels using a **confusion matrix**:
 ![](./images/Figure_9.27_B16834.jpg)
 
 
-Figure 9.27 -- Evaluating classification results with a confusion matrix
+
 
 Each prediction can be one of four outcomes,
 based on how it matches up to the actual value:
@@ -2606,7 +2605,7 @@ model had trouble finding the high-quality red wines consistently
 ![](./images/Figure_9.28_B16834.jpg)
 
 
-Figure 9.28 -- Results for the red wine quality model
+
 
 Now, let\'s look at how well the `white_or_red` model
 predicted the wine type:
@@ -2627,7 +2626,7 @@ with very few incorrect predictions:
 ![](./images/Figure_9.29_B16834.jpg)
 
 
-Figure 9.29 -- Results for the white or red wine model
+
 
 Now that we understand the composition of the confusion matrix, we can
 use it to calculate additional performance metrics.
@@ -2777,7 +2776,7 @@ precision and recall each only consider half of the confusion matrix:
 ![](./images/Figure_9.30_B16834.jpg)
 
 
-Figure 9.30 -- Confusion matrix coverage for precision and recall
+
 
 There is typically a trade-off between maximizing recall and maximizing
 precision, and we have to decide which is more important to us. This
@@ -2856,7 +2855,7 @@ confusion matrix:
 ![](./images/Figure_9.31_B16834.jpg)
 
 
-Figure 9.31 -- Confusion matrix coverage for sensitivity and specificity
+
 
 We would like to maximize both sensitivity and specificity; however, we
 could easily maximize specificity by decreasing
@@ -2904,7 +2903,7 @@ toward the top-left corner:
 ![](./images/Figure_9.32_B16834.jpg)
 
 
-Figure 9.32 -- Comparing ROC curves
+
 
 The `ml_utils.classification` module contains a function for
 plotting our ROC curve. Let\'s take a look at it:
@@ -2968,7 +2967,7 @@ model is very good, with an AUC of nearly 1:
 ![](./images/Figure_9.33_B16834.jpg)
 
 
-Figure 9.33 -- ROC curve for the white or red wine model
+
 
 Given the other metrics we have looked at, we don\'t expect the red wine
 quality prediction model to have a great ROC
@@ -2988,7 +2987,7 @@ This ROC curve isn\'t as good as the previous one, as expected:
 ![](./images/Figure_9.34_B16834.jpg)
 
 
-Figure 9.34 -- ROC curve for the red wine quality model
+
 
 Our AUROC is 0.85; however, note that the AUROC provides optimistic
 estimates under class imbalance (since it
@@ -3085,7 +3084,7 @@ optimize one:
 ![](./images/Figure_9.35_B16834.jpg)
 
 
-Figure 9.35 -- Precision-recall curve for the red wine quality model
+
 
 Since we have a class imbalance between the high-quality and low-quality
 red wines (less than 14% are high quality), we must make a choice as to
@@ -3128,7 +3127,7 @@ we can achieve high precision and high recall:
 ![](./images/Figure_9.36_B16834.jpg)
 
 
-Figure 9.36 -- Precision-recall curve for the white or red wine model
+
 
 As we saw with the red wine quality model, AUPR works very well with
 class imbalance. However, it can\'t be compared
@@ -3148,7 +3147,7 @@ This gave us some ideas about what kinds of models we would want to
 build. A thorough exploration of the data is essential before attempting
 to build a model.
 
-In order to prepare our data efficiently,
+ In order to prepare our data efficiently,
 we used pipelines in `scikit-learn` to package up everything
 from our preprocessing through our model.
 

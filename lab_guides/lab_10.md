@@ -220,7 +220,7 @@ performance:
 ![](./images/Figure_10.1_B16834.jpg)
 
 
-Figure 10.1 -- Searching for the best hyperparameters
+
 
 Scikit-learn provides the `GridSearchCV` class in the
 `model_selection` module for carrying out
@@ -242,7 +242,7 @@ diagram:
 ![](./images/Figure_10.2_B16834.jpg)
 
 
-Figure 10.2 -- Understanding k-fold cross-validation
+
 
 Tip
 
@@ -575,7 +575,7 @@ of these values:
 ![](./images/Figure_10.3_B16834.jpg)
 
 
-Figure 10.3 -- Examining the interaction terms and polynomial features
+
 created
 
 If we are only interested in the interaction variables (*citric acid ×
@@ -783,7 +783,7 @@ we can see how to separate them, but there is still some overlap:
 ![](./images/Figure_10.4_B16834.jpg)
 
 
-Figure 10.4 -- Using two PCA components to separate wines by type
+
 
 Tip
 
@@ -866,14 +866,6 @@ angle, although we still have a few points in the wrong section:
 
 ![](./images/Figure_10.5_B16834.jpg)
 
-
-Figure 10.5 -- Using three PCA components to separate wines by type
-
-Important note
-
-PCA performs linear dimensionality reduction. Check out t-SNE and Isomap
-to perform manifold learning for non-linear dimensionality reduction.
-
 We can use the
 `pca_explained_variance_plot()` function from the
 `ml_utils.pca` module to visualize the cumulative explained
@@ -927,7 +919,7 @@ The first four PCA components explain about 80% of the variance:
 ![](./images/Figure_10.6_B16834.jpg)
 
 
-Figure 10.6 -- Explained variance for PCA components used
+
 
 We can also use the elbow point method to find a good value for the
 number of PCA components to use, just as we did
@@ -980,7 +972,7 @@ components because there are diminishing returns after that component:
 ![](./images/Figure_10.7_B16834.jpg)
 
 
-Figure 10.7 -- Diminishing returns for each additional PCA component
+
 after the fourth
 
 We can build a model on top of these four PCA
@@ -1141,7 +1133,7 @@ white wine are total sulfur dioxide and chlorides:
 ![](./images/Figure_10.8_B16834.jpg)
 
 
-Figure 10.8 -- Importance of each chemical property in predicting wine
+
 type
 
 Tip
@@ -1191,7 +1183,7 @@ number of samples in each class at that node (**values**):
 ![](./images/Figure_10.9_B16834.jpg)
 
 
-Figure 10.9 -- Decision tree for predicting wine type based on chemical
+
 properties
 
 We can also apply decision trees to regression
@@ -1219,7 +1211,7 @@ why. The first four splits are all based on the semi-major axis:
 ![](./images/Figure_10.10_B16834.jpg)
 
 
-Figure 10.10 -- Decision tree for predicting planet period
+
 
 Decision trees can be **pruned** after being grown to maximum depth, or
 provided with a max depth before training, to
@@ -1248,7 +1240,7 @@ the following subplots:
 ![](./images/Figure_10.11_B16834.jpg)
 
 
-Figure 10.11 -- The bias-variance trade-off
+
 
 Ensemble methods can be broken down into three
 categories: **boosting**, **bagging**, and **stacking**. **Boosting**
@@ -1581,7 +1573,7 @@ fooled pretty badly:
 ![](./images/Figure_10.12_B16834.jpg)
 
 
-Figure 10.12 -- Prediction confidence when the model was correct versus
+
 incorrect
 
 This outcome tells us we may want to look into the chemical properties
@@ -1648,7 +1640,7 @@ or sulfur dioxide, and white wines with high volatile acidity:
 ![](./images/Figure_10.13_B16834.jpg)
 
 
-Figure 10.13 -- Checking whether incorrect predictions were outliers
+
 
 Despite having many more white wines than red
 wines in the data, our model is able to distinguish between them pretty
@@ -1937,73 +1929,6 @@ SMOTE to work well.
 
 Regularization
 ==============
-
-
-When working with regressions, we may look to add a penalty term to our
-regression equation to reduce overfitting by punishing certain decisions
-for coefficients made by the model; this is called **regularization**.
-We are looking for the coefficients that will minimize
-this penalty term. The idea is to shrink the
-coefficients toward zero for features that don\'t contribute much to
-reducing the error of the model. Some common techniques are ridge
-regression, LASSO (short for *Least Absolute Shrinkage and Selection
-Operator*) regression, and elastic net regression, which combines the
-LASSO and ridge penalty terms. Note that since these techniques rely on
-the magnitude of the coefficients, the data
-should be scaled beforehand.
-
-**Ridge regression**, also called **L2 regularization**, punishes high
-coefficients (![](./images/Formula_10_002.png)) by adding the
-sum of the squares of the coefficients to the
-cost function (which regression looks to minimize when fitting), as per
-the following penalty term:
-
-
-![](./images/Formula_10_003.jpg)
-
-
-This penalty term is also weighted by λ (lambda), which indicates how
-large the penalty will be. When this is zero, we have ordinary least
-squares regression, as before.
-
-Important note
-
-Remember the `C` parameter from the
-`LogisticRegression` class? By default, the
-`LogisticRegression` class will use the L2 penalty term, where
-`C` is 1/λ. However, it also supports L1, but only with
-certain solvers.
-
-**LASSO regression**, also called **L1 regularization**, drives
-coefficients to zero by adding the sum of the
-absolute values of the coefficients to the cost function. This is
-more robust than L2 regularization because it is
-less sensitive to extreme values:
-
-
-![](./images/Formula_10_004.jpg)
-
-
-Since LASSO drives coefficients of certain
-features in the regression to zero (where they won\'t contribute to the
-model), it is said to perform feature selection.
-
-Important note
-
-Both the L1 and L2 penalties are also referred to as **L1 and L2 norms**
-(a mathematical transformation on a vector to be in the range \[0, ∞))
-and written as ![](./images/Formula_10_005.png) and
-![](./images/Formula_10_006.png), respectively.
-
-**Elastic net regression** combines both LASSO and ridge penalty terms
-into the following penalty term, where we can
-tune both the strength of the penalty (λ) and the percentage of the
-penalty that is L1 (and consequently, the percentage that is L2) with α
-(alpha):
-
-
-![](./images/Formula_10_007.jpg)
-
 
 Scikit-learn implements ridge, LASSO, and elastic net regressions with
 the `Ridge`, `Lasso`, and `ElasticNet`

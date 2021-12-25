@@ -84,7 +84,7 @@ we will have to find another way around this:
 ![](./images/Figure_11.1_B16834.jpg)
 
 
-Figure 11.1 -- Simulation parameters
+
 
 Important note
 
@@ -168,7 +168,7 @@ Our data looks like this:
 ![](./images/Figure_11.2_B16834.jpg)
 
 
-Figure 11.2 -- Login attempt logs for 2018
+
 
 Our data types will be the same as in *Lab 8*,
 *Rule-Based Anomaly Detection*, with the exception of the
@@ -279,7 +279,7 @@ users since they have relatively high success rates:
 ![](./images/Figure_11.3_B16834.jpg)
 
 
-Figure 11.3 -- Metrics per IP address
+
 
 Let\'s use this dataframe to plot successes
 versus attempts per IP address to see whether there is a pattern we can
@@ -319,7 +319,7 @@ boundary looking something like this:
 ![](./images/Figure_11.5_B16834.jpg)
 
 
-Figure 11.5 -- A possible decision boundary
+
 
 Now, the question is, which of those two groups is the attackers? Well,
 if more of the IP addresses are the attackers (since they use different
@@ -343,7 +343,7 @@ valid users have more successes than the attackers because they only use
 ![](./images/Figure_11.6_B16834.jpg)
 
 
-Figure 11.6 -- Looking for outliers using metrics per IP address
+
 
 Clearly, looking at the data like this isn\'t helping too much, so
 let\'s see whether a smaller granularity can help us. Let\'s visualize
@@ -379,7 +379,7 @@ have multiple failures for their attempts:
 ![](./images/Figure_11.7_B16834.jpg)
 
 
-Figure 11.7 -- Distribution of metrics per minute per IP address
+
 
 Perhaps a combination of unique usernames and failures will give us
 something that doesn\'t rely on the IP address being constant. Let\'s
@@ -406,7 +406,7 @@ with our website, or something malicious:
 ![](./images/Figure_11.8_B16834.jpg)
 
 
-Figure 11.8 -- Usernames with failures over time
+
 
 After a thorough exploration of the data we will be working with, we
 have an idea of what features we could use when
@@ -508,7 +508,7 @@ A single tree in the forest will look something like the following:
 ![](./images/Figure_11.9_B16834.jpg)
 
 
-Figure 11.9 -- Example of a single tree in an isolation forest
+
 
 The average length of the path that must be traveled from the top of
 each tree in the forest to the leaf containing a given point is used to
@@ -711,7 +711,7 @@ minute-by-minute data means we will trigger many alerts per attack:
 ![](./images/Figure_11.10_B16834.jpg)
 
 
-Figure 11.10 -- Labeled data for evaluating our models
+
 
 Using the `start_floor` and `end_ceil` columns, we
 can create a range of datetimes and can check whether the data we marked
@@ -815,7 +815,7 @@ false positives compared to LOF, but it has fewer false negatives:
 ![](./images/Figure_11.11_B16834.jpg)
 
 
-Figure 11.11 -- Confusion matrices for our unsupervised models
+
 
 The SOC has informed us that false negatives are much more costly than
 false positives. However, they would like us to keep false positives in
@@ -1006,7 +1006,7 @@ nearly zero:
 ![](./images/Figure_11.13_B16834.jpg)
 
 
-Figure 11.13 -- Baselining with a dummy classifier
+
 
 Since we have a very large class imbalance, the
 stratified random guessing strategy should perform horrendously on the
@@ -1075,7 +1075,7 @@ curve, meaning this model has some predictive value:
 ![](./images/Figure_11.14_B16834.jpg)
 
 
-Figure 11.14 -- Performance of the Naive Bayes classifier
+
 
 Unfortunately, we are triggering an enormous quantity of false positives
 (8,218). For the month of February, roughly 1 out of every 1,644 attack
@@ -1185,7 +1185,7 @@ curve is a bit more optimistic about the performance:
 ![](./images/Figure_11.15_B16834.jpg)
 
 
-Figure 11.15 -- Performance using logistic regression
+
 
 This model meets the requirements
 of the SOC. Our recall is at least 70% and our
@@ -1485,7 +1485,7 @@ stakeholders; our performance is not in the target region:
 ![](./images/Figure_11.17_B16834.jpg)
 
 
-Figure 11.17 -- Model performance with a default threshold
+
 
 Our resulting recall (TPR) is 63.64%, which doesn\'t meet the goal of
 70% or better. By default, when we use the `predict()` method,
@@ -1573,7 +1573,7 @@ Our precision is in the acceptable range as well:
 ![](./images/Figure_11.18_B16834.jpg)
 
 
-Figure 11.18 -- Model performance using a custom threshold
+
 
 Using the custom threshold, we have correctly identified another three
 cases, reducing our false negatives, which are very costly for the SOC.
@@ -1646,7 +1646,7 @@ of the curve is in the target region:
 ![](./images/Figure_11.19_B16834.jpg)
 
 
-Figure 11.19 -- Model performance after one update
+
 
 ### Presenting our results
 
@@ -1704,7 +1704,7 @@ while it dropped for the precision-recall curve:
 ![](./images/Figure_11.20_B16834.jpg)
 
 
-Figure 11.20 -- Model performance after two updates
+
 
 ### Further improvements
 
