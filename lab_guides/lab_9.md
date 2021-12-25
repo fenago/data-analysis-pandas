@@ -1,2845 +1,3340 @@
-
-
 <img align="right" src="./logo.png">
 
 
-Lab 9: Aggregating Pandas DataFrames
-=====================================
+*Lab 9*: Getting Started with Machine Learning in Python
+========================================================
 
 The following topics will be covered in this lab:
 
--   Performing database-style operations on DataFrames
--   Using DataFrame operations to enrich data
--   Aggregating data
--   Working with time series data
+-   Overview of the machine learning landscape
+-   Performing exploratory data analysis using skills learned in
+    previous labs
+-   Preprocessing data for use in a machine learning model
+-   Clustering to help understand unlabeled data
+-   Learning when regression is appropriate and how to implement it with
+    scikit-learn
+-   Understanding classification tasks and learning how to use logistic
+    regression
 
-
-#### Pre-reqs:
-- Google Chrome (Recommended)
-
-#### Lab Environment
-Notebooks are ready to run. All packages have been installed. There is no requirement for any setup.
-
-All examples are present in `~/work/machine-learning-essentials-module1/lab_09` folder. 
 
 Lab materials
 =================
 
-There are four notebooks that we will work through, each numbered
-according to when they will be used. The text will prompt you to switch.
-We will begin with the `1-querying_and_merging.ipynb` notebook
-to learn about querying and merging dataframes. Then, we will move on to
-the `2-dataframe_operations.ipynb` notebook to discuss data
-enrichment through operations such as binning, window functions, and
-pipes. For this section, we will also use the `window_calc.py`
-Python file, which contains a function for performing window
-calculations using pipes.
 
-**Tip:** 
+In this lab, we will be working with three datasets. The first two
+come from data on wine quality that was donated to the UCI Machine
+Learning Data Repository (<http://archive.ics.uci.edu/ml/index.php>) by
+P. Cortez, A. Cerdeira, F. Almeida, T. Matos, and J. Reis, which
+contains information on the chemical properties of various wine samples,
+along with a rating of the quality from a blind tasting by a panel of
+wine experts. These files can be found in the `data/` folder
+inside this lab\'s folder in the GitHub repository
+(<https://github.com/fenago/data-analysis-pandas/tree/master/lab_9>)
+as `winequality-red.csv` and `winequality-white.csv`
+for red and white wine, respectively.
 
-The `understanding_window_calculations.ipynb` notebook
-contains some interactive visualizations for understanding window
-functions. This may require some additional setup, but the instructions
-are in the notebook.
+Our third dataset was collected using the Open Exoplanet Catalogue
+database, which can be found at
+<https://github.com/OpenExoplanetCatalogue/open_exoplanet_catalogue/>.
+This database provides data in **eXtensible
+Markup Language** (**XML**) format, which is similar to HTML. The
+`planet_data_collection.ipynb` notebook on GitHub contains the
+code that was used to parse this information into the CSV files we will
+use in this lab; while we won\'t be going over this explicitly, I
+encourage you to take a look at it. The data files can be found in the
+`data/` folder, as well. We will use `planets.csv`
+for this lab; however, the parsed data for the other hierarchies is
+provided for exercises and further exploration. These are
+`binaries.csv`, `stars.csv`, and
+`systems.csv`, which contain data on binaries (stars or
+binaries forming a group of two), data on a single star, and data on
+planetary systems, respectively.
 
-Next, in the `3-aggregations.ipynb` notebook, we will discuss
-aggregations, pivot tables, and crosstabs. Finally, we will focus on
-additional capabilities `pandas` provides when working with
-time series data in the `4-time_series.ipynb` notebook. Note
-that we will not go over the `0-weather_data_collection.ipynb`
-notebook; however, for those interested, it contains the code that was
-used to collect the data from the **National Centers for Environmental Information** (**NCEI**) API, which can be found at
-<https://www.ncdc.noaa.gov/cdo-web/webservices/v2>.
+We will be using the `red_wine.ipynb` notebook to predict red
+wine quality, the `wine.ipynb` notebook to classify wines as
+red or white based on their chemical properties, and the
+`planets_ml.ipynb` notebook to build a regression model to
+predict the year length of planets and perform clustering to find
+similar planet groups. We will use the
+`preprocessing.ipynb` notebook for the section on
+preprocessing.
 
-Throughout this lab, we will use a variety of datasets, which can be
-found in the `data/` directory:
+Back in [*Lab
+1*],
+*Introduction to Data Analysis*, when we set up our environment, we
+installed a package from GitHub called `ml_utils`. This
+package contains utility functions and classes that we will use for our
+three labs on machine learning. Unlike the last two labs, we
+won\'t be discussing how to make this package; however, those interested
+can look through the code at
+https://github.com/stefmolin/ml-utils/tree/2nd\_edition and follow the
+instructions from [*Lab
+7*],
+*Financial Analysis -- Bitcoin and the Stock Market*, to install it in
+editable mode.
+
+The following are the reference links for the data sources:
+
+-   *Open Exoplanet Catalogue database*, available at
+    <https://github.com/OpenExoplanetCatalogue/open_exoplanet_catalogue/#data-structure>.
+-   *P. Cortez, A. Cerdeira, F. Almeida, T. Matos and J. Reis. Modeling
+    wine preferences by data mining from physicochemical properties. In
+    Decision Support Systems, Elsevier, 47(4):547-553, 2009.* Available
+    online at <http://archive.ics.uci.edu/ml/datasets/Wine+Quality>.
+-   *Dua, D. and Karra Taniskidou, E. (2017). UCI Machine Learning
+    Repository \[*<http://archive.ics.uci.edu/ml/index.php>*\]. Irvine,
+    CA: University of California, School of Information and Computer
+    Science.*
 
 
-![](./images/Figure_4.1_B16834.jpg)
+Machine learning in Python
+--------------------------
+
+In this course, we will be using `scikit-learn` for its
+user-friendly API. In `scikit-learn`, our base class is an
+**estimator** (not to be confused with a model when used in statistical
+terms), which is capable of learning from the data via its
+`fit()` method. We use **transformers** to prepare our data
+with their `transform()` method---transforming the data into
+something **predictors** (classes for supervised or unsupervised
+learning) can use with their
+`predict()` method. The **model** classes are capable of
+calculating how well they perform using a
+`score()` method. Knowing just these
+four methods, we can easily build any machine learning model offered by
+`scikit-learn`.
 
 
+Exploratory data analysis
+=========================
 
-Note that the `exercises/` directory contains the CSV files
-that are required to complete the end-of-lab exercises. More
-information on these datasets can be found in the
-`exercises/README.md` file.
 
-Performing database-style operations on DataFrames
-==================================================
+As we have learned throughout this course, our first step should be to
+engage in some **exploratory data analysis** (**EDA**) to get familiar
+with our data. In the interest of brevity, this section
+will include a subset of the EDA that\'s
+available in each of the notebooks---be sure to check out the respective
+notebooks for the full version.
 
-For this section, we will be working in the
-`1-querying_and_merging.ipynb` notebook. We will begin with
-our imports and read in the NYC weather data CSV file:
+Let\'s start with our imports, which will be the same across the
+notebooks we will use in this lab:
 
 ```
+>>> %matplotlib inline
+>>> import matplotlib.pyplot as plt
+>>> import numpy as np
 >>> import pandas as pd
->>> weather = pd.read_csv('data/nyc_weather_2018.csv')
->>> weather.head()
+>>> import seaborn as sns
 ```
 
-
-This is long format data --- we have several
-different weather observations per day for various stations covering NYC
-in 2018:
-
-
-![](./images/Figure_4.2_B16834.jpg)
+We will start our EDA with the wine quality data before moving on to the
+planets.
 
 
 
+Red wine quality data
+---------------------
 
-Querying DataFrames
--------------------
-
-Pandas provides the `query()` method so that
-we can easily write complicated filters instead of
-using a Boolean mask. The syntax is similar to the `WHERE`
-clause in a SQL statement. To illustrate this, let\'s query the weather
-data for all the rows where the value of the `SNOW` column was
-greater than zero:
+Let\'s read in our red wine data and
+do some EDA using techniques we have learned
+throughout this course:
 
 ```
->>> snow_data = weather.query(
-...     'datatype == "SNOW" and value > 0 '
-... ) 
->>> snow_data.head()
+>>> red_wine = pd.read_csv('data/winequality-red.csv')
 ```
 
-
-Each row is a snow observation for a given combination of date and
-station. Notice that the values vary quite a bit for January 4th---some
-stations received more snow than others:
-
-
-![](./images/Figure_4.3_B16834.jpg)
+We have data on 11 different chemical properties of red wine, along with
+a column indicating the quality score from the wine experts that
+participated in the blind taste testing. We can try to predict the
+quality score by looking at the chemical properties:
 
 
-
-This query is equivalent to the following in SQL.
-Note that `SELECT *` selects all the columns in the table (our
-dataframe, in this case):
-
-```
-SELECT * FROM weather
-WHERE
-  datatype == "SNOW" AND value > 0 AND station LIKE "%US1NY%";
-```
+![](./images/Figure_9.1_B16834.jpg)
 
 
-In *Working with Pandas DataFrames*, we learned how to use a Boolean mask
-to get the same result:
+Figure 9.1 -- Red wine dataset
+
+Let\'s see what the distribution of the `quality` column looks
+like:
 
 ```
->>> weather[
-...     (weather.datatype == 'SNOW') & (weather.value > 0)
-...     & weather.station.str.contains('US1NY')
-... ].equals(snow_data)
-True
+>>> def plot_quality_scores(df, kind):
+...     ax = df.quality.value_counts().sort_index().plot.barh(
+...         title=f'{kind.title()} Wine Quality Scores',
+...         figsize=(12, 3)
+...     ) 
+...     ax.axes.invert_yaxis()
+...     for bar in ax.patches:
+...         ax.text(
+...             bar.get_width(),
+...             bar.get_y() + bar.get_height()/2,
+...             f'{bar.get_width()/df.shape[0]:.1%}',
+...             verticalalignment='center'
+...         )
+...     plt.xlabel('count of wines')
+...     plt.ylabel('quality score')
+...  
+...     for spine in ['top', 'right']:
+...         ax.spines[spine].set_visible(False)
+... 
+...     return ax
+>>> plot_quality_scores(red_wine, 'red')
 ```
 
-
-For the most part, which one we use is a matter of preference; however,
-if we have a long name for our dataframe, we will probably prefer the
-`query()` method. In the previous example, we had to type the
-dataframe\'s name an additional three times in order to use the mask.
-
-
-Merging DataFrames
-------------------
-
-Let\'s look at some Venn diagrams and then do some sample
-joins on the weather data. Here, the darker regions represent the data
-we are left with after performing the join:
+The information on the dataset says that
+`quality` varies from 0 (terrible) to 10 (excellent); however,
+we only have values in the middle of that range. An
+interesting task for this dataset could be to see
+if we can predict high-quality red wines (a quality score of 7 or
+higher):
 
 
-![](./images/Figure_4.4_B16834.jpg)
+![](./images/Figure_9.2_B16834.jpg)
 
 
-The NCEI API\'s `stations` endpoint gives us all the
-information we need for the stations. This is in the
-`weather_stations.csv` file, as well as in the
-`stations` table in the SQLite database. Let\'s read this data
-into a dataframe:
+Figure 9.2 -- Distribution of red wine quality scores
+
+All of our data is numeric, so we
+don\'t have to worry about handling text values;
+we also don\'t have any missing values:
 
 ```
->>> station_info = pd.read_csv('data/weather_stations.csv')
->>> station_info.head()
+>>> red_wine.info()
+<class 'pandas.core.frame.DataFrame'>
+RangeIndex: 1599 entries, 0 to 1598
+Data columns (total 12 columns):
+ #   Column                Non-Null Count  Dtype  
+---  ------                --------------  -----  
+ 0   fixed acidity         1599 non-null   float64
+ 1   volatile acidity      1599 non-null   float64
+ 2   citric acid           1599 non-null   float64
+ 3   residual sugar        1599 non-null   float64
+ 4   chlorides             1599 non-null   float64
+ 5   free sulfur dioxide   1599 non-null   float64
+ 6   total sulfur dioxide  1599 non-null   float64
+ 7   density               1599 non-null   float64
+ 8   pH                    1599 non-null   float64
+ 9   sulphates             1599 non-null   float64
+ 10  alcohol               1599 non-null   float64
+ 11  quality               1599 non-null   int64  
+dtypes: float64(11), int64(1)
+memory usage: 150.0 KB
 ```
 
-
-For reference, Central Park in NYC is at 40.7829° N, 73.9654° W
-(latitude 40.7829 and longitude -73.9654), and NYC has an elevation of
-10 meters. The first five stations that record NYC data are not in New
-York. The ones in New Jersey are southwest of NYC, while the ones in
-Connecticut are northeast of NYC:
-
-
-![](./images/Figure_4.5_B16834.jpg)
-
-
-
-Joins require us to specify how to match the data up. The only data the
-`weather` dataframe has in common with the
-`station_info` dataframe is the station ID. However, the
-columns containing this information are not named the same: in the
-`weather` dataframe, this column is called
-`station`, while in the `station_info` dataframe, it
-is called `id`. Before we join the data, let\'s get some
-information on how many distinct stations we have and how many entries
-are in each dataframe:
+We can  to get an idea
+of what scale each of the columns is on:
 
 ```
->>> station_info.id.describe()
-count                   279
-unique                  279
-top       GHCND:US1NJBG0029
-freq                      1
-Name: id, dtype: object
->>> weather.station.describe()
-count                 78780
-unique                  110
-top       GHCND:USW00094789
-freq                   4270
-Name: station, dtype: object
+>>> red_wine.describe()
 ```
 
-
-The difference in the number of unique stations across the dataframes
-tells us they don\'t contain all the same
-stations. Depending on the type of join we pick, we may lose some data.
-Therefore, it\'s important to look at the row count before and after the
-join. We can see this in the **count** entry from the output of
-`describe()`, but we don\'t need to run that just to get the
-row count. Instead, we can use the `shape` attribute, which
-gives us a tuple of the form
-`(number of rows, number of columns)`. To select the rows, we
-just grab the value at index `0` (`1` for columns):
-
-```
->>> station_info.shape[0], weather.shape[0] # 0=rows, 1=cols
-(279, 78780)
-```
+The result indicates that we will definitely have to do some scaling if
+our model uses distance metrics for anything because our columns aren\'t
+all on the same range:
 
 
-Since we will be checking the row count often, it makes more sense to
-write a function that will give us the row count for any number of
-dataframes. The `*dfs` argument collects all the input to this
-function in a tuple, which we can iterate over in a list comprehension
-to get the row count:
+![](./images/Figure_9.3_B16834.jpg)
+
+
+Figure 9.3 -- Summary statistics for the red wine dataset
+
+Lastly, let\'s use `pd.cut()` to bin our high-quality red
+wines (roughly 14% of the data) for later:
 
 ```
->>> def get_row_count(*dfs):
-...     return [df.shape[0] for df in dfs]
->>> get_row_count(station_info, weather)
-[279, 78780]
-```
-
-
-Now that we know that we have 78,780 rows of weather data and 279 rows
-of station information data, we can begin looking at the types of joins.
-We\'ll begin with the inner join, which will result in the least amount
-of rows (unless the two dataframes have all the same values for the
-column being joined on, in which case all the joins will be equivalent).
-The **inner join** will return the columns from
-both dataframes where they have a match on the specified key column.
-Since we will be joining on the `weather.station` column and
-the `station_info.id` column, we will only get weather data
-for stations that are in `station_info`.
-
-We will use the `merge()` method to
-perform the join (which is an inner join by
-default) by providing the left and right dataframes, along with
-specifying which columns to join on. Since the station ID column is
-named differently across dataframes, we must specify the names with
-`left_on` and `right_on`. The left dataframe is the
-one we call `merge()` on, while the right one is the dataframe
-that gets passed in as an argument:
-
-```
->>> inner_join = weather.merge(
-...     station_info, left_on='station', right_on='id'
+>>> red_wine['high_quality'] = pd.cut(
+...     red_wine.quality, bins=[0, 6, 10], labels=[0, 1]
 ... )
->>> inner_join.sample(5, random_state=0)
+>>> red_wine.high_quality.value_counts(normalize=True)
+0    0.86429
+1    0.13571
+Name: high_quality, dtype: float64
 ```
 
 
-Notice that we have five additional columns, which have been added to
-the right. These came from the `station_info` dataframe. This
-operation also kept both the `station` and `id`
-columns, which are identical:
 
+White and red wine chemical properties data
+-------------------------------------------
 
-!](./images/Figure_4.6_B16834.jpg)
-
-
-
-
-In order to remove the duplicate information in
-the `station` and `id` columns, we can rename one of
-them before the join. Consequently, we will only have to supply a value
-for the `on` parameter because the columns will share the same
-name:
+Now, let\'s look at the red and white wine data together. Since the data
+comes in separate files, we need to read in both
+and concatenate them into a single dataframe. The
+white wine file is actually semi-colon
+(`;`) separated, so we must provide the `sep`
+argument to `pd.read_csv()`:
 
 ```
->>> weather.merge(
-...     station_info.rename(dict(id='station'), axis=1), 
-...     on='station'
-... ).sample(5, random_state=0)
+>>> red_wine = pd.read_csv('data/winequality-red.csv')
+>>> white_wine = \
+...     pd.read_csv('data/winequality-white.csv', sep=';')
 ```
 
-
-Since the columns shared the name, we only get one back after joining on
-them:
-
-
-!](./images/Figure_4.7_B16834.jpg)
-
-
+We can also look at the quality scores of the
+white wines, just as we did with the red ones, and we will find that the
+white wines tend to be rated higher overall. This might bring us to
+question whether the judges preferred white wine over red wine, thus
+creating a bias in their ratings. As it is, the rating system that was
+used seems to be pretty subjective:
 
 
-**Tip:** 
+![](./images/Figure_9.4_B16834.jpg)
 
-We can join on multiple columns by passing the list of column names to
-the `on` parameter or to the `left_on` and
-`right_on` parameters.
 
-Remember that we had 279 unique stations in the `station_info`
-dataframe, but only 110 unique stations for the weather data. When we
-performed the inner join, we lost all the stations that didn\'t have
-weather observations associated with them. If we don\'t want to lose
-rows on a particular side of the join, we can
-perform a left or right join instead. A **left
-join** requires us to list the dataframe with the rows that we want to
-keep (even if they don\'t exist in the other dataframe) on the left and
-the other dataframe on the right; a **right join**
-is the inverse:
+Figure 9.4 -- Distribution of white wine quality scores
+
+Both of these dataframes
+have the same columns, so we can combine them
+without further work. Here, we use `pd.concat()` to stack
+the white wine data on top of
+the red wine data after adding a column to
+identify which wine type each observation belongs to:
 
 ```
->>> left_join = station_info.merge(
-...     weather, left_on='id', right_on='station', how='left'
+>>> wine = pd.concat([
+...     white_wine.assign(kind='white'),
+...     red_wine.assign(kind='red')
+... ])
+>>> wine.sample(5, random_state=10)
+```
+
+As we did with the red wine dataset, we can run `info()` to
+check whether we need to perform type conversion or whether we are
+missing any data; thankfully, we have no need here either. Our combined
+wine dataset looks like this:
+
+
+![](./images/Figure_9.5_B16834.jpg)
+
+
+Figure 9.5 -- Combined wine dataset
+
+Using `value_counts()`, we can see that
+we have many more white wines than red wines in the data:
+
+```
+>>> wine.kind.value_counts()
+white    4898
+red      1599
+Name: kind, dtype: int64
+```
+
+Lastly, let\'s examine box
+plots for each chemical property
+broken out by wine type using
+`seaborn`. This can help us identify **features** (model
+inputs) that will be helpful when building our model to distinguish
+between red and white wine:
+
+```
+>>> import math
+>>> chemical_properties = [col for col in wine.columns
+...                        if col not in ['quality', 'kind']]
+>>> melted = \
+...     wine.drop(columns='quality').melt(id_vars=['kind'])
+>>> fig, axes = plt.subplots(
+...     math.ceil(len(chemical_properties) / 4), 4, 
+...     figsize=(15, 10)
 ... )
->>> right_join = weather.merge(
-...     station_info, left_on='station', right_on='id',
-...     how='right'
+>>> axes = axes.flatten()
+>>> for prop, ax in zip(chemical_properties, axes):
+...     sns.boxplot(
+...         data=melted[melted.variable.isin([prop])], 
+...         x='variable', y='value', hue='kind', ax=ax
+...     ).set_xlabel('')
+>>> for ax in axes[len(chemical_properties):]:
+...     ax.remove() # remove the extra subplots
+>>> plt.suptitle(
+...     'Comparing Chemical Properties of Red and White Wines'
 ... )
->>> right_join[right_join.datatype.isna()].head() # see nulls
+>>> plt.tight_layout()
 ```
 
-
-Wherever the other dataframe contains no data, we will get null values.
-We may want to investigate why we don\'t have any weather data
-associated with these stations. Alternatively, our analysis may involve
-determining the availability of data per station, so getting null values
-isn\'t necessarily an issue:
-
-
-](./images/Figure_4.8_B16834.jpg)
+Given the following result, we might look to use
+fixed acidity, volatile acidity, total sulfur
+dioxide, and sulphates
+when building a model since they seem to be
+distributed differently for red and white wines:
 
 
-
-Since we placed the `station_info` dataframe on the left for
-the left join and on the right for the right join, the results here are
-equivalent. In both cases, we chose to keep all the stations
-present in the `station_info` dataframe,
-accepting null values for the weather observations. To prove they are
-equivalent, we need to put the columns in the same order, reset the
-index, and sort the data:
-
-```
->>> left_join.sort_index(axis=1)\
-...     .sort_values(['date', 'station'], ignore_index=True)\
-...     .equals(right_join.sort_index(axis=1).sort_values(
-...         ['date', 'station'], ignore_index=True
-...     ))
-True
-```
+![](./images/Figure_9.6_B16834.jpg)
 
 
-Note that we have additional rows in the left and right joins because we
-kept all the stations that didn\'t have weather observations:
+Figure 9.6 -- Comparing red and white wine on a chemical level
 
-```
->>> get_row_count(inner_join, left_join, right_join)
-[78780, 78949, 78949]
-```
+Tip
+
+Comparing the distributions of variables across
+classes can help inform feature selection for our model. If
+the
+distribution for a variable is very different between classes, that
+variable may be very useful to include in our model. It is essential
+that we perform an in-depth exploration of our
+data before moving on to modeling. Be sure to use the visualizations we
+covered in [*Lab
+5*],
+*Visualizing Data with Pandas and Matplotlib*, and [*Lab
+6*],
+*Plotting with Seaborn and Customization Techniques*, as they will prove
+invaluable for this process.
+
+We will come back to this visualization in [*Lab
+10*],
+*Making Better Predictions -- Optimizing Models*, when we examine
+incorrect predictions made by our model. Now, let\'s take a look at the
+other dataset we will be working with.
 
 
-The final type of join is a **full outer join**, which will
-keep all the values, regardless of whether or not
-they exist in both dataframes. For instance, say we queried for stations
-with `US1NY` in their station ID because we believed that
-stations measuring NYC weather would have to be labeled as such. This
-means that an inner join would result in losing observations from the
-stations in Connecticut and New Jersey, while a left/right join would
-result in either lost station information or lost weather data. The
-outer join will preserve all the data. We will
-also pass in `indicator=True` to add an additional column to
-the resulting dataframe, which will indicate which dataframe each row
-came from:
+
+Planets and exoplanets data
+---------------------------
+
+An **exoplanet** is simply a planet that orbits a
+star outside of our solar system, so from here on
+out we will refer to both collectively as
+**planets**. Let\'s read in our planets data now:
 
 ```
->>> outer_join = weather.merge(
-...     station_info[station_info.id.str.contains('US1NY')], 
-...     left_on='station', right_on='id',
-...     how='outer', indicator=True
+>>> planets = pd.read_csv('data/planets.csv')
+```
+
+Some interesting tasks we can do with this data would be to find
+clusters of similar planets based on their orbits and try to predict the
+orbit period (how long a year is on a planet), in Earth days:
+
+
+![](./images/Figure_9.7_B16834.jpg)
+
+
+Figure 9.7 -- Planets dataset
+
+We can build a correlation matrix heatmap to help find the best features
+to use:
+
+```
+>>> fig = plt.figure(figsize=(7, 7))
+>>> sns.heatmap(
+...     planets.drop(columns='discoveryyear').corr(), 
+...     center=0, vmin=-1, vmax=1, square=True, annot=True,
+...     cbar_kws={'shrink': 0.8}
 ... )
-# view effect of outer join
->>> pd.concat([
-...     outer_join.query(f'_merge == "{kind}"')\
-...         .sample(2, random_state=0)
-...     for kind in outer_join._merge.unique()
-... ]).sort_index()
 ```
 
-
-Indices **23634** and **25742** come from stations located in New York,
-and the match gives us information about the station. Indices **60645**
-and **70764** are for stations that don\'t have `US1NY` in
-their station ID, causing nulls for the station information columns. The
-bottom two rows are stations in New York that aren\'t providing weather
-observations for NYC. This join keeps all the data and will often
-introduce null values, unlike inner joins, which won\'t:
+The heatmap shows us that the semi-major axis of a planet\'s orbit is
+highly positively correlated to the length
+of its period, which makes
+sense since the semi-major axis (along
+with eccentricity) helps define the path that a
+planet travels around its star:
 
 
-![](./images/Figure_4.9_B16834.jpg)
+![](./images/Figure_9.8_B16834.jpg)
 
 
+Figure 9.8 -- Correlations between features in the planets dataset
 
-The aforementioned joins are equivalent to SQL
-statements of the following form, where we simply change
-`<JOIN_TYPE>` to `(INNER) JOIN`,
-`LEFT JOIN`, `RIGHT JOIN`, or
-`FULL OUTER JOIN` for the appropriate join:
-
-```
-SELECT *
-FROM left_table
-<JOIN_TYPE> right_table
-ON left_table.<col> == right_table.<col>;
-```
+To predict `period`, we probably want to look at
+`semimajoraxis`, `mass`, and
+`eccentricity`. The orbit eccentricity quantifies how much the
+orbit differs from a perfect circle:
 
 
-Joining dataframes makes working with the dirty data in *Lab 8*, *Data
-Wrangling with Pandas*, easier. Remember, we had data from two distinct
-stations: one had a valid station ID and the other was `?`.
-The `?` station was the only one recording the water
-equivalent of snow (`WESF`). Now that we know about joining
-dataframes, we can join the data from the valid station ID to the data
-from the `?` station that we are missing by date. First, we
-will need to read in the CSV file, setting the `date` column
-as the index. We will drop the duplicates and the `SNWD`
-column (snow depth), which we found to be uninformative since most of
-the values were infinite (both in the presence and absence of snow):
+![](./images/Figure_9.9_B16834.jpg)
+
+
+Figure 9.9 -- Understanding eccentricity
+
+Let\'s shapes
+the orbits we have are:
 
 ```
->>> dirty_data = pd.read_csv(
-...     'data/dirty_data.csv', index_col='date'
-... ).drop_duplicates().drop(columns='SNWD')
->>> dirty_data.head()
+>>> planets.eccentricity.min(), planets.eccentricity.max()
+(0.0, 0.956) # circular and elliptical eccentricities
+>>> planets.eccentricity.hist()
+>>> plt.xlabel('eccentricity')
+>>> plt.ylabel('frequency')
+>>> plt.title('Orbit Eccentricities')
 ```
 
-
-Our starting data looks like this:
-
-
-![](./images/Figure_4.10_B16834.jpg)
+It looks like nearly everything is an ellipse,
+which we would expect since these are planets:
 
 
-
-Now, we need to create a dataframe for each
-station. To reduce output, we will drop some additional columns:
-
-```
->>> valid_station = dirty_data.query('station != "?"')\
-...     .drop(columns=['WESF', 'station'])
->>> station_with_wesf = dirty_data.query('station == "?"')\
-...     .drop(columns=['station', 'TOBS', 'TMIN', 'TMAX'])
-```
+![](./images/Figure_9.10_B16834.jpg)
 
 
-This time, the column we want to join on (the date) is actually the
-index, so we will pass in `left_index` to indicate that the
-column to use from the left dataframe is the index, and then
-`right_index` to indicate the same for the right dataframe. We
-will perform a left join to make sure we don\'t lose any rows from our
-valid station, and, where possible, augment them with the observations
-from the `?` station:
+Figure 9.10 -- Distribution of orbit eccentricities
 
-```
->>> valid_station.merge(
-...     station_with_wesf, how='left',
-...     left_index=True, right_index=True
-... ).query('WESF > 0').head()
-```
+An ellipse, being an elongated circle, has two axes: *major* and *minor*
+for the longest and shortest ones, respectively.
+The semi-major axis is half the major axis. When
+compared to a circle, the axes are analogous to
+the diameter, crossing the entire shape, and the
+semi-axes are akin to the radius, being half the diameter. The following
+is how this would look in the case where the planet orbited a star that
+was exactly in the center of its elliptical orbit (due to gravity from
+other objects, in reality, the star can be anywhere inside the orbit
+path):
 
 
-For all the columns that the dataframes had in common, but weren\'t part
-of the join, we have two versions now. The versions coming from the left
-dataframe have the `_x` suffix appended to the column names,
-and those coming from the right dataframe have `_y` as the
-suffix:
+![](./images/Figure_9.11_B16834.jpg)
 
 
-![](./images/Figure_4.11_B16834.jpg)
+Figure 9.11 -- Understanding the semi-major axis
 
-
-
-We can provide our own suffixes with the
-`suffixes` parameter. Let\'s use a suffix for the
-`?` station only:
+Now that we understand what these columns mean, let\'s do some more EDA.
+This data isn\'t as clean as our wine data was---it\'s certainly much
+easier to measure everything when we can reach
+out and touch it. We only have
+`eccentricity`, `semimajoraxis`, or `mass`
+data for a fraction of the planets, despite
+ values:
 
 ```
->>> valid_station.merge(
-...     station_with_wesf, how='left',
-...     left_index=True, right_index=True, 
-...     suffixes=('', '_?')
-... ).query('WESF > 0').head()
+>>> planets[[
+...     'period', 'eccentricity', 'semimajoraxis', 'mass'
+... ]].info()
+<class 'pandas.core.frame.DataFrame'>
+RangeIndex: 4094 entries, 0 to 4093
+Data columns (total 4 columns):
+ #   Column         Non-Null Count  Dtype  
+---  ------         --------------  -----  
+ 0   period         3930 non-null   float64
+ 1   eccentricity   1388 non-null   float64
+ 2   semimajoraxis  1704 non-null   float64
+ 3   mass           1659 non-null   float64
+dtypes: float64(4)
+memory usage: 128.1 KB
 ```
 
-
-Since we specified an empty string for the left suffix, the columns
-coming from the left dataframe have their original names. However, the
-right suffix of `_?` was added to the names of the columns
-that came from the right dataframe:
-
-
-![](./images/Figure_4.12_B16834.jpg)
-
-
-
-
-When we are joining on the index, an easier way to do this is to use the
-`join()` method instead of `merge()`. It also
-defaults to an inner join, but this behavior can be changed with the
-`how` parameter, just like with `merge()`. The
-`join()` method will always use the index of the left
-dataframe to join, but it can use a column in the right dataframe if its
-name is passed to the `on` parameter. Note that suffixes are
-now specified using `lsuffix` for the left dataframe\'s suffix
-and `rsuffix` for the right one. This yields the same result
-as the previous example (*Figure 4.12*):
+If we were to drop data where any of these columns was null, we would be
+left with about 30% of it:
 
 ```
->>> valid_station.join(
-...     station_with_wesf, how='left', rsuffix='_?'
-... ).query('WESF > 0').head()
+>>> planets[[
+...     'period', 'eccentricity', 'semimajoraxis', 'mass'
+... ]].dropna().shape
+(1222, 4)
 ```
 
-
-One important thing to keep in mind is that joins
-can be rather resource-intensive, so it is often beneficial to figure
-out what will happen to the rows before going through with it. If we
-don\'t already know what type of join we want, this can help give us an
-idea. We can use **set operations** on the index
-we plan to join on to figure this out.
-
-Remember that the mathematical definition of a **set** is a collection
-of distinct objects. By definition, the index is a set. Set operations
-are often explained with Venn diagrams:
-
-
-![](./images/Figure_4.13_B16834.jpg)
-
-
-
-**Important note:**
-
-Note that `set` is also a Python type that\'s available in the
-standard library. A common use of sets is to remove duplicates from a
-list. More information on sets in Python can be found in the
-documentation at
-<https://docs.python.org/3/library/stdtypes.html#set-types-set-frozenset>.
-
-Let\'s use the `weather` and `station_info`
-dataframes to illustrate set operations. First, we must set the index to
-the column(s) that will be used for the join operation:
+If we are simply looking for a way to predict the length of the year
+(when we have these values available) to learn more about their
+relationship, we wouldn\'t necessarily worry about throwing out the
+missing data. Imputing it here could be far worse for our model. At
+least everything is properly encoded as a decimal
+(`float64`); however, let\'s check
+whether we need to do some scaling (beneficial if our model is sensitive
+to differences in magnitude):
 
 ```
->>> weather.set_index('station', inplace=True)
->>> station_info.set_index('id', inplace=True)
+>>> planets[[
+...     'period', 'eccentricity', 'semimajoraxis', 'mass'
+... ]].describe()
 ```
 
-
-To see what will remain with an inner join, we can
-take the **intersection** of the indices, which shows us the overlapping
-stations:
-
-```
->>> weather.index.intersection(station_info.index)
-Index(['GHCND:US1CTFR0039', ..., 'GHCND:USW1NYQN0029'],
-      dtype='object', length=110)
-```
+This shows us that, depending on our model, we
+will definitely have to do some scaling because
+the values in the `period` column are much larger than the
+others:
 
 
-As we saw when we ran the inner join, we only got station information
-for the stations with weather observations. This doesn\'t tell us what
-we lost, though; for this, we need to find the **set difference**, which
-will subtract the sets and give us the values of
-the first index that aren\'t in the second. With the set difference, we
-can easily see that, when performing an inner join, we don\'t lose any
-rows from the weather data, but we lose 169 stations that don\'t have
-weather observations:
+![](./images/Figure_9.12_B16834.jpg)
+
+
+Figure 9.12 -- Summary statistics for the planets dataset
+
+We could also look at some scatter plots. Note that there is a
+`list` column for the group the planet belongs to, such as
+`Solar System` or `Controversial`. We might want to
+see if the period (and distance from the star) influences this:
 
 ```
->>> weather.index.difference(station_info.index)
-Index([], dtype='object')
->>> station_info.index.difference(weather.index)
-Index(['GHCND:US1CTFR0022', ..., 'GHCND:USW00014786'],
-      dtype='object', length=169)
+>>> sns.scatterplot(
+...     x=planets.semimajoraxis, y=planets.period, 
+...     hue=planets.list, alpha=0.5
+... )
+>>> plt.title('period vs. semimajoraxis')
+>>> plt.legend(title='') 
 ```
 
+The controversial planets appear to be
+spread throughout and have larger
+axes and
+periods. Perhaps they are controversial because they are very far from
+their star:
 
-Note that this output also tells us how left and right joins will turn
-out. To avoid losing rows, we want to put the `station_info`
-dataframe on the same side as the join (on the left for a left join and
-on the right for a right join).
 
-**Tip:** 
+![](./images/Figure_9.13_B16834.jpg)
 
-We can use the `symmetric_difference()` method on the indices
-of the dataframes involved in the join to see what will be lost from
-both sides: `index_1.symmetric_difference(index_2)`. The
-result will be the values that are only in one of the indices. An
-example is in the notebook.
 
-Lastly, we can use the **union** to view all the values we
-will keep if we run a full outer join. Remember,
-the `weather` dataframe contains the stations repeated
-throughout because they provide daily
-measurements, so we call the `unique()` method before taking
-the union to see the number of stations we will keep:
+Figure 9.13 -- Planet period versus semi-major axis
+
+Unfortunately, we can see that the scale of `period` is making
+this pretty difficult to read, so we could try a log transformation on
+the *y*-axis to get more separation in the denser section on the
+lower-left. Let\'s just point out the planets in our solar system this
+time:
 
 ```
->>> weather.index.unique().union(station_info.index)
-Index(['GHCND:US1CTFR0022', ..., 'GHCND:USW00094789'],
-      dtype='object', length=279)
+>>> fig, ax = plt.subplots(1, 1, figsize=(10, 10))
+>>> in_solar_system = (planets.list == 'Solar System')\
+...     .rename('in solar system?')
+>>> sns.scatterplot(
+...     x=planets.semimajoraxis, y=planets.period, 
+...     hue=in_solar_system, ax=ax
+... )
+>>> ax.set_yscale('log')
+>>> solar_system = planets[planets.list == 'Solar System']
+>>> for planet in solar_system.name:
+...     data = solar_system.query(f'name == "{planet}"')
+...     ax.annotate(
+...         planet, 
+...         (data.semimajoraxis, data.period), 
+...         (7 + data.semimajoraxis, data.period),
+...         arrowprops=dict(arrowstyle='->')
+...     )
+>>> ax.set_title('log(orbital period) vs. semi-major axis')
 ```
 
-
-The *Further reading* section at the end of this lab contains some
-resources on set operations and how `pandas` compares to SQL.
-For now, let\'s move on to data enrichment.
-
-
-Using DataFrame operations to enrich data
-=========================================
+There were certainly a lot of
+planetsthat
+lower-left corner of the plot. We can see many
+planets with years shorter than Mercury\'s 88 Earth-day year now:
 
 
-Now that we\'ve discussed how to query and merge
-`DataFrame` objects, let\'s learn how to perform complex
-operations on them to create and modify columns and rows. For this
-section, we will be working in the
-`2-dataframe_operations.ipynb` notebook using the weather
-data, along with Facebook stock\'s volume traded and opening, high, low,
-and closing prices daily for 2018. Let\'s import what we will need and
-read in the data:
+![](./images/Figure_9.14_B16834.jpg)
+
+
+Figure 9.14 -- Our solar system compared to exoplanets
+
+Now that we have a feel for the data we will be working with, let\'s
+learn how to prepare it for use in a machine learning model.
+
+
+Preprocessing data
+==================
+
+
+In this section, we will be working in the
+`preprocessing.ipynb` notebook before we return
+to the notebooks we used for EDA. We will begin
+with our imports and read in the data:
 
 ```
 >>> import numpy as np
 >>> import pandas as pd
->>> weather = pd.read_csv(
-...     'data/nyc_weather_2018.csv', parse_dates=['date']
-... )
->>> fb = pd.read_csv(
-...     'data/fb_2018.csv', index_col='date', parse_dates=True
-... )
+>>> planets = pd.read_csv('data/planets.csv')
+>>> red_wine = pd.read_csv('data/winequality-red.csv')
+>>> wine = pd.concat([
+...     pd.read_csv(
+...         'data/winequality-white.csv', sep=';'
+...     ).assign(kind='white'), 
+...     red_wine.assign(kind='red')
+... ])
 ```
 
+Machine learning models follow the garbage in, garbage out principle. We
+have to make sure that we **train** our models (have them learn) on the
+best possible version of the data. What this means will depend on the
+model we choose. For instance, models that use a distance metric to
+calculate how similar observations are will easily be confused if our
+features are on wildly different scales. Unless
+we are working with a **natural language processing** (**NLP**) problem
+to try and understand the meaning of words, our model will have no use
+for---or worse, be unable to interpret---textual values. Missing or
+invalid data will also cause problems; we will have to decide whether to
+drop them or impute them. All of the adjustments we make to our
+data before giving it to our model to learn from
+are collectively called **preprocessing**.
 
-We will begin by reviewing operations that
-summarize entire rows and columns before moving on to binning, applying
-functions across rows and columns, and window calculations, which
-summarize data along a certain number of observations at a time (such as
-moving averages).
 
 
-Arithmetic and statistics
+Training and testing sets
 -------------------------
 
-To start off, let\'s create a column with the Z-score for the volume
-traded in Facebook stock and use it to find the days where the Z-score
-is greater than three in absolute value. These values are more than
-three standard deviations from the mean, which may be abnormal
-(depending on the data). Remember from our discussion of Z-scores in *Lab 1*, that we calculate them by subtracting
-the mean and dividing by the standard deviation. Rather than using
-mathematical operators for subtraction and division, we will use the
-`sub()` and `div()` methods, respectively:
+So far, machine learning sounds pretty great, though---we can build a
+model that will learn how to perform a task for
+us. Therefore, we should give it all the data we
+have so that it learns well, right? Unfortunately, it\'s not that
+simple. If we give the model all of our data, we risk **overfitting**
+it, meaning that it won\'t be able to generalize well to new data points
+because it was fit to the sample rather than the population. On the
+other hand, if we don\'t give it enough data, it will **underfit** and
+be unable to capture the underlying information in the data.
+
+Tip
+
+When a model fits the randomness in the data, it is said to fit the
+**noise** in the data.
+
+Another thing to consider is that if we use all of our data to train the
+model, how can we evaluate its performance? If we test it on the data we
+used for training, we will be overestimating how good it is because our
+model will always perform better on the training data. For these
+reasons, it\'s important to split our data into a **training set** and
+**testing set**. To do so, we could shuffle our dataframe and select the
+top *x*% of the rows for training and leave the rest for testing:
 
 ```
->>> fb.assign(
-...     abs_z_score_volume=lambda x: x.volume \
-...         .sub(x.volume.mean()).div(x.volume.std()).abs()
-... ).query('abs_z_score_volume > 3')
+shuffled = \
+    planets.reindex(np.random.permutation(planets.index))
+train_end_index = int(np.ceil(shuffled.shape[0] * .75))
+training = shuffled.iloc[:train_end_index,]
+testing = shuffled.iloc[train_end_index:,]
 ```
 
-
-Five days in 2018 had Z-scores for volume traded greater than three in
-absolute value. These dates in particular will come up often in the rest
-of this lab as they mark some trouble points for Facebook\'s stock
-price:
-
-
-![](./images/Figure_4.14_B16834.jpg)
-
-
-
-Two other very useful methods are `rank()` and
-`pct_change()`, which let us rank the values of a column (and
-store them in a new column) and calculate the percentage change
-between periods, respectively. By combining these,
-we can see which five days had the largest percentage change of volume
-traded in Facebook stock from the day prior:
+This would work, but it\'s a lot to write every time. Thankfully,
+`scikit-learn` provides us with the
+`train_test_split()` function in the
+`model_selection` module, which is a more robust,
+easier-to-use solution. It requires us to separate our input data
+(`X`) from our output data (`y`) beforehand. Here,
+we will pick 75% of the data to be used for the training set
+(`X_train`, `y_train`) and 25% for the testing set
+(`X_test`, `y_test`). We will set a seed
+(`random_state=0`) so that the split is reproducible:
 
 ```
->>> fb.assign(
-...     volume_pct_change=fb.volume.pct_change(),
-...     pct_change_rank=lambda x: \
-...         x.volume_pct_change.abs().rank(ascending=False)
-... ).nsmallest(5, 'pct_change_rank')
+>>> from sklearn.model_selection import train_test_split
+>>> X = planets[['eccentricity', 'semimajoraxis', 'mass']]
+>>> y = planets.period
+>>> X_train, X_test, y_train, y_test = train_test_split(
+...     X, y, test_size=0.25, random_state=0
+... )
 ```
 
+While there are no specific criteria for what constitutes a good size
+for the test set, a rule of thumb is usually between 10% and 30% of the
+data. However, if we don\'t have much data, we will
+shift toward a 10% testing set to make sure that
+we have enough data to learn from. Conversely, if
+we have a lot of data, we may move toward 30% testing, since, not only
+do we not want to overfit, but we want to give our model a good amount
+of data to prove its worth. Note that there is a big caveat with this
+rule of thumb: there are diminishing returns on the amount of training
+data we use. If we have a ton of data, we will most likely use much less
+than 70% of it for training because our computational costs may rise
+significantly for possibly minuscule improvements and an increased risk
+of overfitting.
 
-The day with the largest percentage change in volume traded was January
-12, 2018, which happens to coincide with one of the many Facebook
-scandals that shook the stock in 2018
-(<https://www.cnbc.com/2018/11/20/facebooks-scandals-in-2018-effect-on-stock.html>).
-This was when they announced changes to the news feed to prioritize
-content from a user\'s friends over brands they follow. Given that a
-large component of Facebook\'s revenue comes from advertising (nearly
-89% in 2017, *source*:
-<https://www.investopedia.com/ask/answers/120114/how-does-facebook-fb-make-money.asp>),
-this caused panic as many sold the stock, driving
-up the volume traded drastically and dropping the stock price:
+Important note
 
+When building models that require tuning, we split the data into
+training, validation, and testing sets. We will introduce validation
+sets in [*Lab
+10*],
+*Making Better Predictions -- Optimizing Models*.
 
-![](./images/Figure_4.15_B16834.jpg)
-
-
-
-We can use slicing to look at the change around this announcement:
-
-```
->>> fb['2018-01-11':'2018-01-12']
-```
-
-
-Notice how we are able to combine everything we learned in the last few
-labs to get interesting insights from our data. We were able to sift
-through a year\'s worth of stock data and find some days that had large
-effects on Facebook stock (good or bad):
-
-
-![](./images/Figure_4.16_B16834.jpg)
-
-
-
-Lastly, we can inspect the dataframe with aggregated Boolean operations.
-For example, we can see that Facebook stock never had a daily low price
-greater than \$215 in 2018 with the `any()` method:
+Let\'s take a look at the dimensions of our training and testing sets
+now. Since we are using three features (`eccentricity`,
+`semimajoraxis`, and `mass`), `X_train`
+and `X_test` have three columns. The `y_train` and
+`y_test` sets will be a single column each. The number of
+observations in the `X` and `y` data for training
+will be equal, as will be the case for the testing set:
 
 ```
->>> (fb > 215).any()
-open          True
-high          True
-low          False
-close         True
-volume        True
-dtype: bool
+>>> X.shape, y.shape # original data
+((4094, 3), (4094,))
+>>> X_train.shape, y_train.shape # training data
+((3070, 3), (3070,))
+>>> X_test.shape, y_test.shape # testing data
+((1024, 3), (1024,))
 ```
 
-
-If we want to see if all the rows in a column meet
-the criteria, we can use the `all()` method. This tells us
-that Facebook has at least one day for the opening, high, low, and
-closing prices with a value less than or equal to \$215:
+`X_train` and `X_test` are returned to us as
+dataframes since that is the format we passed them in as. If we
+are working with data in NumPy directly, we will
+ back
+instead. We are going to work with this data for other examples in the
+*Preprocessing data* section, so let\'s take a look at the first five
+rows of the `X_train` dataframe. Don\'t worry about the
+`NaN` values for now; we will discuss different ways of
+handling them in the *Imputing* section:
 
 ```
->>> (fb > 215).all()
-open      False
-high      False
-low       False
-close     False
-volume     True
-dtype: bool
+>>> X_train.head()
+      eccentricity  semimajoraxis  mass
+1390           NaN            NaN   NaN
+2837           NaN            NaN   NaN
+3619           NaN         0.0701   NaN
+1867           NaN            NaN   NaN
+1869           NaN            NaN   NaN
 ```
 
+Both `y_train` and `y_test` are series since that is
+what we passed into the `train_test_split()` function. If we
+had passed in a NumPy array, that is what we would have gotten back
+instead. The rows in `y_train` and `y_test` must
+line up with the rows in `X_train` and `X_test`,
+respectively. Let\'s confirm this by looking at the first five rows of
+`y_train`:
 
-Now, let\'s take a look at how we can use binning to divide up our data
-rather than a specific value, such as \$215 in the `any()` and
-`all()` examples.
+```
+>>> y_train.head()
+1390     1.434742
+2837    51.079263
+3619     7.171000
+1867    51.111024
+1869    62.869161
+Name: period, dtype: float64
+```
+
+Indeed, everything matches up, as expected. Note that for our wine
+models, we need to use stratified sampling, which
+can also be done with `train_test_split()` by passing
+the values to stratify on in the
+`stratify` argument. We will see this in the *Classification*
+section. For now, let\'s move on to the rest of our preprocessing.
 
 
 
-Binning
+Scaling and centering data
+--------------------------
+
+We\'ve seen that our dataframes had columns with very different scales;
+if we want to use any model that calculates a
+distance metric (such as k-means, which we will
+discuss in this lab, or **k-nearest neighbors** (**k-NN**), which we
+will discuss briefly in [*Lab
+10*],
+*Making Better Predictions -- Optimizing Models*), we will need to scale
+these. As we discussed back in [*Lab
+1*],
+*Introduction to Data Analysis*, we have quite a few options for doing
+so. Scikit-learn provides options in the `preprocessing`
+module for standardizing (scaling by calculating Z-scores) and min-max
+scaling (to normalize data to be in the range \[0, 1\]), among others.
+
+Important note
+
+We should check the requirements of the model we are building to see if
+the data needs to be scaled.
+
+For standard scaling, we use the `StandardScaler` class. The
+`fit_transform()` method combines `fit()`, which
+figures out the mean and standard deviation needed to center and scale,
+and `transform()`, which applies the transformation to the
+data. Note that, when instantiating a `StandardScaler` object,
+we can choose to not subtract the mean or not divide by the standard
+deviation by passing `False` to `with_mean` or
+`with_std`, respectively. Both are `True` by
+default:
+
+```
+>>> from sklearn.preprocessing import StandardScaler
+>>> standardized = StandardScaler().fit_transform(X_train)
+# examine some of the non-NaN values
+>>> standardized[~np.isnan(standardized)][:30]
+array([-5.43618156e-02,  1.43278593e+00,  1.95196592e+00,
+        4.51498477e-03, -1.96265630e-01,  7.79591646e-02, 
+        ...,
+       -2.25664815e-02,  9.91013258e-01, -7.48808523e-01,
+       -4.99260165e-02, -8.59044215e-01, -5.49264158e-02])
+```
+
+After this transformation, the data is in **scientific notation**. The
+information after the character `e` tells us
+where the decimal point got moved to. For a
+`+` sign, we move the decimal point to
+the right by the number of places indicated; we move to the left for a
+`-` sign. Therefore, `1.00e+00` is equivalent to
+`1`, `2.89e-02` is equivalent to `0.0289`,
+and `2.89e+02` is equivalent to `289`. The
+transformed planets data is mostly between -3 and 3 because everything
+is now a Z-score.
+
+Other scalers can be used with the same syntax. Let\'s use the
+`MinMaxScaler` class to transform the planets data into the
+range \[0, 1\]:
+
+```
+>>> from sklearn.preprocessing import MinMaxScaler
+>>> normalized = MinMaxScaler().fit_transform(X_train)
+# examine some of the non-NaN values
+>>> normalized[~np.isnan(normalized)][:30]
+array([2.28055906e-05, 1.24474091e-01, 5.33472803e-01,
+       1.71374569e-03, 1.83543340e-02, 1.77824268e-01, 
+       ...,
+       9.35966714e-04, 9.56961137e-02, 2.09205021e-02, 
+       1.50201619e-04, 0.00000000e+00, 6.59028789e-06])
+```
+
+Tip
+
+Another 
+class, which uses the median and IQR for robust
+to outliers scaling. There is an example of this in the notebook. More
+preprocessing classes can be found at
+<https://scikit-learn.org/stable/modules/classes.html#module-sklearn.preprocessing>.
+
+
+
+Encoding data
+-------------
+
+All of the scalers discussed so far address the preprocessing of our
+numeric data, but how can we deal with
+categorical data? We need to encode the categories into integer values.
+There are a few options here, depending on what the categories
+represent. If our category is binary (such as
+`0`/`1`, `True`/`False`, or
+`yes`/`no`), then we will **encode** these as a
+single column for both options, where `0` is one option and
+`1` is the other. We can easily do this with the
+`np.where()` function. Let\'s encode the wine data\'s
+`kind` field as `1` for red and `0` for
+white:
+
+```
+>>> np.where(wine.kind == 'red', 1, 0)
+array([0, 0, 0, ..., 1, 1, 1])
+```
+
+This is effectively a column that tells us whether or not the wine is
+red. Remember, we concatenated the red wines to the bottom of the white
+wines when we created our `wine` dataframe, so
+`np.where()` will return zeros for the top rows and ones for
+the bottom rows, just like we saw in the previous result.
+
+Tip
+
+We can also use the `LabelBinarizer` class from
+`scikit-learn` to encode the `kind` field. Note that
+if our data is actually continuous, but we want to treat it as a binary
+categorical value, we could use the `Binarizer` class and
+provide a threshold or `pd.cut()`/`pd.qcut()`. There
+are examples of these in the notebook.
+
+If our categories are ordered, we may want to use
+**ordinal encoding** on those columns; this will preserve the ordering
+of the categories. For instance, if we wanted to classify the red wines
+as low, medium, or high quality, we could encode this as `0`,
+`1`, and `2`, respectively. The advantages of this
+are that we can use regression techniques to
+predict the quality, or we can use this as a feature in the model to
+predict something else; this model would be able to use the fact that
+high is better than medium, which is better than low quality. We can
+achieve this with the `LabelEncoder` class. Note that the
+labels will be created according to alphabetical order, so the first
+category alphabetically will be `0`:
+
+```
+>>> from sklearn.preprocessing import LabelEncoder
+>>> pd.Series(LabelEncoder().fit_transform(pd.cut(
+...     red_wine.quality, 
+...     bins=[-1, 3, 6, 10], 
+...     labels=['0-3 (low)', '4-6 (med)', '7-10 (high)']
+... ))).value_counts()
+1    1372
+2     217
+0      10
+dtype: int64
+```
+
+Important note
+
+Scikit-learn provides the `OrdinalEncoder` class, but our data
+is not in the correct format---it expects 2D data (such as a
+`DataFrame` or `ndarray` object), instead of the 1D
+`Series` object we are working with here. We still need to
+ensure that the categories are in the proper order beforehand.
+
+However, note that the ordinal encoding may create a potential data
+issue. In our example, if high-quality wines are now `2` and
+medium-quality wines are `1`, the model may interpret that
+`2 * med = high`. This is implicitly creating an association
+between the levels of quality that we may not agree with.
+
+Alternatively, a safer approach would be to
+perform **one-hot encoding** to create two new
+columns---`is_low` and `is_med`, which take only
+`0` or `1`. Using those two, we automatically know
+whether the wine quality was high (when `is_low` =
+`is_med` = `0`). These are called **dummy
+variables** or **indicator variables**; they numerically represent group
+membership for use in machine learning. If the
+indicator or dummy has a value of `1`, that row is a member of
+that group; in our example of wine quality
+categories, if `is_low` is `1`, then that row is a
+member of the low-quality group. This can be achieved with the
+`pd.get_dummies()` function and the `drop_first`
+argument, which will remove the redundant column.
+
+Let\'s use one-hot encoding to encode the `list` column in the
+planets data, since the categories have no inherent order. Before we do
+any transformations, let\'s take a look at the lists we have in the
+data:
+
+```
+>>> planets.list.value_counts()
+Confirmed planets                    3972
+Controversial                          97
+Retracted planet candidate             11
+Solar System                            9
+Kepler Objects of Interest              4
+Planets in binary systems, S-type       1
+Name: list, dtype: int64
+```
+
+We can use the `pd.get_dummies()` function to create dummy
+variables if we want to include the planet list in our models:
+
+```
+>>> pd.get_dummies(planets.list).head()
+```
+
+This turns our single series into the following
+dataframe, where the dummy variables were created in the order they
+appeared in the data:
+
+
+![](./images/Figure_9.15_B16834.jpg)
+
+
+Figure 9.15 -- One-hot encoding
+
+As we discussed previously, one of these columns is redundant because
+the values in the remaining ones can be used to determine the value for
+the redundant one. Some models may be
+significantly affected by the high correlation between these columns
+(referred to as **multicollinearity**), so we should remove one
+redundant column by passing in the `drop_first` argument:
+
+```
+>>> pd.get_dummies(planets.list, drop_first=True).head()
+```
+
+Note that the first column from the previous result has been removed,
+but we can still determine that all but the last row were in the
+`Confirmed Planets` list:
+
+
+![](./images/Figure_9.16_B16834.jpg)
+
+
+Figure 9.16 -- Dropping redundant columns after one-hot encoding
+
+Note that we can obtain a similar result by using the
+`LabelBinarizer` class and its `fit_transform()`
+method on our planets list. This won\'t drop a redundant feature, so we
+once again have the first feature belonging to
+the confirmed planets list, which can be seen in bold in the following
+result:
+
+```
+>>> from sklearn.preprocessing import LabelBinarizer
+>>> LabelBinarizer().fit_transform(planets.list)
+array([[1, 0, 0, 0, 0, 0],
+       [1, 0, 0, 0, 0, 0], 
+       [1, 0, 0, 0, 0, 0],
+       ..., 
+       [1, 0, 0, 0, 0, 0],
+       [1, 0, 0, 0, 0, 0],
+       [1, 0, 0, 0, 0, 0]])
+```
+
+Important note
+
+Scikit-learn provides the `OneHotEncoder` class, but our data
+is not in the correct format---it expects the data to come in a 2D
+array, and our series is just 1D. We will see an example of how to use
+this in the *Additional transformers* section.
+
+
+
+Imputing
+--------
+
+We already know that we have some missing values in our planet data, so
+let\'s discuss a few of the options `scikit-learn` offers for
+handling them, which can be found in the `impute` module:
+imputing with a value (using constants or summary statistics), imputing
+based on similar observations, and indicating
+what is missing.
+
+Back in the *Exploratory data analysis* section, we ran
+`dropna()` on the planets data we planned to model with.
+Let\'s say we don\'t want to get rid of it, and we want to try imputing
+it instead. The last few rows of our data have some missing values for
+`semimajoraxis`:
+
+```
+>>> planets[['semimajoraxis', 'mass', 'eccentricity']].tail()
+      semimajoraxis    mass  eccentricity
+4089        0.08150  1.9000         0.000
+4090        0.04421  0.7090         0.038
+4091            NaN  0.3334         0.310
+4092            NaN  0.4000         0.270
+4093            NaN  0.4200         0.160
+```
+
+We can use the `SimpleImputer` class to impute with a value,
+which will be the mean by default:
+
+```
+>>> from sklearn.impute import SimpleImputer
+>>> SimpleImputer().fit_transform(
+...     planets[['semimajoraxis', 'mass', 'eccentricity']]
+... )
+array([[ 1.29      , 19.4       ,  0.231     ],
+       [ 1.54      , 11.2       ,  0.08      ],
+       [ 0.83      ,  4.8       ,  0.        ],
+       ...,
+       [ 5.83796389,  0.3334    ,  0.31      ],
+       [ 5.83796389,  0.4       ,  0.27      ],
+       [ 5.83796389,  0.42      ,  0.16      ]])
+```
+
+The mean hardly seems like a good strategy here since the planets we
+know about may share something in common, and surely things like what
+system a planet is a part of and its orbit can be
+good indicators of some of the missing data points. We have the option
+to provide the `strategy` parameter with a method other than
+the mean; currently, it can be `median`,
+`most_frequent`, or `constant` (specify the value
+with `fill_value`). None of these is really appropriate for
+us; however, `scikit-learn` also provides the
+`KNNImputer` class for imputing missing values based on
+similar observations. By default, it uses the five nearest neighbors and
+runs k-NN, which we will discuss in [*Lab
+10*],
+*Making Better Predictions -- Optimizing Models*, using the features
+that aren\'t missing:
+
+```
+>>> from sklearn.impute import KNNImputer
+>>> KNNImputer().fit_transform(
+...     planets[['semimajoraxis', 'mass', 'eccentricity']]
+... )
+array([[ 1.29    , 19.4     ,  0.231   ],
+       [ 1.54    , 11.2     ,  0.08    ],
+       [ 0.83    ,  4.8     ,  0.      ],
+       ...,
+       [ 0.404726,  0.3334  ,  0.31    ],
+       [ 0.85486 ,  0.4     ,  0.27    ],
+       [ 0.15324 ,  0.42    ,  0.16    ]])
+```
+
+Notice that each of the bottom three rows has a unique value imputed for
+the semi-major axis now. This is because the mass and eccentricity were
+used to find similar planets from which to impute the semi-major axis.
+While this is certainly better than using the `SimpleImputer`
+class for the planets data, imputing can be dangerous.
+
+Rather than imputing the data, in some cases, we may be more interested
+in noting where we have missing data and using
+that as a feature in our model. This can be achieved with the
+`MissingIndicator` class:
+
+```
+>>> from sklearn.impute import MissingIndicator
+>>> MissingIndicator().fit_transform(
+...     planets[['semimajoraxis', 'mass', 'eccentricity']]
+... )
+array([[False, False, False],
+       [False, False, False],
+       [False, False, False],
+       ...,
+       [ True, False, False],
+       [ True, False, False],
+       [ True, False, False]])
+```
+
+As we turn our attention to the final set of preprocessors that we will
+discuss, notice that all of them have a `fit_transform()`
+method, along with `fit()` and `transform()`
+methods. This API design decision makes it very easy to figure out how
+to use new classes and is one of the reasons why
+`scikit-learn` is so easy to learn and use---it\'s very
+consistent.
+
+
+
+Additional transformers
+-----------------------
+
+What if, rather than scaling our data or encoding
+it, we want to run a mathematical operation, such as taking the square
+root or the logarithm? The `preprocessing` module also has
+some classes for this. While there are a few that perform a specific
+transformation, such as the `QuantileTransformer` class, we
+will focus our attention on the `FunctionTransformer` class,
+which lets us provide an arbitrary function to use:
+
+```
+>>> from sklearn.preprocessing import FunctionTransformer
+>>> FunctionTransformer(
+...     np.abs, validate=True
+... ).fit_transform(X_train.dropna())
+array([[0.51   , 4.94   , 1.45   ],
+       [0.17   , 0.64   , 0.85   ],
+       [0.08   , 0.03727, 1.192  ],
+       ...,
+       [0.295  , 4.46   , 1.8    ],
+       [0.34   , 0.0652 , 0.0087 ],
+       [0.3    , 1.26   , 0.5    ]])
+```
+
+Here, we took the absolute value of every number. Take note of the
+`validate=True` argument; the `FunctionTransformer`
+class knows that `scikit-learn` models won\'t accept
+`NaN` values, infinite values, or missing ones, so it will
+throw an error if we get those back. For this reason, we run
+`dropna()` here as well.
+
+Notice that for scaling, encoding, imputing, and
+transforming data, everything we passed was transformed. If we have
+features of different data types, we can use the
+`ColumnTransformer` class to map transformations to a column
+(or group of columns) in a single call:
+
+```
+>>> from sklearn.compose import ColumnTransformer 
+>>> from sklearn.impute import KNNImputer
+>>> from sklearn.preprocessing import (
+...     MinMaxScaler, StandardScaler
+... )
+>>> ColumnTransformer([
+...     ('impute', KNNImputer(), [0]),
+...     ('standard_scale', StandardScaler(), [1]),
+...     ('min_max', MinMaxScaler(), [2])
+... ]).fit_transform(X_train)[10:15] 
+array([[ 0.17      , -0.04747176,  0.0107594 ],
+       [ 0.08      , -0.05475873,  0.01508851],
+       [ 0.15585591,         nan,  0.13924042],
+       [ 0.15585591,         nan,         nan],
+       [ 0.        , -0.05475111,  0.00478471]])
+```
+
+There is also the `make_column_transformer()` function, which
+will name the transformers for us. Let\'s make a
+`ColumnTransformer` object that will treat categorical data
+and numerical data differently:
+
+```
+>>> from sklearn.compose import make_column_transformer
+>>> from sklearn.preprocessing import (
+...     OneHotEncoder, StandardScaler
+... )
+>>> categorical = [
+...     col for col in planets.columns
+...     if col in [
+...         'list', 'name', 'description', 
+...         'discoverymethod', 'lastupdate'
+...     ]
+... ]
+>>> numeric = [
+...     col for col in planets.columns
+...     if col not in categorical
+... ]
+>>> make_column_transformer(
+...     (StandardScaler(), numeric),
+...     (OneHotEncoder(sparse=False), categorical)
+... ).fit_transform(planets.dropna())
+array([[ 3.09267587, -0.2351423 , -0.40487424, ...,  
+         0.        ,  0.        ],
+       [ 1.432445  , -0.24215395, -0.28360905, ...,  
+         0.        ,  0.        ],
+       [ 0.13665505, -0.24208849, -0.62800218, ...,  
+         0.        ,  0.        ],
+       ...,
+       [-0.83289954, -0.76197788, -0.84918988, ...,  
+         1.        ,  0.        ],
+       [ 0.25813535,  0.38683239, -0.92873984, ...,  
+         0.        ,  0.        ],
+       [-0.26827931, -0.21657671, -0.70076129, ...,  
+         0.        ,  1.        ]])
+```
+
+Tip
+
+We are passing `sparse=False` upon instantiating our
+`OneHotEncoder` object so that we can
+see our result. In practice, we don\'t need to do this since
+`scikit-learn` models know how to handle NumPy sparse
+matrices.
+
+
+
+Building data pipelines
+-----------------------
+
+It sure seems like there are a lot of steps involved in preprocessing
+our data, and they need to be applied in the
+correct order for both training and testing data---quite tedious.
+Thankfully, `scikit-learn` offers the ability to create
+pipelines to streamline the preprocessing and ensure that the training
+and testing sets are treated the same. This prevents issues, such as
+calculating the mean using all the data in order to standardize it and
+then splitting it into training and testing sets, which will create a
+model that looks like it will perform better than it actually will.
+
+Important note
+
+When information from outside the training set
+(such as using the full dataset to calculate the mean for
+standardization) is used to train the model, it is referred to as **data
+leakage**.
+
+We are learning about pipelines before we build our first models because
+they ensure that the models are built properly. Pipelines can contain
+all the preprocessing steps and the model itself. Making a pipeline is
+as simple as defining the steps and naming them:
+
+```
+>>> from sklearn.pipeline import Pipeline
+>>> from sklearn.preprocessing import StandardScaler
+>>> from sklearn.linear_model import LinearRegression
+>>> Pipeline([
+...     ('scale', StandardScaler()), ('lr', LinearRegression())
+... ])
+Pipeline(steps=[('scale', StandardScaler()), 
+                ('lr', LinearRegression())])
+```
+
+We aren\'t limited to using pipelines with models---they can also be
+used inside other `scikit-learn` objects, for example,
+`ColumnTransformer` objects. This makes it possible for us to
+first use k-NN imputing on the semi-major axis data (the column at index
+`0`) and then standardize the result.
+We can then include this as part of a pipeline, which gives us
+tremendous flexibility in how we build our models:
+
+```
+>>> from sklearn.compose import ColumnTransformer 
+>>> from sklearn.impute import KNNImputer
+>>> from sklearn.pipeline import Pipeline
+>>> from sklearn.preprocessing import (
+...     MinMaxScaler, StandardScaler
+... )
+>>> ColumnTransformer([
+...     ('impute', Pipeline([
+...         ('impute', KNNImputer()),
+...         ('scale', StandardScaler())
+...     ]), [0]),
+...     ('standard_scale', StandardScaler(), [1]),
+...     ('min_max', MinMaxScaler(), [2])
+... ]).fit_transform(X_train)[10:15]
+array([[ 0.13531604, -0.04747176,  0.0107594 ],
+       [-0.7257111 , -0.05475873,  0.01508851],
+       [ 0.        ,         nan,  0.13924042],
+       [ 0.        ,         nan,         nan],
+       [-1.49106856, -0.05475111,  0.00478471]])
+```
+
+Just like with the `ColumnTransformer` class, we have a
+function that can make pipelines for us without
+having to name the steps. Let\'s make another pipeline, but this time we
+will use the `make_pipeline()` function:
+
+```
+>>> from sklearn.pipeline import make_pipeline
+>>> make_pipeline(StandardScaler(), LinearRegression())
+Pipeline(steps=[('standardscaler', StandardScaler()),
+                ('linearregression', LinearRegression())])
+```
+
+Note that the steps have been automatically named the lowercase version
+of the class name. As we will see in the next lab, naming the steps
+will make it easier to optimize model parameters by name. The
+consistency of the `scikit-learn` API will also allow us to
+use this pipeline to fit our model and make predictions using the same
+object, which we will see in the next section.
+
+
+Clustering
+==========
+
+
+We use clustering to divide our data points into groups of similar
+points. The points in each group are more like
+their fellow group members than those of other groups. Clustering is
+commonly used for tasks such as recommendation systems (think of how
+Netflix recommends what to watch based on what other people who\'ve
+watched similar things are watching) and market segmentation.
+
+For example, say we work at an online retailer and want to segment our
+website users for more targeted marketing efforts; we can gather data on
+time spent on the site, page visits, products viewed, products
+purchased, and much more. Then, we can have an unsupervised clustering
+algorithm find groups of users with similar behavior; if we make three
+groups, we can come up with labels for each group according to its
+behavior:
+
+
+![](./images/Figure_9.17_B16834.jpg)
+
+
+Figure 9.17 -- Clustering website users into three groups
+
+Since we can use clustering for unsupervised
+learning, we will need to interpret the groups that are created and then
+try to derive a meaningful name for each group. If our clustering
+algorithm identified the three clusters in the preceding scatter plot,
+we may be able to make the following behavioral observations:
+
+-   **Frequent customers (group 0)**: Purchase a lot and look at many
+    products.
+-   **Occasional customers (group 1)**: Have made some purchases, but
+    less than the most frequent customers.
+-   **Browsers (group 2)**: Visit the website, but haven\'t bought
+    anything.
+
+Once these groups have been identified, the marketing team can focus on
+marketing to each of these groups differently; it\'s clear that the
+frequent customers will do more for the bottom line, but if they are
+already buying a lot, perhaps the marketing budget is better utilized
+trying to increase the purchases of the occasional customers or
+converting browsers into occasional customers.
+
+Important note
+
+Deciding on the number of groups to create can clearly influence how the
+groups are later interpreted, meaning that this is not a trivial
+decision. We should at least visualize our data and obtain some domain
+knowledge on it before attempting to guess the number of groups to split
+it into.
+
+Alternatively, clustering can be used in a supervised fashion if we know
+the group labels for some of the data for
+training purposes. Say we collected data on login activity, like in
+[*Lab
+8*],
+*Rule-Based Anomaly Detection*, but we had some examples of what
+attacker activity looks like; we could gather those data points for all
+activity and then use a clustering algorithm to assign to the valid
+users group or to the attacker group. Since we have the labels, we can
+tweak our input variables and/or the clustering algorithm we use to best
+align these groups to their true group.
+
+
+
+k-means
 -------
 
-Sometimes, it\'s more convenient to work with
-categories rather than the specific values. A common example is working
-with ages---most likely, we don\'t want to look at the data for each
-age, such as 25 compared to 26; however, we may very well be interested
-in how the group of individuals aged 25-34 compares to the group of
-those aged 35-44. This is called **binning** or **discretizing** (going
-from continuous to discrete); we take our data and
-place the observations into bins (or buckets)
-matching the range they fall into. By doing so, we
-can drastically reduce the number of distinct values our data can take
-on and make it easier to analyze.
+The clustering algorithms offered by
+`scikit-learn` can be found in the `cluster`
+module\'s documentation at
+<https://scikit-learn.org/stable/modules/classes.html#module-sklearn.cluster>.
+We will take a look at **k-means**, which iteratively
+assigns points to the nearest group using the
+distance from the **centroid** of the group (center point), making *k*
+groups. Since this model uses distance
+calculations, it is imperative that we understand the effect scale will
+have on our results beforehand; we can then decide which columns, if
+any, to scale.
 
-**Important note:**
+Important note
 
-While binning our data can make certain parts of the analysis easier,
-keep in mind that it will reduce the information in that field since the
-granularity is reduced.
+There are many ways to measure the distance between points in space.
+Often, Euclidean distance, or straight-line distance, is the default;
+however, another common one is Manhattan distance, which can be thought
+of as city-block distance.
 
-One interesting thing we could do with the volume traded would be to see
-which days had high trade volume and look for news about Facebook on
-those days or large swings in price. Unfortunately, it is highly
-unlikely that the volume will be the same any two days; in fact, we can
-confirm that, in the data, no two days have the same volume traded:
+When we plotted out the period versus the semi-major axis for all the
+planets using a log scale for the period, we saw a nice separation of
+the planets along an arc. We are going to use k-means to find groups of
+planets with similar orbits along that arc.
 
-```
->>> (fb.volume.value_counts() > 1).sum()
-0
-```
+### Grouping planets by orbit characteristics
 
-
-Remember that `fb.volume.value_counts()` gives us the number
-of occurrences for each unique value for `volume`. We can then
-create a Boolean mask for whether the count is greater than 1 and sum it
-up (`True` evaluates to `1` and `False`
-evaluates to `0`). Alternatively, we can use `any()`
-instead of `sum()`, which, rather than telling us the number
-of unique values of `volume` that had more than one
-occurrence, would give us `True` if at least one volume traded
-amount occurred more than once and `False` otherwise.
-
-Clearly, we will need to create some ranges for the volume traded in
-order to look at the days of high trading volume, but how do we decide
-which range is a good range? One way is to use the `pd.cut()`
-function for binning based on value. First, we should decide how many
-bins we want to create---three seems like a good split, since we can
-label the bins low, medium, and high. Next, we need to determine the
-width of each bin; `pandas` tries to make this process as
-painless as possible, so if we want equally-sized bins, all we have to
-do is specify the number of bins we want (otherwise, we must specify the
-upper bound for each bin as a list):
+As we discussed in the *Preprocessing data* section, we can build a
+pipeline to scale and then model our data. Here, our model will be a
+`KMeans` object that makes eight clusters (for the number of
+planets in our solar system---sorry, Pluto). Since the k-means algorithm
+randomly picks its starting centroids, it\'s
+possible to get different cluster results unless we specify the seed.
+Therefore, we also provide `random_state=0` for
+reproducibility:
 
 ```
->>> volume_binned = pd.cut(
-...     fb.volume, bins=3, labels=['low', 'med', 'high']
+>>> from sklearn.cluster import KMeans
+>>> from sklearn.pipeline import Pipeline
+>>> from sklearn.preprocessing import StandardScaler
+>>> kmeans_pipeline = Pipeline([
+...     ('scale', StandardScaler()), 
+...     ('kmeans', KMeans(8, random_state=0))
+... ])
+```
+
+Once we have our pipeline, we fit it on all the data since we aren\'t
+trying to predict anything (in this case)---we just want to find similar
+planets:
+
+```
+>>> kmeans_data = planets[['semimajoraxis', 'period']].dropna()
+>>> kmeans_pipeline.fit(kmeans_data)
+Pipeline(steps=[('scale', StandardScaler()),
+                ('kmeans', KMeans(random_state=0))])
+```
+
+Once the model is fit to our data, we can use the `predict()`
+method to get the cluster labels for each point (on the same data that
+we used previously). Let\'s take a look at the clusters that k-means
+identified:
+
+```
+>>> fig, ax = plt.subplots(1, 1, figsize=(7, 7))
+>>> sns.scatterplot(
+...     x=kmeans_data.semimajoraxis, 
+...     y=kmeans_data.period, 
+...     hue=kmeans_pipeline.predict(kmeans_data),
+...     ax=ax, palette='Accent'
 ... )
->>> volume_binned.value_counts()
-low     240
-med       8
-high      3
-Name: volume, dtype: int64
+>>> ax.set_yscale('log')
+>>> solar_system = planets[planets.list == 'Solar System']
+>>> for planet in solar_system.name:
+...     data = solar_system.query(f'name == "{planet}"')
+...     ax.annotate(
+...         planet, 
+...         (data.semimajoraxis, data.period), 
+...         (7 + data.semimajoraxis, data.period),
+...         arrowprops=dict(arrowstyle='->')
+...     )
+>>> ax.get_legend().remove()
+>>> ax.set_title('KMeans Clusters')
 ```
 
-
-**Tip:** 
-
-Note that we provided labels for each bin here; if we don\'t do this,
-each bin will be labeled by the interval of values it includes, which
-may or may not be helpful for us, depending on our application. If we
-want to both label the values and see the bins afterward, we can pass in
-`retbins=True` when we call `pd.cut()`. Then, we can
-access the binned data as the first element of the tuple that is
-returned, and the bin ranges themselves as the second element.
-
-It looks like an overwhelming majority of the trading days were in the
-low-volume bin; keep in mind that this is all relative because we evenly
-divided the range between the minimum and maximum
-trading volumes. Let\'s look at the data for the three days of high
-volume:
-
-```
->>> fb[volume_binned == 'high']\
-...     .sort_values('volume', ascending=False)
-```
+Mercury and Venus landed in the same cluster, as
+did Earth and Mars. Jupiter, Saturn, and Uranus each belong to separate
+clusters, while Neptune and Pluto share a cluster:
 
 
-Even among the high-volume days, we can see that July 26, 2018 had a
-much higher trade volume compared to the other two dates in March
-(nearly 40 million additional shares were traded):
+![](./images/Figure_9.18_B16834.jpg)
 
 
-![](./images/Figure_4.17_B16834.jpg)
+Figure 9.18 -- Eight clusters of planets identified by k-means
 
+We picked eight clusters arbitrarily here, since this is the number of
+planets in our solar system. Ideally, we would have some domain
+knowledge about the true groupings or need to
+pick a specific number. For example, say we want
+to fit wedding guests at five tables so that they all get along, then
+our *k* is 5; if we can run three marketing campaigns on user groups, we
+have a *k* of 3. If we have no intuition as to the number of groups
+there will be in the data, a rule of thumb is to try the square root of
+our observations, but this can yield an unmanageable amount of clusters.
+Therefore, if it doesn\'t take too long to create many k-means models on
+our data, we can use the elbow point method.
 
+### The elbow point method for determining k
 
-In fact, querying a search engine for *Facebook stock price July 26,
-2018* reveals that Facebook had announced their earnings and
-disappointing user growth after market close on July 25th, which was
-followed by lots of after-hours selling. When the market opened the next
-morning, the stock had dropped from \$217.50 at
-close on the 25th to \$174.89 at market open on the 26th. Let\'s pull
-out this data:
+The **elbow point method** involves creating multiple models with many
+values of *k* and plotting each model\'s
+**inertia** (**within-cluster sum of squares**) versus the number of
+clusters. We want to minimize the sum of squared
+distances from points to their cluster\'s center while not creating too
+many clusters.
+
+The `ml_utils.elbow_point` module contains our
+`elbow_point()` function, which has been reproduced here:
 
 ```
->>> fb['2018-07-25':'2018-07-26']
+import matplotlib.pyplot as plt
+def elbow_point(data, pipeline, kmeans_step_name='kmeans',    
+                k_range=range(1, 11), ax=None):
+    """
+    Plot the elbow point to find an appropriate k for
+    k-means clustering.
+    Parameters:
+        - data: The features to use
+        - pipeline: The scikit-learn pipeline with `KMeans`
+        - kmeans_step_name: Name of `KMeans` step in pipeline
+        - k_range: The values of `k` to try
+        - ax: Matplotlib `Axes` to plot on.
+    Returns: 
+        A matplotlib `Axes` object
+    """
+    scores = []
+    for k in k_range:
+        pipeline.named_steps[kmeans_step_name].n_clusters = k
+        pipeline.fit(data)
+        # score is -1*inertia so we multiply by -1 for inertia
+        scores.append(pipeline.score(data) * -1)
+    if not ax:
+        fig, ax = plt.subplots()
+    ax.plot(k_range, scores, 'bo-')
+    ax.set_xlabel('k')
+    ax.set_ylabel('inertias')
+    ax.set_title('Elbow Point Plot')
+    return ax
 ```
 
-
-Not only was there a huge drop in stock price, but the volume traded
-also skyrocketed, increasing by more than 100 million. All of this
-resulted in a loss of about \$120 billion in Facebook\'s market
-capitalization
-(<https://www.marketwatch.com/story/facebook-stock-crushed-after-revenue-user-growth-miss-2018-07-25>):
-
-
-!](./images/Figure_4.18_B16834.jpg)
-
-
-
-
-If we look at the other two days marked as high-volume trading days, we
-will find a plethora of information as to why. Both of these days were
-marked by scandal for Facebook. The Cambridge Analytica political data
-privacy scandal broke on Saturday, March 17, 2018, so trading with this
-information didn\'t commence until Monday the 19th
-(<https://www.nytimes.com/2018/03/19/technology/facebook-cambridge-analytica-explained.html>):
+Let\'s use the elbow point method to find an
+appropriate value for *k*:
 
 ```
->>> fb['2018-03-16':'2018-03-20']
-```
-
-
-Things only got worse once more information was revealed in the
-following days with regards to the severity of the incident:
-
-
-![](./images/Figure_4.19_B16834.jpg)
-
-
-As for the third day of high trading volume (March 26, 2018), the FTC
-launched an investigation into the Cambridge Analytica scandal, so
-Facebook\'s woes continued
-(<https://www.cnbc.com/2018/03/26/ftc-confirms-facebook-data-breach-investigation.html>).
-
-If we look at some of the dates within the medium
-trading volume group, we can see that many are part of the three trading
-events we just discussed. This forces us to reexamine how we created the
-bins in the first place. Perhaps equal-width bins wasn\'t the answer?
-Most days were pretty close in volume traded; however, a few days caused
-the bin width to be rather large, which left us with a large imbalance
-of days per bin:
-
-
-![](./images/Figure_4.20_B16834.jpg)
-
-
-
-If we want each bin to have an equal number of observations, we can
-split the bins based on evenly-spaced quantiles using the
-`pd.qcut()` function. We can bin the volumes into quartiles to
-evenly bucket the observations into bins of varying width, giving us the
-63 highest trading volume days in the **q4** bin:
-
-```
->>> volume_qbinned = pd.qcut(
-...     fb.volume, q=4, labels=['q1', 'q2', 'q3', 'q4']
+>>> from ml_utils.elbow_point import elbow_point
+>>> ax = elbow_point(
+...     kmeans_data, 
+...     Pipeline([
+...         ('scale', StandardScaler()), 
+...         ('kmeans', KMeans(random_state=0))
+...     ])
 ... )
->>> volume_qbinned.value_counts()
-q1    63
-q2    63
-q4    63
-q3    62
-Name: volume, dtype: int64
-```
-
-
-Notice that the bins don\'t cover the same range
-of volume traded anymore:
-
-
-![](./images/Figure_4.21_B16834.jpg)
-
-
-
-**Tip:** 
-
-In both of these examples, we let `pandas` calculate the bin
-ranges; however, both `pd.cut()` and `pd.qcut()`
-allow us to specify the upper bounds for each bin as a list.
-
-
-
-Applying functions
-------------------
-
-So far, most of the actions we have taken on our data have been
-column-specific. When we want to run the same code on
-all the columns in our dataframe, we can use the
-`apply()` method for more succinct code. Note that this will
-not be done in-place.
-
-Before we get started, let\'s isolate the weather observations from the
-Central Park station and pivot the data:
-
-```
->>> central_park_weather = weather.query(
-...     'station == "GHCND:USW00094728"'
-... ).pivot(index='date', columns='datatype', values='value')
-```
-
-
-Let\'s calculate the Z-scores of the `TMIN` (minimum
-temperature), `TMAX` (maximum temperature), and
-`PRCP` (precipitation) observations in Central Park in October
-2018. It\'s important that we don\'t try to take the Z-scores across the
-full year. NYC has four seasons, and what is considered normal weather
-will depend on which season we are looking at. By isolating our
-calculation to October, we can see if October had any days with very
-different weather:
-
-```
->>> oct_weather_z_scores = central_park_weather\
-...     .loc['2018-10', ['TMIN', 'TMAX', 'PRCP']]\
-...     .apply(lambda x: x.sub(x.mean()).div(x.std()))
->>> oct_weather_z_scores.describe().T
-```
-
-
-`TMIN` and `TMAX` don\'t appear to have any values
-that differ much from the rest of October, but `PRCP` does:
-
-
-![](./images/Figure_4.22_B16834.jpg)
-
-
-
-We can use `query()` to extract the
-value for this date:
-
-```
->>> oct_weather_z_scores.query('PRCP > 3').PRCP
-date
-2018-10-27    3.936167
-Name: PRCP, dtype: float64
-```
-
-
-If we look at the summary statistics for precipitation in October, we
-can see that this day had much more precipitation than the rest:
-
-```
->>> central_park_weather.loc['2018-10', 'PRCP'].describe()
-count    31.000000
-mean      2.941935
-std       7.458542
-min       0.000000
-25%       0.000000
-50%       0.000000
-75%       1.150000
-max      32.300000
-Name: PRCP, dtype: float64
-```
-
-
-The `apply()` method lets us run vectorized operations on
-entire columns or rows at once. We can apply pretty much any function we
-can think of as long as those operations are valid on all the columns
-(or rows) in our data. For example, we can use the `pd.cut()`
-and `pd.qcut()` binning functions we
-discussed in the previous section to divide each column into bins
-(provided we want the same number of bins or value ranges). Note that
-there is also an `applymap()` method if the function we want
-to apply isn\'t vectorized. Alternatively, we can use
-`np.vectorize()` to vectorize our functions for use with
-`apply()`. Consult the notebook for an example.
-
-Pandas does provide some functionality for iterating over the dataframe,
-including the `iteritems()`, `itertuples()`, and
-`iterrows()` methods; however, we should avoid using these
-unless we absolutely can\'t find another solution. Pandas and NumPy are
-designed for vectorized operations, which are much faster because they
-are written in efficient C code; by writing a loop to iterate one
-element at a time, we are making it more computationally intensive due
-to the way Python implements integers and floats. For instance, look at
-how the time to complete the simple operation of adding the number
-`10` to each value in a series of floats grows linearly with
-the number of rows when using `iteritems()`, but stays near
-zero, regardless of size, when using a vectorized operation:
-
-
-![](./images/Figure_4.23_B16834.jpg)
-
-
-
-All the functions and methods we have used so far have involved the full
-row or column; however, sometimes, we are more
-interested in performing window calculations, which use a section of the
-data.
-
-
-
-Window calculations
--------------------
-
-Pandas makes it possible to perform calculations
-over a window or range of rows/columns. In this section, we will discuss
-a few ways of constructing these windows. Depending on the type of
-window, we get a different look at our data.
-
-### Rolling windows
-
-When our index is of type `DatetimeIndex`, we can
-specify the window in day parts (such as
-`2H` for two hours or `3D` for three days);
-otherwise, we can specify the number of periods as an integer. Say we
-are interested in the amount of rain that has fallen in a rolling 3-day
-window; it would be quite tedious (and probably inefficient) to
-implement this with what we have learned so far. Fortunately, we can use
-the `rolling()` method to get this information easily:
-
-```
->>> central_park_weather.loc['2018-10'].assign(
-...     rolling_PRCP=lambda x: x.PRCP.rolling('3D').sum()
-... )[['PRCP', 'rolling_PRCP']].head(7).T
-```
-
-
-After performing the rolling 3-day sum, each date
-will show the sum of that day\'s and the previous two days\'
-precipitation:
-
-
-![](./images/Figure_4.24_B16834.jpg)
-
-
-
-**Tip:** 
-
-If we want to use dates for the rolling calculation, but don\'t have
-dates in the index, we can pass the name of our date column to the
-`on` parameter in the call to `rolling()`.
-Conversely, if we want to use an integer index of row numbers, we can
-simply pass in an integer as the window; for example,
-`rolling(3)` for a 3-row window.
-
-To change the aggregation, all we have to do is call a different method
-on the result of `rolling()`; for example, `mean()`
-for the average and `max()` for the maximum. The rolling
-calculation can also be applied to all the columns at once:
-
-```
->>> central_park_weather.loc['2018-10']\
-...     .rolling('3D').mean().head(7).iloc[:,:6]
-```
-
-
-This gives us the 3-day rolling average for all the weather observations
-from Central Park:
-
-
-![](./images/Figure_4.25_B16834.jpg)
-
-
-
-To apply different aggregations across columns, we can use the
-`agg()` method instead; it allows us to specify the
-aggregations to perform per column as a predefined or
-custom function. We simply pass in a dictionary
-mapping the columns to the aggregation to perform on them. Let\'s find
-the rolling 3-day maximum temperature (`TMAX`), minimum
-temperature (`TMIN`), average wind speed (`AWND`),
-and total precipitation (`PRCP`). Then, we will join it to the
-original data so that we can compare the results:
-
-```
->>> central_park_weather\
-...     ['2018-10-01':'2018-10-07'].rolling('3D').agg({
-...     'TMAX': 'max', 'TMIN': 'min',
-...     'AWND': 'mean', 'PRCP': 'sum'
-... }).join( # join with original data for comparison
-...     central_park_weather[['TMAX', 'TMIN', 'AWND', 'PRCP']], 
-...     lsuffix='_rolling'
-... ).sort_index(axis=1) # put rolling calcs next to originals
-```
-
-
-Using `agg()`, we were able to calculate different rolling
-aggregations for each column:
-
-
-![](./images/Figure_4.26_B16834.jpg)
-
-
-
-**Tip:** 
-
-We can also use variable-width windows with a little extra effort: we
-can either create a subclass of `BaseIndexer` and provide the
-logic for determining the window bounds in the
-`get_window_bounds()` method (more information can be found at
-<https://pandas.pydata.org/pandas-docs/stable/user_guide/computation.html#custom-window-rolling>),
-or we can use one of the predefined classes in the
-`pandas.api.indexers` module. The notebook we are currently
-working in contains an example of using the
-`VariableOffsetWindowIndexer` class to perform a 3-business
-day rolling calculation.
-
-With rolling calculations, we have a sliding
-window over which we calculate our functions; however, in some cases, we
-are more interested in the output of a function on all the data up to
-that point, in which case we use an expanding window.
-
-### Expanding windows
-
-Expanding calculations will give us the cumulative
-value of our aggregation function. We use the `expanding()`
-method to perform a calculation with an expanding window; methods such
-as `cumsum()` and `cummax()` use expanding windows
-for their calculations. The advantage of using `expanding()`
-directly is additional flexibility: we aren\'t limited to predefined
-aggregations, and we can specify the minimum number of periods before
-the calculation starts with the `min_periods` parameter
-(defaults to 1). With the Central Park weather data, let\'s use the
-`expanding()` method to calculate the month-to-date average
-precipitation:
-
-```
->>> central_park_weather.loc['2018-06'].assign(
-...     TOTAL_PRCP=lambda x: x.PRCP.cumsum(),
-...     AVG_PRCP=lambda x: x.PRCP.expanding().mean()
-... ).head(10)[['PRCP', 'TOTAL_PRCP', 'AVG_PRCP']].T
-```
-
-
-Note that while there is no method for the cumulative mean, we are able
-to use the `expanding()` method to calculate it. The values in
-the `AVG_PRCP` column are the values in the
-`TOTAL_PRCP` column divided by the number of days processed:
-
-
-![](./images/Figure_4.27_B16834.jpg)
-
-
-
-As we did with `rolling()`, we can provide column-specific
-aggregations with the `agg()` method. Let\'s find the
-expanding maximum temperature, minimum temperature, average wind speed,
-and total precipitation. Note that we can also pass in NumPy functions
-to `agg()`:
-
-```
->>> central_park_weather\
-...     ['2018-10-01':'2018-10-07'].expanding().agg({
-...     'TMAX': np.max, 'TMIN': np.min, 
-...     'AWND': np.mean, 'PRCP': np.sum
-... }).join(
-...     central_park_weather[['TMAX', 'TMIN', 'AWND', 'PRCP']], 
-...     lsuffix='_expanding'
-... ).sort_index(axis=1)
-```
-
-
-Once again, we joined the window calculations with
-the original data for comparison:
-
-
-!](./images/Figure_4.28_B16834.jpg)
-
-
-
-
-Both rolling and expanding windows equally weight all the observations
-in the window when performing calculations, but sometimes, we want to
-place more emphasis on more recent values. One option is to
-exponentially weight the observations.
-
-### Exponentially weighted moving windows
-
-Pandas also provides the `ewm()` method
-for exponentially weighted moving calculations. Let\'s compare the
-rolling 30-day average to the 30-day EWMA of the
-maximum daily temperature. Note that we use the `span`
-argument to specify the number of periods to use for the EWMA
-calculation:
-
-```
->>> central_park_weather.assign(
-...     AVG=lambda x: x.TMAX.rolling('30D').mean(),
-...     EWMA=lambda x: x.TMAX.ewm(span=30).mean()
-... ).loc['2018-09-29':'2018-10-08', ['TMAX', 'EWMA', 'AVG']].T
-```
-
-
-Unlike the rolling average, the EWMA places higher
-importance on more recent observations, so the jump in temperature on
-October 7th has a larger effect on the EWMA than the rolling average:
-
-
-![](./images/Figure_4.29_B16834.jpg)
-
-
-
-**Tip:** 
-
-Check out the `understanding_window_calculations.ipynb`
-notebook, which contains some interactive visualizations for
-understanding window functions. This may require some additional setup,
-but the instructions are in the notebook.
-
-
-
-Pipes
------
-
-Pipes facilitate chaining together operations that
-expect `pandas` data structures as their first argument. By
-using pipes, we can build up complex workflows without needing to write
-highly nested and hard-to-read code. In general, pipes let us turn
-something like `f(g(h(data), 20), x=True)` into the following,
-making it much easier to read:
-
-```
-data.pipe(h)\ # first call h(data)
-    .pipe(g, 20)\ # call g on the result with positional arg 20
-    .pipe(f, x=True) # call f on result with keyword arg x=True
-```
-
-
-Say we wanted to print the dimensions of a subset of the Facebook
-dataframe with some formatting by calling this function:
-
-```
->>> def get_info(df):
-...     return '%d rows, %d cols and max closing Z-score: %d' 
-...             % (*df.shape, df.close.max()) 
-```
-
-
-Before we call the function, however, we want to
-calculate the Z-scores for all the columns. One approach is the
-following:
-
-```
->>> get_info(fb.loc['2018-Q1']\
-...            .apply(lambda x: (x - x.mean())/x.std()))
-```
-
-
-Alternatively, we could pipe the dataframe after calculating the
-Z-scores to this function:
-
-```
->>> fb.loc['2018-Q1'].apply(lambda x: (x - x.mean())/x.std())\
-...     .pipe(get_info)
-```
-
-
-Pipes can also make it easier to write reusable code. In several of the
-code snippets in this course, we have seen the idea of passing a function
-into another function, such as when we pass a NumPy function to
-`apply()` and it gets executed on each column. We can use
-pipes to extend that functionality to methods of `pandas` data
-structures:
-
-```
->>> fb.pipe(pd.DataFrame.rolling, '20D').mean().equals(
-...     fb.rolling('20D').mean()
-... ) # the pipe is calling pd.DataFrame.rolling(fb, '20D')
-True
-```
-
-
-To illustrate how this can benefit us, let\'s look at a function that
-will give us the result of a window calculation of our choice. The
-function is in the `window_calc.py` file. We will import the
-function and use `??` from IPython to view the function
-definition:
-
-```
->>> from window_calc import window_calc
->>> window_calc??
-Signature: window_calc(df, func, agg_dict, *args, **kwargs)
-Source:   
-def window_calc(df, func, agg_dict, *args, **kwargs):
-    """
-    Run a window calculation of your choice on the data.
-    Parameters:
-        - df: The `DataFrame` object to run the calculation on.
-        - func: The window calculation method that takes `df` 
-          as the first argument.
-        - agg_dict: Information to pass to `agg()`, could be 
-          a dictionary mapping the columns to the aggregation 
-          function to use, a string name for the function, 
-          or the function itself.
-        - args: Positional arguments to pass to `func`.
-        - kwargs: Keyword arguments to pass to `func`.
-    
-    Returns:
-        A new `DataFrame` object.
-    """
-    return df.pipe(func, *args, **kwargs).agg(agg_dict)
-File:      ~/.../lab_09/window_calc.py
-Type:      function
-```
-
-
-Our `window_calc()` function takes the dataframe, the function
-to execute (as long as it takes a dataframe as its first argument), and
-information on how to aggregate the result, along with any optional
-parameters, and gives us back a new dataframe with
-the results of the window calculations. Let\'s use this function to find
-the expanding median of the Facebook stock data:
-
-```
->>> window_calc(fb, pd.DataFrame.expanding, np.median).head()
-```
-
-
-Note that the `expanding()` method doesn\'t require us to
-specify any parameters, so all we had to do was pass in
-`pd.DataFrame.expanding` (no parentheses), along with the
-aggregation to perform as the window calculation on the dataframe:
-
-
-![](./images/Figure_4.30_B16834.jpg)
-
-
-
-The `window_calc()` function also takes `*args` and
-`**kwargs`; these are optional parameters that, if supplied,
-will be collected by Python into `kwargs` when they are passed
-by name (such as `span=20`) and into `args` if not
-(passed by position). These can then be **unpacked** and passed to
-another function or method call by using `*` for
-`args` and `**` for `kwargs`. We need this
-behavior in order to use the `ewm()` method for the EWMA of
-the closing price of Facebook stock:
-
-```
->>> window_calc(fb, pd.DataFrame.ewm, 'mean', span=3).head()
-```
-
-
-In the previous example, we had to use `**kwargs` because the
-`span` argument is not the first argument that
-`ewm()` receives, and we didn\'t want to pass the ones before
-it:
-
-
-![](./images/Figure_4.31_B16834.jpg)
-
-
-
-
-To calculate the rolling 3-day weather
-aggregations for Central Park, we take advantage of `*args`
-since we know that the window is the first argument to
-`rolling()`:
-
-```
->>> window_calc(
-...     central_park_weather.loc['2018-10'], 
-...     pd.DataFrame.rolling, 
-...     {'TMAX': 'max', 'TMIN': 'min',
-...      'AWND': 'mean', 'PRCP': 'sum'},
-...     '3D'
-... ).head()
-```
-
-
-We were able to aggregate each of the columns differently since we
-passed in a dictionary instead of a single value:
-
-
-![](./images/Figure_4.32_B16834.jpg)
-
-
-
-Notice how we were able to create a consistent API for the window
-calculations, without the caller needing to figure out which aggregation
-method to call after the window function. This
-hides some of the implementation details, while
-making it easier to use. We will be using this function as the base for
-some of the functionality in the `StockVisualizer` class we
-will build in *Lab 12*.
-
-
-Aggregating data
-================
-
-
-We already got a sneak peek at aggregation when we
-discussed window calculations and pipes in the previous section. Here,
-we will focus on summarizing the dataframe through
-aggregation, which will change the shape of our dataframe (often through
-row reduction). We also saw how easy it is to take
-advantage of vectorized NumPy functions on `pandas` data
-structures, especially to perform aggregations. This is what NumPy does
-best: it performs computationally efficient mathematical operations on
-numeric arrays.
-
-NumPy pairs well with aggregating dataframes since it gives us an easy
-way to summarize data with different pre-written functions; often, when
-aggregating, we just need the NumPy function, since most of what we
-would want to write ourselves has previously been built. We have already
-seen some NumPy functions commonly used for aggregations, such as
-`np.sum()`, `np.mean()`, `np.min()`, and
-`np.max()`; however, we aren\'t limited to numeric
-operations---we can use things such as `np.unique()` on
-strings. Always check whether NumPy already has a function before
-implementing one yourself.
-
-For this section, we will be working in the
-`3-aggregations.ipynb` notebook. Let\'s import
-`pandas` and `numpy` and read in the data we will be
-working with:
-
-```
->>> import numpy as np
->>> import pandas as pd
->>> fb = pd.read_csv(
-...     'data/fb_2018.csv', index_col='date', parse_dates=True
-... ).assign(trading_volume=lambda x: pd.cut(
-...     x.volume, bins=3, labels=['low', 'med', 'high'] 
-... ))
->>> weather = pd.read_csv(
-...     'data/weather_by_station.csv', 
-...     index_col='date', parse_dates=True
+>>> ax.annotate(
+...     'possible appropriate values for k', xy=(2, 900), 
+...     xytext=(2.5, 1500), arrowprops=dict(arrowstyle='->')
+... )
+>>> ax.annotate(
+...     '', xy=(3, 3480), xytext=(4.4, 1450), 
+...     arrowprops=dict(arrowstyle='->')
 ... )
 ```
 
-
-Note that the weather data for this section has
-been merged with some of the station data:
-
-
-![](./images/Figure_4.33_B16834.jpg)
+The point at which we see diminishing returns is
+an appropriate *k*, which may be around two or three here:
 
 
-
-Before we dive into any calculations, let\'s make
-sure that our data won\'t be displayed in scientific notation. We will
-modify how floats are formatted for displaying. The
-format we will apply is `.2f`, which
-will provide the float with two digits after the decimal point:
-
-```
->>> pd.set_option('display.float_format', lambda x: '%.2f' % x)
-```
+![](./images/Figure_9.19_B16834.jpg)
 
 
-First, we will take a look at summarizing the full dataset before moving
-on to summarizing by groups and building pivot tables and crosstabs.
+Figure 9.19 -- Interpreting an elbow point plot
+
+If we create just two clusters, we divide the planets into a group with
+most of the planets (orange) and a second group with only a few in the
+upper-right (blue), which are likely to be outliers:
 
 
-
-Summarizing DataFrames
-----------------------
-
-When we discussed window calculations, we saw that we could run the
-`agg()` method on the result of `rolling()`,
-`expanding()`, or `ewm()`; however, we can also call
-it directly on the dataframe in the same fashion. The only difference is
-that the aggregations done this way will be
-performed on all the data, meaning that we will
-only get a series back that contains the overall result. Let\'s
-aggregate the Facebook stock data the same way we did with the window
-calculations. Note that we won\'t get anything back for the
-`trading_volume` column, which contains the volume traded bins
-from `pd.cut()`; this is because we aren\'t specifying an
-aggregation to run on that column:
-
-```
->>> fb.agg({
-...     'open': np.mean, 'high': np.max, 'low': np.min, 
-...     'close': np.mean, 'volume': np.sum
-... })
-open            171.45
-high            218.62
-low             123.02
-close           171.51
-volume   6949682394.00
-dtype: float64
-```
+![](./images/Figure_9.20_B16834.jpg)
 
 
-We can use aggregations to easily find the total snowfall and
-precipitation for 2018 in Central Park. In this case, since we will be
-performing the sum on both, we can either use `agg('sum')` or
-call `sum()` directly:
+Figure 9.20 -- Two clusters of planets identified by k-means
+
+Note that while this may have been an appropriate
+amount of clusters, it doesn\'t tell us as much as the previous attempt.
+If we wanted to know about planets that are similar to each of the
+planets in our solar system, we would want to use a larger *k*.
+
+### Interpreting centroids and visualizing the cluster space
+
+Since we standardized our data before clustering,
+we can look at the **centroids**, or cluster
+centers, to see the Z-score that the members
+are closest to. A centroid\'s location will be
+the average of each of the dimensions of the points in the cluster. We
+can grab this with the `cluster_centers_` attribute of the
+model. The centroid of the blue cluster is located at (18.9, 20.9),
+which is in the (semi-major axis, period) format; remember, these are
+Z-scores, so these are quite far from the rest of the data. The orange
+cluster, on the other hand, is centered at (-0.035, -0.038).
+
+Let\'s build a visualization that shows us the location of the centroids
+with the scaled input data and the cluster distance space (where points
+are represented as the distance to their cluster\'s centroid). First, we
+will set up our layout for a smaller plot inside of a larger one:
 
 ```
->>> weather.query('station == "GHCND:USW00094728"')\
-...     .pivot(columns='datatype', values='value')\
-...     [['SNOW', 'PRCP']].sum()
-datatype
-SNOW   1007.00
-PRCP   1665.30
-dtype: float64
+>>> fig = plt.figure(figsize=(8, 6))
+>>> outside = fig.add_axes([0.1, 0.1, 0.9, 0.9])
+>>> inside = fig.add_axes([0.6, 0.2, 0.35, 0.35])
 ```
 
-
-Additionally, we can provide multiple functions to
-run on each of the columns we want to aggregate. As we have already
-seen, we get a `Series` object when each column has a single
-aggregation. To distinguish between the aggregations in the case
-of multiple ones per column, `pandas`
-will return a `DataFrame` object instead. The index of this
-dataframe will tell us which metric is being calculated for which
-column:
-
-```
->>> fb.agg({
-...     'open': 'mean', 
-...     'high': ['min', 'max'],
-...     'low': ['min', 'max'], 
-...     'close': 'mean'
-... })
-```
-
-
-This results in a dataframe where the rows indicate the aggregation
-function being applied to the data columns. Note that we get nulls for
-any combination of aggregation and column that we didn\'t explicitly ask
-for:
-
-
-![](./images/Figure_4.34_B16834.jpg)
-
-
-
-So far, we have learned how to aggregate over specific windows and over
-the entire dataframe; however, the real power comes with the ability to
-aggregate by group membership. This lets us calculate things such as the
-total precipitation per month, per station and average OHLC stock prices
-for each volume traded bin we\'ve created.
-
-
-
-Aggregating by group
---------------------
-
-To calculate the aggregations per group, we must
-first call the `groupby()` method on the dataframe and provide
-the column(s) we want to use to determine distinct
-groups. Let\'s look at the average of our stock data points for each of
-the volume traded bins we created with `pd.cut()`; remember,
-these are three equal-width bins:
+Next, we grab the scaled version of the input data and the distances
+between those data points and the centroid of the
+cluster they belong to. We can use the
+`transform()` and `fit_transform()`
+(`fit()` followed by `transform()`) methods to
+convert the input data into cluster distance space. We get NumPy
+`ndarrays` back, where each value in the outer array
+represents the coordinates of a point:
 
 ```
->>> fb.groupby('trading_volume').mean()
+>>> scaled = kmeans_pipeline_2.named_steps['scale']\ 
+...     .fit_transform(kmeans_data) 
+>>> cluster_distances = kmeans_pipeline_2\
+...     .fit_transform(kmeans_data)
 ```
 
-
-The average OHLC prices are smaller for larger trading volumes, which
-was to be expected given that the three dates in the high-volume traded
-bin were selloffs:
-
-
-![](./images/Figure_4.35_B16834.jpg)
-
-
-
-After running `groupby()`, we can also select specific columns
-for aggregation:
-
-```
->>> fb.groupby('trading_volume')\
-...     ['close'].agg(['min', 'max', 'mean'])
-```
-
-
-This gives us the aggregations for the closing price in each volume
-traded bucket:
-
-
-![](./images/Figure_4.36_B16834.jpg)
-
-
-
-If we need more fine-tuned control over how each
-column gets aggregated, we use the `agg()` method again with a
-dictionary that maps the columns to their aggregation function. As we
-did previously, we can provide lists of functions
-per column; the result, however, will look a
-little different:
-
-```
->>> fb_agg = fb.groupby('trading_volume').agg({
-...     'open': 'mean', 'high': ['min', 'max'],
-...     'low': ['min', 'max'], 'close': 'mean'
-... })
->>> fb_agg
-```
-
-
-We now have a hierarchical index in the columns. Remember, this means
-that if we want to select the minimum low price for the medium volume
-traded bucket, we need to use
-`fb_agg.loc['med', 'low']['min']`:
-
-
-![](./images/Figure_4.37_B16834.jpg)
-
-
-
-The columns are stored in a `MultiIndex`
+Since we know that each array in the outer array will have the
+semi-major axis as the first entry and the period as the second, we use
+`[:,0]` to select all the semi-major axis values and
+`[:,1]` to select all the period values. These will be the *x*
+and *y* for our scatter plot. Note that we actually don\'t need to call
+`predict()` to get the cluster labels for the data because we
+want the labels for the data we trained the model on; this means that we
+can use the `labels_` attribute of the `KMeans`
 object:
 
 ```
->>> fb_agg.columns
-MultiIndex([( 'open', 'mean'),
-            ( 'high',  'min'),
-            ( 'high',  'max'),
-            (  'low',  'min'),
-            (  'low',  'max'),
-            ('close', 'mean')],
-           )
+>>> for ax, data, title, axes_labels in zip(
+...     [outside, inside], [scaled, cluster_distances], 
+...     ['Visualizing Clusters', 'Cluster Distance Space'], 
+...     ['standardized', 'distance to centroid']
+... ):
+...     sns.scatterplot(
+...         x=data[:,0], y=data[:,1], ax=ax, alpha=0.75, s=100,
+...         hue=kmeans_pipeline_2.named_steps['kmeans'].labels_
+...     )
+... 
+...     ax.get_legend().remove()
+...     ax.set_title(title)
+...     ax.set_xlabel(f'semimajoraxis ({axes_labels})')
+...     ax.set_ylabel(f'period ({axes_labels})')
+...     ax.set_ylim(-1, None)
 ```
 
-
-We can use a list comprehension to remove this
-hierarchy and instead have our column names in the form of
-`<column>_<agg>`. At each iteration, we will get a tuple of
-the levels from the `MultiIndex` object, which we can combine
-into a single string to remove the hierarchy:
+Lastly, we annotate the location of the centroids
+on the outer plot, which shows the scaled data:
 
 ```
->>> fb_agg.columns = ['_'.join(col_agg) 
-...                   for col_agg in fb_agg.columns]
->>> fb_agg.head()
+>>> cluster_centers = kmeans_pipeline_2\
+...     .named_steps['kmeans'].cluster_centers_
+>>> for color, centroid in zip(
+...     ['blue', 'orange'], cluster_centers
+... ):
+...     outside.plot(*centroid, color=color, marker='x')
+...     outside.annotate(
+...         f'{color} center', xy=centroid, 
+...         xytext=centroid + [0, 5], 
+...         arrowprops=dict(arrowstyle='->')
+...     )
 ```
 
-
-This replaces the hierarchy in the columns with a single level:
-
-
-![](./images/Figure_4.38_B16834.jpg)
+In the resulting plot, we can easily see that the three blue points are
+quite different from the rest and that they are the only members of the
+second cluster:
 
 
-
-Say we want to see the average observed
-precipitation across all the stations per day. We
-would need to group by the date, but it is in the index. In this case,
-we have a few options:
-
--   Resampling, which we will cover in the *Working with time series
-    data* section, later in this lab.
--   Resetting the index and using the date column that gets created from
-    the index.
--   Passing `level=0` to `groupby()` to indicate
-    that the grouping should be performed on the outermost level of the
-    index.
--   Using a `Grouper` object.
-
-Here, we will pass `level=0` to `groupby()`, but
-note that we can also pass in `level='date'` because our index
-is named. This gives us the average precipitation observations across
-the stations, which may give us a better idea of the weather than simply
-picking a station to look at. Since the result is a single-column
-`DataFrame` object, we call `squeeze()` to turn it
-into a `Series` object:
-
-```
->>> weather.loc['2018-10'].query('datatype == "PRCP"')\ 
-...     .groupby(level=0).mean().head().squeeze()
-date
-2018-10-01    0.01
-2018-10-02    2.23
-2018-10-03   19.69
-2018-10-04    0.32
-2018-10-05    0.96
-Name: value, dtype: float64
-```
+![](./images/Figure_9.21_B16834.jpg)
 
 
-We can also group by many categories at once.
-Let\'s find the quarterly total recorded precipitation per station.
-Here, rather than pass in `level=0` to `groupby()`,
-we need to use a `Grouper` object to aggregate from daily to
-quarterly frequency. Since this will create a multi-level index, we will
-also use `unstack()` to put the inner level (the quarter)
-along the columns after the aggregation is performed:
+Figure 9.21 -- Visualizing the planets in the cluster distance space
 
-```
->>> weather.query('datatype == "PRCP"').groupby(
-...     ['station_name', pd.Grouper(freq='Q')]
-... ).sum().unstack().sample(5, random_state=1)
-```
+So far, we have been using
+`transform()` or combination methods,
+such as `fit_predict()` or `fit_transform()`, but
+not all models will support these methods. We will see a slightly
+different workflow in the *Regression* and *Classification* sections. In
+general, most `scikit-learn` objects will support the
+following, based on what they are used for:
 
 
-There are many possible follow-ups for this
-result. We could look at which stations receive the most/least
-precipitation. We could go back to the location and elevation
-information we had for each station to see if that affects
-precipitation. We could also see which quarter has the most/least
-precipitation across the stations:
+![](./images/Figure_9.22_B16834.jpg)
 
 
-![](./images/Figure_4.39_B16834.jpg)
+Figure 9.22 -- General reference for the scikit-learn model API
+
+Now that we have built a few models, we are ready
+for the next step: quantifying their performance.
+The `metrics` module in `scikit-learn` contains
+various metrics for evaluating model performance across clustering,
+regression, and classification tasks; the API lists the functions at
+<https://scikit-learn.org/stable/modules/classes.html#module-sklearn.metrics>.
+Let\'s discuss how to evaluate an unsupervised clustering model next.
 
 
 
-**Tip:** 
+Evaluating clustering results
+-----------------------------
 
-The `DataFrameGroupBy` objects returned by the
-`groupby()` method have a `filter()` method, which
-allows us to filter groups. We can use this to exclude certain groups
-from the aggregation. Simply pass a function that returns a Boolean for
-each group\'s subset of the dataframe (`True` to include the
-group and `False` to exclude it). An example is in the
-notebook.
+The most important criterion for evaluating our clustering results is
+that they are useful for what we set out to do;
+we used the elbow point method to pick an appropriate value for *k*, but
+that wasn\'t as useful to us as the original model with eight clusters.
+That being said, when looking to quantify the performance, we need to
+pick metrics that match the type of learning we performed.
 
-Let\'s see which months have the most
-precipitation. First, we need to group by day and
-average the precipitation across the stations. Then, we can group by
-month and sum the resulting precipitation. Finally, we will use
-`nlargest()` to get the five months with the most
-precipitation:
+When we know the true clusters for our data, we can check that our
+clustering model places the points together in a cluster as they are in
+the true cluster. The cluster label given by our
+model can be different than the true one---all
+that matters is that the points in the same true cluster are also
+together in the predicted clusters. One such metric is the
+**Fowlkes-Mallows Index**, which we will see in the end-of-lab
+exercises.
+
+With the planets data, we performed unsupervised clustering because we
+don\'t have labels for each data point, and therefore, we can\'t measure
+how well we did against those. This means that we have to use metrics
+that evaluate aspects of the clusters themselves, such as how far apart
+they are and how close the points in a cluster are together. We can
+compare multiple metrics to get a more well-rounded evaluation of the
+performance.
+
+One such method is called the **silhouette
+coefficient**, which helps quantify cluster separation. It is calculated
+by subtracting the mean of the distances between every two points in a
+cluster (*a*) from the mean of distances between points in a
+given cluster and the closest different cluster
+(*b*) and dividing by the maximum of the two:
+
+
+![](./images/Formula_09_001.jpg)
+
+
+This metric returns values in the range \[-1, 1\], where -1 is the worst
+(clusters are wrongly assigned) and 1 is the best; values near 0
+indicate overlapping clusters. The higher this number is, the better
+defined (more separated) the clusters are:
 
 ```
->>> weather.query('datatype == "PRCP"')\
-...     .groupby(level=0).mean()\
-...     .groupby(pd.Grouper(freq='M')).sum().value.nlargest()
-date
-2018-11-30   210.59
-2018-09-30   193.09
-2018-08-31   192.45
-2018-07-31   160.98
-2018-02-28   158.11
-Name: value, dtype: float64
+>>> from sklearn.metrics import silhouette_score
+>>> silhouette_score(
+...     kmeans_data, kmeans_pipeline.predict(kmeans_data)
+... )
+0.7579771626036678
 ```
 
-
-Perhaps the previous result was surprising. The saying goes *April
-showers bring May flowers*; however, April wasn\'t in the top five
-(neither was May, for that matter). Snow will count toward
-precipitation, but that doesn\'t explain why summer months are higher
-than April. Let\'s look for days that accounted for a large percentage
-of the precipitation in a given month to see if April shows up there.
-
-To do so, we need to calculate the average daily
-precipitation across stations and then find the total per month; this
-will be the denominator. However, in order to divide the daily values by
-the total for their month, we will need a `Series` object of
-equal dimensions. This means that we will need to use the
-`transform()` method, which will perform the specified
-calculation on the data while always returning an object of equal
-dimensions to what we started with. Therefore, we
-can call it on a `Series` object and always get a
-`Series` object back, regardless of what the aggregation
-function itself would return:
+Another score we could use to evaluate our clustering result is the
+ratio of **within-cluster distances** (distances between points in a
+cluster) to the **between-cluster distances** (distances between points
+in different clusters), called the **Davies-Bouldin score**. Values
+closer to zero indicate better partitions between
+clusters:
 
 ```
->>> weather.query('datatype == "PRCP"')\
-...     .rename(dict(value='prcp'), axis=1)\
-...     .groupby(level=0).mean()\
-...     .groupby(pd.Grouper(freq='M'))\
-...     .transform(np.sum)['2018-01-28':'2018-02-03']
+>>> from sklearn.metrics import davies_bouldin_score
+>>> davies_bouldin_score(
+...     kmeans_data, kmeans_pipeline.predict(kmeans_data)
+... )
+0.4632311032231894 
 ```
 
-
-Rather than getting a single sum for January and another for February,
-notice that we have the same value being repeated for the January
-entries and a different one for the February ones. Note that the value
-for February is the value we found in the previous result:
-
-
-!](./images/Figure_4.40_B16834.jpg)
-
-
-
-
-We can make this a column in our
-dataframe to easily calculate the percentage of
-the monthly precipitation that occurred each day. Then, we can use
-`nlargest()` to pull out the largest values:
+One last metric for unsupervised clustering that
+we will discuss here is the **Calinski and
+Harabasz score**, or **Variance Ratio Criterion**, which is the ratio of
+dispersion within a cluster to dispersion between
+clusters. Higher values indicate better defined (more separated)
+clusters:
 
 ```
->>> weather.query('datatype == "PRCP"')\
-...     .rename(dict(value='prcp'), axis=1)\
-...     .groupby(level=0).mean()\
-...     .assign(
-...         total_prcp_in_month=lambda x: x.groupby(
-...             pd.Grouper(freq='M')).transform(np.sum),
-...         pct_monthly_prcp=lambda x: \
-...             x.prcp.div(x.total_prcp_in_month)
-...     ).nlargest(5, 'pct_monthly_prcp')
+>>> from sklearn.metrics import calinski_harabasz_score
+>>> calinski_harabasz_score(
+...     kmeans_data, kmeans_pipeline.predict(kmeans_data)
+... )
+21207.276781867335
 ```
 
-
-Together, the 4th- and 5th-place days in terms of
-the amount of monthly precipitation they accounted for make up more than
-50% of the rain in April. They were also consecutive days:
-
-
-!](./images/Figure_4.41_B16834.jpg)
+For a complete list of clustering evaluation metrics offered by
+`scikit-learn` (including supervised clustering) and when to
+use them, check out the *Clustering performance evaluation* section of
+their guide at
+<https://scikit-learn.org/stable/modules/clustering.html#clustering-evaluation>.
 
 
+Regression
+==========
 
 
-**Important note:**
-
-The `transform()` method also works on
-`DataFrame` objects, in which case it will return a
-`DataFrame` object. We can use it to easily standardize all
-the columns at once. An example is in the notebook.
-
-
-
-Pivot tables and crosstabs
---------------------------
-
-To wrap up this section, we will discuss some `pandas`
-functions that will aggregate our data into some common formats. The
-aggregation methods we discussed previously will
-give us the highest level of customization; however, `pandas`
-provides some functions to quickly generate a
-pivot table and a crosstab in a common format.
-
-In order to generate a pivot table, we must
-specify what to group on and, optionally, which subset of columns we
-want to aggregate and/or how to aggregate (average, by default). Let\'s
-create a pivot table of averaged OHLC data for Facebook per volume
-traded bin:
-
-```
->>> fb.pivot_table(columns='trading_volume')
-```
-
-
-Since we passed in `columns='trading_volume'`, the distinct
-values in the `trading_volume` column were placed along
-the columns. The columns from the original
-dataframe then went to the index. Notice that the
-index for the columns has a name (**trading\_volume**):
-
-
-![](./images/Figure_4.42_B16834.jpg)
+With the planets dataset, we want to predict the length of the year,
+which is a numeric value, so we will turn to
+regression. As mentioned at the beginning of this lab, regression is
+a technique for modeling the strength and magnitude of the relationship
+between 
+data)---often called **regressors**---and the dependent variable (our
+`y` data) that we want to predict.
 
 
 
+Linear regression
+-----------------
 
-With the `pivot()` method, we weren\'t able
-to handle multi-level indices or indices with
-repeated values. For this reason, we haven\'t been able to put the
-weather data in wide format. The `pivot_table()` method solves
-this issue. To do so, we need to put the
-`date` and `station` information in the index and
-the distinct values of the `datatype` column along the
-columns. The values will come from the
-`value` column. We will use the median to aggregate any
-overlapping combinations (if any):
-
-```
->>> weather.reset_index().pivot_table(
-...     index=['date', 'station', 'station_name'], 
-...     columns='datatype', 
-...     values='value', 
-...     aggfunc='median'
-... ).reset_index().tail()
-```
+Scikit-learn provides many algorithms that can handle regression tasks,
+ranging from decision trees to linear regression,
+spread across modules according to the various algorithm classes.
+However, typically, the best starting point is a linear
+regression, which can be found in the
+`linear_model` module. In **simple linear regression**, we fit
+our data to a line of the following form:
 
 
-After resetting the index, we have our data in wide format. One final
-step would be to rename the index:
+![](./images/Formula_09_002.jpg)
 
 
-![(./images/Figure_4.43_B16834.jpg)
+Here, epsilon (*ε*) is the error term and betas (*β*) are coefficients.
+
+Important note
+
+The coefficients we get from our model are those that minimize the
+**cost function**, or error between the observed values (*y*) and those
+predicted with the model (*ŷ*, pronounced *y-hat*). Our model gives us
+estimates of these coefficients, and we write them as
+![](./images/Formula_09_004.png) (pronounced *beta-hat*).
+
+However, if we want to model additional
+relationships, we need to use **multiple linear regression**, which
+contains multiple regressors:
 
 
+![](./images/Formula_09_005.jpg)
 
 
-We can use the `pd.crosstab()` function to create a frequency
-table. For example, if we want to see how many low-, medium-,
-and high-volume trading days Facebook stock had
-each month, we can use a crosstab. The syntax is
-pretty straightforward; we pass the row and column
-labels to the `index` and `columns` parameters,
-respectively. By default, the values in the cells will be the count:
+Linear regression in `scikit-learn` uses **ordinary least
+squares** (**OLS**), which yields the
+coefficients that minimize the sum of squared
+errors (measured as the distance between *y* and *ŷ*). The coefficients
+can be found using the closed-form solution, or
+estimated with optimization methods, such as **gradient descent**, which
+uses the negative gradient (direction of steepest ascent calculated with
+partial derivatives) to determine which coefficients
+to try next (see the link in the *Further
+reading* section for more information). We will use gradient descent in
+[*Lab
+11*],
+*Machine Learning Anomaly Detection*.
+
+Important note
+
+Linear regression makes some assumptions about the data, which we must
+keep in mind when choosing to use this technique. It assumes that the
+residuals are normally distributed and homoskedastic and that there is
+no multicollinearity (high correlations between the regressors).
+
+Now that we have a little background on how linear regression works,
+let\'s build a model to predict the orbit period of a planet.
+
+### Predicting the length of a year on a planet
+
+Before we can build our model, we must isolate
+the columns that are used to predict (`semimajoraxis`,
+`mass`, and `eccentricity`) from the column that
+will be predicted (`period`):
 
 ```
->>> pd.crosstab(
-...     index=fb.trading_volume, columns=fb.index.month,
-...     colnames=['month'] # name the columns index
+>>> data = planets[
+...     ['semimajoraxis', 'period', 'mass', 'eccentricity']
+... ].dropna()
+>>> X = data[['semimajoraxis', 'mass', 'eccentricity']]
+>>> y = data.period
+```
+
+This is a supervised task. We want to be able to predict the length of a
+year on a planet using its semi-major axis, mass, and eccentricity of
+orbit, and we have the period lengths for most of the planets in the
+data. Let\'s create a 75/25 split of training to testing data so that we
+can assess how well this model predicts year length:
+
+```
+>>> from sklearn.model_selection import train_test_split
+>>> X_train, X_test, y_train, y_test = train_test_split(
+...     X, y, test_size=0.25, random_state=0
 ... )
 ```
 
-
-This makes it easy to see the months when high volumes of Facebook stock
-were traded:
-
-
-](./images/Figure_4.44_B16834.jpg)
-
-
-
-
-**Tip:** 
-
-We can normalize the output to percentages of the row/column totals by
-passing in `normalize='rows'`/`normalize='columns'`.
-An example is in the notebook.
-
-To change the aggregation function,
-we can provide an argument to `values`
-and then specify `aggfunc`. To illustrate this, let\'s find
-the average closing price of each trading volume
-bucket per month instead of the count in the previous example:
+Once we have separated the data into the training and testing sets, we
+can create and fit the model:
 
 ```
->>> pd.crosstab(
-...     index=fb.trading_volume, columns=fb.index.month,
-...     colnames=['month'], values=fb.close, aggfunc=np.mean
-... )
+>>> from sklearn.linear_model import LinearRegression
+>>> lm = LinearRegression().fit(X_train, y_train)
 ```
 
+This fitted model can be used to examine the estimated coefficients and
+also to predict the value of the dependent variable for a given set of
+independent variables. We will cover both of these use cases in the next
+two sections.
 
-We now get the average closing price per month, per volume traded bin,
-with null values when that combination wasn\'t present in the data:
+### Interpreting the linear regression equation
 
+The equation derived from a linear regression model gives coefficients
+to quantify the relationships between the variables. Care must be
+exercised when attempting to interpret these
+coefficients if we are dealing with more than a single regressor. In the
+case of multicollinearity, we can\'t interpret them because we are
+unable to hold all other regressors constant to examine the effect of a
+single one.
 
-![](./images/Figure_4.45_B16834.jpg)
-
-
-
-We can also get row and column subtotals with the `margins`
-parameter. Let\'s count the number of times each station recorded snow
-per month and include the subtotals:
-
-```
->>> snow_data = weather.query('datatype == "SNOW"')
->>> pd.crosstab(
-...     index=snow_data.station_name,
-...     columns=snow_data.index.month, 
-...     colnames=['month'],
-...     values=snow_data.value,
-...     aggfunc=lambda x: (x > 0).sum(),
-...     margins=True, # show row and column subtotals
-...     margins_name='total observations of snow' # subtotals
-... )
-```
-
-
-Along the bottom row, we have the total snow
-observations per month, while
-down the rightmost column, we have the total snow
-observations in 2018 per station:
-
-
-](./images/Figure_4.46_B16834.jpg)
-
-
-Just by looking at a few stations, we can see that, despite all of them
-supplying weather information for NYC, they don\'t
-share every facet of the weather. Depending on which stations we choose
-to look at, we could be adding/subtracting snow
-from what really happened in NYC.
-
-
-Working with time series data
-=============================
-
-
-With time series data, we have some additional
-operations we can use, for anything from selection and filtering to
-aggregation. We will be exploring some of this functionality in the
-`4-time_series.ipynb` notebook. Let\'s start off by reading in
-the Facebook data from the previous sections:
+Thankfully, the regressors we are using for the planets data aren\'t
+correlated, as we saw from the correlation matrix heatmap we made in the
+*Exploratory data analysis* section (*Figure 9.8*). So, let\'s get the
+intercept and coefficients from the fitted linear model object:
 
 ```
->>> import numpy as np
->>> import pandas as pd
->>> fb = pd.read_csv(
-...     'data/fb_2018.csv', index_col='date', parse_dates=True
-... ).assign(trading_volume=lambda x: pd.cut( 
-...     x.volume, bins=3, labels=['low', 'med', 'high']     
-... ))
+# get intercept
+>>> lm.intercept_
+-622.9909910671811 
+# get coefficients
+>>> [(col, coef) for col, coef in 
+...  zip(X_train.columns, lm.coef_)]
+[('semimajoraxis', 1880.4365990440929),
+ ('mass', -90.18675916509196),
+ ('eccentricity', -3201.078059333091)] 
 ```
 
-
-We will begin this section by discussing the selection and filtering of
-time series data before moving on to shifting, differencing, resampling,
-and finally merging based on time. Note that it\'s important to set the
-index to our date (or datetime) column, which will allow us to take
-advantage of the additional functionality we will be discussing. Some
-operations may work without doing this, but for a smooth process
-throughout our analysis, using an index of type
-`DatetimeIndex` is recommended.
+This yields the following equation for our linear regression model of
+planet year length:
 
 
-
-Time-based selection and filtering
-----------------------------------
-
-Let\'s start with a quick recap of datetime
-slicing and indexing. We can easily isolate data for the year by
-indexing on it: `fb.loc['2018']`. In the case of our stock
-data, the full dataframe would be returned because we only have 2018
-data; however, we can filter to a month (`fb.loc['2018-10']`)
-or to a range of dates. Note that using `loc[]` is optional
-with ranges:
-
-```
->>> fb['2018-10-11':'2018-10-15']
-```
+![](./images/Formula_09_006.jpg)
 
 
-We only get three days back because the stock market is closed on the
-weekends:
+In order to interpret this more completely, we
+need to understand the units everything is in:
 
+-   `period` (length of year): Earth days
 
-![](./images/Figure_4.47_B16834.jpg)
+-   `semimajoraxis`: **Astronomical units** (**AUs**)
 
+-   `mass`: Jupiter masses (planet mass divided by Jupiter\'s
+    mass)
 
+-   `eccentricity`: N/A
 
-Keep in mind that the date range can also be supplied using other
-frequencies, such as month or the quarter of the year:
+    Tip
 
-```
->>> fb.loc['2018-q1'].equals(fb['2018-01':'2018-03'])
-True
-```
+    An astronomical unit is the average distance between the Earth and
+    the Sun, which is equivalent to 149,597,870,700 meters.
 
+The intercept in this particular model doesn\'t have any meaning: if the
+planet had a semi-major axis of zero, no mass, and a perfect circle
+eccentricity, its year would be -623 Earth days long. A planet must have
+a non-negative, non-zero period, semi-major axis, and mass, so this
+clearly makes no sense. We can, however, interpret the other
+coefficients. The equation says that, holding mass and eccentricity
+constant, adding one additional AU to the semi-major axis distance
+increases the year length by 1,880 Earth days. Holding the
+semi-major axis and eccentricity constant, each
+additional Jupiter mass decreases the year length by 90.2 Earth days.
 
-When targeting the beginning or end of a date range, `pandas`
-has some additional methods for selecting the first or last rows within
-a specified unit of time. We can select the first week of stock prices
-in 2018 using the `first()` method and an offset of
-`1W`:
+Going from a perfectly circular orbit (`eccentricity=0`) to a
+nearly parabolic escape orbit (`eccentricity=1`) will decrease
+the year length by 3,201 Earth days; note that these are approximate for
+this term because, with a parabolic escape orbit, the planet will never
+return, and consequently, this equation wouldn\'t make sense. In fact,
+if we tried to use this equation for eccentricities greater than or
+equal to 1, we would be extrapolating because we have no such values in
+the training data. This is a clear example of when extrapolation
+doesn\'t work. The equation tells us that the larger the eccentricity,
+the shorter the year, but once we get to eccentricities of one and
+beyond, the planets never come back (they have reached escape orbits),
+so the year is infinite.
 
-```
->>> fb.first('1W')
-```
+All of the eccentricity values in the training data are in the range
+\[0, 1), so we are interpolating (predicting period values using data in
+the ranges we trained on). This means that as long as the eccentricity
+of the planet we want to predict is also in the range \[0, 1), we can
+use this model to make the prediction.
 
+### Making predictions
 
-January 1, 2018 was a holiday, meaning that the market was closed. It
-was also a Monday, so the week here is only four days long:
-
-
-!](./images/Figure_4.48_B16834.jpg)
-
-
-
-
-We can perform a similar operation for the most
-recent dates as well. Selecting the last week in the data is as simple
-as switching the `first()` method with the `last()`
-method:
+Now that we have an idea of the effect each of
+our regressors has, let\'s use our model to make predictions of year
+length for the planets in the test set:
 
 ```
->>> fb.last('1W')
+>>> preds = lm.predict(X_test)
 ```
 
-
-Since December 31, 2018 was a Monday, the last week only consists of one
-day:
-
-
-!](./images/Figure_4.49_B16834.jpg)
-
-
-
-
-When working with daily stock data, we only have data for the dates the
-stock market was open. Suppose that we reindexed the data to include
-rows for each day of the year:
-
-```
->>> fb_reindexed = fb.reindex(
-...     pd.date_range('2018-01-01', '2018-12-31', freq='D')
-... )
-```
-
-
-The reindexed data would have all nulls for January 1st and any other
-days the market was closed. We can combine the `first()`,
-`isna()`, and `all()` methods to confirm this. Here,
-we will also use the `squeeze()` method to turn the 1-row
-`DataFrame` object resulting from the call to
-`first('1D').isna()` into a `Series` object so that
-calling `all()` yields a single value:
-
-```
->>> fb_reindexed.first('1D').isna().squeeze().all()
-True
-```
-
-
-We can use the `first_valid_index()` method to obtain the
-index of the first non-null entry in our data, which will be the first
-day of trading in the data. To obtain the last day of trading, we can
-use the `last_valid_index()` method. For the first quarter of
-2018, the first day of trading was January 2nd and
-the last was March 29th:
-
-```
->>> fb_reindexed.loc['2018-Q1'].first_valid_index()
-Timestamp('2018-01-02 00:00:00', freq='D')
->>> fb_reindexed.loc['2018-Q1'].last_valid_index()
-Timestamp('2018-03-29 00:00:00', freq='D')
-```
-
-
-If we wanted to know what Facebook\'s stock price looked like as of
-March 31, 2018, our initial idea may be to use indexing to retrieve it.
-However, if we try to do so with `loc[]`
-(`fb_reindexed.loc['2018-03-31']`), we will get null values
-because the stock market wasn\'t open that day. If we use the
-`asof()` method instead, it will give us the closest non-null
-data that precedes the date we ask for, which in this case is March
-29th. Therefore, if we wanted to see how Facebook performed on the last
-day in each month, we could use `asof()`, and avoid having to
-first check if the market was open that day:
-
-```
->>> fb_reindexed.asof('2018-03-31')
-open                   155.15
-high                   161.42
-low                    154.14
-close                  159.79
-volume            59434293.00
-trading_volume            low
-Name: 2018-03-31 00:00:00, dtype: object
-```
-
-
-For the next few examples, we will need time information in addition to
-the date. The datasets we have been working with thus far lack a time
-component, so we will switch to the Facebook stock data by the minute
-from May 20, 2019 through May 24, 2019 from Nasdaq.com. In order to
-properly parse the datetimes, we need to pass in a lambda function as
-the `date_parser` argument since they are not in a standard
-format (for instance, May 20, 2019 at 9:30 AM is represented as
-`2019-05-20 09-30`); the lambda function
-will specify how to convert the data in the
-`date` field into datetimes:
-
-```
->>> stock_data_per_minute = pd.read_csv(
-...     'data/fb_week_of_may_20_per_minute.csv', 
-...     index_col='date', parse_dates=True, 
-...     date_parser=lambda x: \
-...         pd.to_datetime(x, format='%Y-%m-%d %H-%M')
-... )
->>> stock_data_per_minute.head()
-```
-
-
-We have the OHLC data per minute, along with the volume traded per
-minute:
-
-
-![](./images/Figure_4.50_B16834.jpg)
-
-
-
-**Important note:**
-
-In order to properly parse datetimes in a non-standard format, we need
-to specify the format it is in. For a reference on the available codes,
-consult the Python documentation at
-<https://docs.python.org/3/library/datetime.html#strftime-strptime-behavior>.
-
-We can use `first()` and `last()` with
-`agg()` to bring this data to a daily granularity. To get the
-true open value, we need to take the first observation per day;
-conversely, for the true closing value, we need to take the last
-observation per day. The high and low will be the
-maximum and minimum of their respective columns
-per day. Volume traded will be the daily sum:
-
-```
->>> stock_data_per_minute.groupby(pd.Grouper(freq='1D')).agg({
-...     'open': 'first', 
-...     'high': 'max', 
-...     'low': 'min', 
-...     'close': 'last', 
-...     'volume': 'sum'
-... })
-```
-
-
-This rolls the data up to a daily frequency:
-
-
-](./images/Figure_4.51_B16834.jpg)
-
-
-The next two methods we will discuss help us select data based on the
-time part of the datetime. The `at_time()` method allows us to
-isolate rows where the time part of the datetime is the time we specify.
-By running `at_time('9:30')`, we can grab all the market open
-prices (the stock market opens at 9:30 AM):
-
-```
->>> stock_data_per_minute.at_time('9:30')
-```
-
-
-This tells us what the stock data looked like at the opening bell each
-day:
-
-
-![](./images/Figure_4.52_B16834.jpg)
-
-
-
-We can use the `between_time()` method to grab all the rows
-where the time portion of the datetime is between two times (inclusive
-of the endpoints by default). This method can be
-very useful if we want to look at data within a certain time range, day
-over day. Let\'s grab all the rows within the last two minutes of
-trading each day (15:59 - 16:00):
-
-```
->>> stock_data_per_minute.between_time('15:59', '16:00')
-```
-
-
-It looks like the last minute (16:00) has significantly more volume
-traded each day compared to the previous minute (15:59). Perhaps people
-rush to make trades before close:
-
-
-![](./images/Figure_4.53_B16834.jpg)
-
-
-
-We may wonder if this also happens in the first two minutes. Do people
-put their trades in the night before, and they execute when the market
-opens? It is trivial to change the previous code to
-answer that question. Instead, let\'s see if, on
-average, more shares were traded within the first 30 minutes of trading
-or in the last 30 minutes for the week in question. We can combine
-`between_time()` with `groupby()` to answer this
-question. In addition, we need to use `filter()` to exclude
-groups from the aggregation. The excluded groups are times that aren\'t
-in the time range we want:
-
-```
->>> shares_traded_in_first_30_min = stock_data_per_minute\
-...     .between_time('9:30', '10:00')\
-...     .groupby(pd.Grouper(freq='1D'))\
-...     .filter(lambda x: (x.volume > 0).all())\
-...     .volume.mean()
->>> shares_traded_in_last_30_min = stock_data_per_minute\
-...     .between_time('15:30', '16:00')\
-...     .groupby(pd.Grouper(freq='1D'))\
-...     .filter(lambda x: (x.volume > 0).all())\
-...     .volume.mean()
-```
-
-
-For the week in question, there were 18,593 more trades on average
-around the opening time than the closing time:
-
-```
->>> shares_traded_in_first_30_min \
-... - shares_traded_in_last_30_min
-18592.967741935485
-```
-
-
-**Tip:** 
-
-We can use the `normalize()` method on
-`DatetimeIndex` objects or after first accessing the
-`dt` attribute of a `Series` object to normalize all
-the datetimes to midnight. This is helpful when the time isn\'t adding
-value to our data. There are examples of this in the notebook.
-
-With the stock data, we have a snapshot of the
-price for each minute or day (depending on the granularity), but we may
-be interested in seeing the change between time periods as a time series
-rather than aggregating the data. For this, we need to learn how to
-create lagged data.
-
-
-
-Shifting for lagged data
-------------------------
-
-We can use the `shift()` method to
-create lagged data. By default, the shift will be
-by one period, but this can be any integer (positive or negative).
-Let\'s use `shift()` to create a new column that indicates the
-previous day\'s closing price for the daily Facebook stock data. From
-this new column, we can calculate the price change due to after-hours
-trading (after the market close one day right up to the market open the
-following day):
-
-```
->>> fb.assign(
-...     prior_close=lambda x: x.close.shift(),
-...     after_hours_change_in_price=lambda x: \
-...         x.open - x.prior_close,
-...     abs_change=lambda x: \
-...         x.after_hours_change_in_price.abs()
-... ).nlargest(5, 'abs_change')
-```
-
-
-This gives us the days that were most affected by after-hours trading:
-
-
-](./images/Figure_4.54_B16834.jpg)
-
-
-
-**Tip:** 
-
-To add/subtract time from the datetimes in the index, consider using
-`Timedelta` objects instead. There is an example of this in
-the notebook.
-
-In the previous example, we used the shifted data
-to calculate the change across columns. However, if, rather than the
-after-hours trading, we were interested in the change in Facebook\'s
-stock price each day, we would calculate the difference between the
-closing price and the shifted closing price. Pandas makes it a little
-easier than this, as we will see next.
-
-
-
-Differenced data
-----------------
-
-We\'ve already discussed creating lagged data with the
-`shift()` method. However, often, we are interested in how
-the values change from one time period to the
-next. For this, `pandas` has the `diff()` method. By
-default, this will calculate the change from time period *t-1* to time
-period *t*:
-
-
-![](./images/Formula_04_001.jpg)
-
-
-Note that this is equivalent to subtracting the result of
-`shift()` from the original data:
-
-```
->>> (fb.drop(columns='trading_volume') 
-...  - fb.drop(columns='trading_volume').shift()
-... ).equals(fb.drop(columns='trading_volume').diff())
-True
-```
-
-
-We can use `diff()` to easily calculate
-the day-over-day change in the Facebook stock data:
-
-```
->>> fb.drop(columns='trading_volume').diff().head()
-```
-
-
-For the first few trading days of the year, we can see that the stock
-price increased, and that the volume traded decreased daily:
-
-
-![](./images/Figure_4.55_B16834.jpg)
-
-
-
-**Tip:** 
-
-To specify the number of periods that are used for the difference,
-simply pass in an integer to `diff()`. Note that this number
-can be negative. An example of this is in the notebook.
-
-
-
-Resampling
-----------
-
-Sometimes, the data is at a granularity that
-isn\'t conducive to our analysis. Consider the case where we have data
-per minute for the full year of 2018. The level of granularity and
-nature of the data may render plotting useless. Therefore, we will need
-to aggregate the data to a less granular frequency:
-
-
-![](./images/Figure_4.56_B16834.jpg)
-
-
-
-Suppose we had a full year of the data. It\'s possible that this level of granularity is
-beyond what is useful for us, in which case we can use the
-`resample()` method to aggregate our time series data to a
-different granularity. To use `resample()`, all we have to do
-is say how we want to roll up the data and tack on an optional call to
-an aggregation method. For example, we can resample this
-minute-by-minute data to a daily frequency and specify how to aggregate
-each column:
-
-```
->>> stock_data_per_minute.resample('1D').agg({
-...     'open': 'first', 
-...     'high': 'max', 
-...     'low': 'min', 
-...     'close': 'last', 
-...     'volume': 'sum'
-... })
-```
-
-
-This is equivalent to the result we got back in the *Time-based
-selection and filtering* section:
-
-
-![](./images/Figure_4.57_B16834.jpg)
-
-
-
-We can resample to any frequency supported by `pandas` (more
-information can be found in the documentation at
-<http://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html>).
-Let\'s resample the daily Facebook stock data to the quarterly average:
-
-```
->>> fb.resample('Q').mean()
-```
-
-
-This gives us the average quarterly performance of
-the stock. The fourth quarter of 2018 was clearly troublesome:
-
-
-![](./images/Figure_4.58_B16834.jpg)
-
-
-
-To look further into this, we can use the `apply()` method to
-look at the difference between how the quarter began and how it ended.
-We will also need the `first()` and `last()` methods
-from the *Time-based selection and filtering* section:
-
-```
->>> fb.drop(columns='trading_volume').resample('Q').apply(
-...     lambda x: x.last('1D').values - x.first('1D').values
-... )
-```
-
-
-Facebook\'s stock price declined in all but the
-second quarter:
-
-
-](./images/Figure_4.59_B16834.jpg)
-
-
-
-
-Consider the melted minute-by-minute stock data in
-`melted_stock_data.csv`:
-
-```
->>> melted_stock_data = pd.read_csv(
-...     'data/melted_stock_data.csv', 
-...     index_col='date', parse_dates=True
-... )
->>> melted_stock_data.head()
-```
-
-
-The OHLC format makes it easy to analyze the stock data, but a single
-column is trickier:
-
-
-![](./images/Figure_4.60_B16834.jpg)
-
-
-
-The `Resampler` object we get back after
-calling `resample()` has an `ohlc()` method, which
-we can use to retrieve the OHLC data we are used to seeing:
-
-```
->>> melted_stock_data.resample('1D').ohlc()['price']
-```
-
-
-Since the column in the original data was called `price`, we
-select it after calling `ohlc()`, which is pivoting our data.
-Otherwise, we will have a hierarchical index in the columns:
-
-
-](./images/Figure_4.61_B16834.jpg)
-
-
-
-
-In the previous examples, we **downsampled** to reduce the granularity
-of the data; however, we can also **upsample** to increase the
-granularity of the data. We can even call `asfreq()` after to
-not aggregate the result:
-
-```
->>> fb.resample('6H').asfreq().head()
-```
-
-
-Note that when we resample at a granularity
-that\'s finer than the data we have, it will introduce `NaN`
+Let\'s visualize how well we did by plotting the actual and predicted
 values:
 
+```
+>>> fig, axes = plt.subplots(1, 1, figsize=(5, 3))
+>>> axes.plot(
+...     X_test.semimajoraxis, y_test, 'ob',
+...     label='actuals', alpha=0.5
+... )
+>>> axes.plot(
+...     X_test.semimajoraxis, preds, 'or', 
+...     label='predictions', alpha=0.5
+... )
+>>> axes.set(xlabel='semimajoraxis', ylabel='period')
+>>> axes.legend()
+>>> axes.set_title('Linear Regression Results')
+```
 
-![](./images/Figure_4.62_B16834.jpg)
-
-
-
-The following are a few ways we can handle the `NaN` values.
-In the interest of brevity, examples of these are in the notebook:
-
--   Use `pad()` after `resample()` to forward fill.
--   Call `fillna()` after `resample()` to handle missing values.
--   Use `asfreq()` followed by `assign()` to handle
-    each column individually.
-
-So far, we have been working with time series data stored in a single
-`DataFrame` object, but we may want to combine time series.
-While the techniques discussed in the *Merging DataFrames* section will
-work for time series, `pandas` provides additional
-functionality for merging time series so that we can merge on close
-matches rather than requiring an exact match. We will discuss these
-next.
+The predicted values seem pretty close to the
+actual values and follow a similar pattern:
 
 
+![](./images/Figure_9.23_B16834.jpg)
 
-Merging time series
+
+Figure 9.23 -- Predictions versus actual values
+
+Tip
+
+Try running this regression with just the `semimajoraxis`
+regressor. Some reshaping of the data will be necessary, but this will
+show how much better this performs as we add in `eccentricity`
+and `mass`. In practice, we often have to build many versions
+of our model to find one we are happy with.
+
+We can check their correlation to see how well our model tracks the true
+relationship:
+
+```
+>>> np.corrcoef(y_test, preds)[0][1]
+0.9692104355988059
+```
+
+Our predictions are very strongly positively
+correlated with the actual values (0.97 correlation coefficient). Note
+that the correlation coefficient will tell us whether our model moves
+with the actual data; however, it will not tell us whether we are off
+magnitude-wise. For that, we will use the metrics discussed in the
+following section.
+
+
+
+Evaluating regression results
+-----------------------------
+
+When looking to evaluate a regression model, we are interested in how
+much of the variance in the data our model is
+able to capture, as well as how accurate the predictions are. We can use
+a combination of metrics and visuals to assess the model for each of
+these aspects.
+
+### Analyzing residuals
+
+Whenever we work with linear regression, we
+should visualize our **residuals**, or the discrepancies between the
+actual values and the model\'s predictions; as we learned in [*Lab
+7*],
+*Financial Analysis -- Bitcoin and the Stock Market*, they should
+be centered around zero and homoskedastic
+(similar variance throughout). We can use a kernel density estimate to
+assess whether the residuals are centered around zero and a scatter plot
+to see if they are homoskedastic.
+
+Let\'s look at the utility function in `ml_utils.regression`,
+which will create these subplots for checking the residuals:
+
+```
+import matplotlib.pyplot as plt
+import numpy as np
+def plot_residuals(y_test, preds):
+    """
+    Plot residuals to evaluate regression.
+    Parameters:
+        - y_test: The true values for y
+        - preds: The predicted values for y
+    Returns:
+        Subplots of residual scatter plot and residual KDE
+    """
+    residuals = y_test – preds
+    fig, axes = plt.subplots(1, 2, figsize=(15, 3))
+    axes[0].scatter(np.arange(residuals.shape[0]), residuals)
+    axes[0].set(xlabel='Observation', ylabel='Residual')
+    residuals.plot(kind='kde', ax=axes[1])
+    axes[1].set_xlabel('Residual')
+    plt.suptitle('Residuals')
+    return axes
+```
+
+Now, let\'s look at the residuals for this linear regression:
+
+```
+>>> from ml_utils.regression import plot_residuals
+>>> plot_residuals(y_test, preds)
+```
+
+It looks like our predictions don\'t have a
+pattern (left subplot), which is good; however, they aren\'t quite
+centered around zero and the distribution has negative skew (right
+subplot). These negative residuals occur when the predicted year was
+longer than the actual year:
+
+
+![](./images/Figure_9.24_B16834.jpg)
+
+
+Figure 9.24 -- Examining the residuals
+
+Tip
+
+If we find patterns in the residuals, our data isn\'t linear and the
+chances are that visualizing the residuals could help us plan our next
+move. This may mean employing strategies such as polynomial regression
+or log transformations of the data.
+
+### Metrics
+
+In addition to examining the residuals, we should
+calculate metrics to evaluate our regression
+model. Perhaps the most common is **R2** (pronounced *R-squared*), or
+the **coefficient of determination**, which
+quantifies the proportion of variance in the
+dependent variable that we can predict from our independent variables.
+It is calculated by subtracting the ratio of the sum of squared
+residuals to the total sum of squares from 1:
+
+
+![](./images/Formula_09_007.jpg)
+
+
+Tip
+
+Sigma (*Σ*) represents the sum. The average of the *y* values is denoted
+as *ȳ* (pronounced *y-bar*). The predictions are denoted with *ŷ*
+(pronounced *y-hat*).
+
+This value will be in the range \[0, 1\], where
+higher values are better. Objects of the `LinearRegression`
+class in `scikit-learn` use R[2]{.superscript} as their
+scoring method. Therefore, we can simply use the `score()`
+method to calculate it for us:
+
+```
+>>> lm.score(X_test, y_test)
+0.9209013475842684 
+```
+
+We can also get R[2]{.superscript} from the `metrics` module:
+
+```
+>>> from sklearn.metrics import r2_score
+>>> r2_score(y_test, preds)
+0.9209013475842684 
+```
+
+This model has a very good R[2]{.superscript}; however, keep in mind
+that there are many factors that affect the period, such as the stars
+and other planets, which exert a gravitational force on the planet in
+question. Despite this abstraction, our simplification does pretty well
+because the orbital period of a planet is determined in large part by
+the distance that must be traveled, which we account for by using the
+semi-major axis data.
+
+There is a problem with R[2]{.superscript}, though; we can keep adding
+regressors, which would make our model more and more complex while at
+the same time increasing R[2]{.superscript}. We need a metric that
+penalizes model complexity. For that, we have **adjusted
+R**[2]{.superscript}, which will only increase if the added regressor
+improves the model more than what would be expected by chance:
+
+
+![](./images/Formula_09_008.jpg)
+
+
+Unfortunately, `scikit-learn` doesn\'t offer this metric;
+however, it is very easy to implement ourselves. The
+`ml_utils.regression` module contains a function for
+calculating  for
+us. Let\'s take a look at it:
+
+```
+from sklearn.metrics import r2_score
+def adjusted_r2(model, X, y):
+    """
+    Calculate the adjusted R^2.
+    Parameters:
+        - model: Estimator object with a `predict()` method
+        - X: The values to use for prediction.
+        - y: The true values for scoring.
+    Returns: 
+        The adjusted R^2 score.
+    """
+    r2 = r2_score(y, model.predict(X))
+    n_obs, n_regressors = X.shape
+    adj_r2 = \
+        1 - (1 - r2) * (n_obs - 1)/(n_obs - n_regressors - 1)
+    return adj_r2
+```
+
+Adjusted R[2]{.superscript} will always be lower than
+R[2]{.superscript}. By using the `adjusted_r2()` function, we
+can see that our adjusted R[2]{.superscript} is slightly lower than the
+R[2]{.superscript} value:
+
+```
+>>> from ml_utils.regression import adjusted_r2
+>>> adjusted_r2(lm, X_test, y_test)
+0.9201155993814631 
+```
+
+Unfortunately, R[2]{.superscript} (and adjusted R[2]{.superscript})
+values don\'t tell us anything about our prediction error or
+even whether we specified our model correctly.
+Think back to when we discussed Anscombe\'s quartet in [*Lab
+1*],
+*Introduction to Data Analysis*. These four different datasets have the
+same summary statistics. They also have the same R[2]{.superscript} when
+fit with a linear regression line (0.67), despite some of them not
+indicating a linear relationship:
+
+
+![](./images/Figure_9.25_B16834.jpg)
+
+
+Figure 9.25 -- R[2]{.superscript} can be misleading
+
+Another metric offered by
+`scikit-learn` is the **explained variance score**, which
+tells us the percentage of the variance that is explained by our model.
+We want this as close to 1 as possible:
+
+
+![](./images/Formula_09_009.jpg)
+
+
+We can see that our model explains 92% of the variance:
+
+```
+>>> from sklearn.metrics import explained_variance_score
+>>> explained_variance_score(y_test, preds)
+0.9220144218429371 
+```
+
+We aren\'t limited to looking at variance when evaluating our regression
+models; we can also look at the magnitude of the
+errors themselves. The remaining metrics we will discuss in this section
+all yield errors in the same unit of measurement we are using for
+prediction (Earth days here), so we can understand the meaning of the
+size of the error.
+
+**Mean absolute error** (**MAE**) tells us the
+average error our model made in either direction. Values range from 0 to
+∞ (infinity), with smaller values being better:
+
+
+![](./images/Formula_09_010.jpg)
+
+
+By using the `scikit-learn` function, we can see that our MAE
+was 1,369 Earth days:
+
+```
+>>> from sklearn.metrics import mean_absolute_error
+>>> mean_absolute_error(y_test, preds)
+1369.441817073533 
+```
+
+**Root mean squared error** (**RMSE**) allows for
+further penalization of poor predictions:
+
+
+![](./images/Formula_09_011.jpg)
+
+
+Scikit-learn provides a function for the **mean squared error**
+(**MSE**), which is the portion of the preceding
+equation inside the square root; therefore, we simply have to take the
+square root of the result. We would use this metric when large errors
+are undesirable:
+
+```
+>>> from sklearn.metrics import mean_squared_error
+>>> np.sqrt(mean_squared_error(y_test, preds))
+3248.499961928374 
+```
+
+An alternative to all these mean-based measures
+is the **median absolute error**, which is the median of the residuals.
+This can be used in cases where we have a few
+outliers in our residuals, and we want a more accurate description of
+the bulk of the errors. Note that this is smaller than the MAE for our
+data:
+
+```
+>>> from sklearn.metrics import median_absolute_error
+>>> median_absolute_error(y_test, preds)
+759.8613358335442 
+```
+
+There is also a `mean_squared_log_error()` function, which can
+only be used for non-negative values. Some of the predictions are
+negative, which prevents us from using this. Negative predictions happen
+when the semi-major axis is very small (less than 1) since that is the
+only portion of the regression equation with a positive coefficient. If
+the semi-major axis isn\'t large enough to balance out the rest of our
+equation, the prediction will be negative and, thus, automatically
+incorrect. For a complete list of regression
+metrics offered by `scikit-learn`, check out
+<https://scikit-learn.org/stable/modules/classes.html#regression-metrics>.
+
+
+Classification
+==============
+
+
+The goal of classification is to determine how to
+label data using a set of discrete labels. This probably sounds similar
+to supervised clustering; however, in this case, we don\'t care how
+close members of the groups are spatially. Instead, we concern ourselves
+with classifying them with the correct class label. Remember, in
+[*Lab
+8*],
+*Rule-Based Anomaly Detection*, when we classified the IP addresses as
+valid user or attacker? We didn\'t care how well-defined clusters of IP
+addresses were---we just wanted to find the attackers.
+
+Just as with regression, `scikit-learn` provides many
+algorithms for classification tasks. These are
+spread across modules, but will usually say *Classifier* at the end for
+classification tasks, as opposed to *Regressor* for regression tasks.
+Some common methods are logistic regression,
+**support vector machines** (**SVMs**), k-NN, decision trees, and random
+forests; here, we will discuss logistic regression.
+
+
+
+Logistic regression
 -------------------
 
-Time series often go down to the second or are
-even more granular, meaning that it can be difficult to merge if the
-entries don\'t have the same datetime. Pandas solves this problem with
-two additional merging functions. When we want to pair up observations
-that are close in time, we can use `pd.merge_asof()` to match
-on nearby keys rather than on equal keys, like we did with joins. On the
-other hand, if we want to match up the equal keys and interleave the
-keys without matches, we can use `pd.merge_ordered()`.
-
-To illustrate how these work, we are going to use the
-`fb_prices` and `aapl_prices` tables in the
-`stocks.db` SQLite database. These contain the prices of
-Facebook and Apple stock, respectively, along with a timestamp of when
-the price was recorded. Note that the Apple data
-was collected before the stock split in August 2020
-(<https://www.marketwatch.com/story/3-things-to-know-about-apples-stock-split-2020-08-28>).
-Let\'s read these tables from the database:
-
-```
->>> import sqlite3
->>> with sqlite3.connect('data/stocks.db') as connection:
-...     fb_prices = pd.read_sql(
-...         'SELECT * FROM fb_prices', connection, 
-...         index_col='date', parse_dates=['date']
-...     )
-...     aapl_prices = pd.read_sql(
-...         'SELECT * FROM aapl_prices', connection, 
-...         index_col='date', parse_dates=['date']
-...     )
-```
+Logistic regression is a way to use linear
+regression to solve classification tasks. However, it uses the logistic
+sigmoid function to return probabilities in the range \[0, 1\] that can
+be mapped to class labels:
 
 
-The Facebook data is at the minute granularity; however, we have
-(fictitious) seconds for the Apple data:
-
-```
->>> fb_prices.index.second.unique()
-Int64Index([0], dtype='int64', name='date')
->>> aapl_prices.index.second.unique()
-Int64Index([ 0, 52, ..., 37, 28], dtype='int64', name='date')
-```
+![](./images/Figure_9.26_B16834.jpg)
 
 
-If we use `merge()` or `join()`, we will only have
-values for both Apple and Facebook when the Apple price was at the top
-of the minute. Instead, to try and line these up, we can perform an *as
-of* merge. In order to handle the mismatch, we will specify to merge
-with the nearest minute (`direction='nearest'`) and require
-that a match can only occur between times that are within 30 seconds of
-each other (`tolerance`). This will place the Apple data
-with the minute that it is closest to, so
-`9:31:52` will go with `9:32` and
-`9:37:07` will go with `9:37`. Since the times are
-on the index, we pass in `left_index` and
-`right_index`, just like we did with `merge()`:
+Figure 9.26 -- The logistic sigmoid function
+
+Let\'s use logistic regression to classify red wines as high or low
+quality and to classify wines as red or white based on their chemical
+properties. We can treat logistic regression as we did the linear
+regression in the previous section, using the `linear_model`
+module in `scikit-learn`. Just like the linear regression
+problem, we will be using a supervised method, so
+we have to split our data into testing and training sets.
+
+Tip
+
+While the examples discussed in this section are both binary
+classification problems (two classes), `scikit-learn` provides
+support for multiclass problems as well. The process of building
+multiclass models will be nearly identical to the binary case but may
+require passing an additional parameter to let the model know that there
+are more than two classes. You will have a chance to build a multiclass
+classification model in the exercises at the end of this lab.
+
+### Predicting red wine quality
+
+We made the `high_quality` column back at the beginning of
+this lab, but remember that there was a large
+imbalance in the number of red wines that were high quality. So, when we
+split our data, we will stratify by that column for a stratified random
+sample to make sure that both the training and testing sets preserve the
+ratio of high-quality to low-quality wines in the data (roughly 14% are
+high quality):
 
 ```
->>> pd.merge_asof(
-...     fb_prices, aapl_prices, 
-...     left_index=True, right_index=True,
-...     # merge with nearest minute
-...     direction='nearest',
-...     tolerance=pd.Timedelta(30, unit='s')
-... ).head()
+>>> from sklearn.model_selection import train_test_split
+>>> red_y = red_wine.pop('high_quality')
+>>> red_X = red_wine.drop(columns='quality')
+>>> r_X_train, r_X_test, \
+... r_y_train, r_y_test = train_test_split(
+...     red_X, red_y, test_size=0.1, random_state=0,
+...     stratify=red_y
+... )
 ```
 
-
-This is similar to a left join; however, we are more lenient when
-matching the keys. Note that in the case where multiple entries in the
-Apple data match the same minute, this function will only keep the
-closest one. We get a null value for `9:31` because the entry
-for Apple at `9:31` was `9:31:52`, which gets placed
-at `9:32` when using `nearest`:
-
-
-![](./images/Figure_4.63_B16834.jpg)
-
-
-
-If we don\'t want the behavior of a left join, we can use the
-`pd.merge_ordered()` function instead. This will allow us to
-specify our join type, which will be `'outer'` by default. We
-will have to reset our index to be able to join on the datetimes,
-however:
+Let\'s make a pipeline that will first standardize all of our data and
+then build a logistic regression. We will provide the seed
+(`random_state=0`) for reproducibility and
+`class_weight='balanced'` to have `scikit-learn`
+compute the weights of the classes, since we have an imbalance:
 
 ```
->>> pd.merge_ordered(
-...     fb_prices.reset_index(), aapl_prices.reset_index()
-... ).set_index('date').head()
+>>> from sklearn.preprocessing import StandardScaler
+>>> from sklearn.pipeline import Pipeline
+>>> from sklearn.linear_model import LogisticRegression
+>>> red_quality_lr = Pipeline([
+...     ('scale', StandardScaler()), 
+...     ('lr', LogisticRegression(
+...         class_weight='balanced', random_state=0
+...     ))
+... ])
 ```
 
+The class weights determine how much the model will be penalized for
+wrong predictions for each class. By selecting
+balanced weights, wrong predictions on smaller classes will carry more
+weight, where the weight will be inversely proportional to the frequency
+of the class in the data. These weights are used for regularization,
+which we will discuss more in [*Lab
+10*],
+*Making Better Predictions -- Optimizing Models*.
 
-This strategy will give us null values whenever
-the times don\'t match exactly, but it will at least sort them for us:
+Once we have our pipeline, we can fit it to the data with the
+`fit()` method:
+
+```
+>>> red_quality_lr.fit(r_X_train, r_y_train)
+Pipeline(steps=[('scale', StandardScaler()),
+                ('lr', LogisticRegression(
+                     class_weight='balanced',
+                     random_state=0))])
+```
+
+Lastly, we can use our model fit on the training data to predict the red
+wine quality for the test data:
+
+```
+>>> quality_preds = red_quality_lr.predict(r_X_test)
+```
+
+Tip
+
+Scikit-learn makes it easy to switch between models because we can count
+on them to have the same methods, such as `score()`,
+`fit()`, and `predict()`. In some cases, we also can
+use `predict_proba()` for probabilities or
+`decision_function()` to evaluate a point with the equation
+derived by the model instead of `predict()`.
+
+Before we move on to evaluating the performance
+of this model, let\'s build another classification model using the full
+wine dataset.
+
+### Determining wine type by chemical properties
+
+We want to know whether it is possible to tell red and white wine apart
+based solely on their chemical properties. To
+test this, we will build a second logistic regression model, which will
+predict whether a wine is red or white. First, let\'s split our data
+into testing and training sets:
+
+```
+>>> from sklearn.model_selection import train_test_split 
+>>> wine_y = np.where(wine.kind == 'red', 1, 0)
+>>> wine_X = wine.drop(columns=['quality', 'kind'])
+>>> w_X_train, w_X_test, \
+... w_y_train, w_y_test = train_test_split(
+...     wine_X, wine_y, test_size=0.25, 
+...     random_state=0, stratify=wine_y
+... )
+```
+
+We will once again use logistic regression in a pipeline:
+
+```
+>>> from sklearn.linear_model import LogisticRegression
+>>> from sklearn.pipeline import Pipeline
+>>> from sklearn.preprocessing import StandardScaler
+>>> white_or_red = Pipeline([
+...     ('scale', StandardScaler()), 
+...     ('lr', LogisticRegression(random_state=0))
+... ]).fit(w_X_train, w_y_train)
+```
+
+Finally, we will save our predictions of which kind of wine each
+observation in the test set was:
+
+```
+>>> kind_preds = white_or_red.predict(w_X_test)
+```
+
+Now that we have predictions for both of our
+logistic regression models using their respective testing sets, we are
+ready to evaluate their performance.
 
 
-![](./images/Figure_4.64_B16834.jpg)
+
+Evaluating classification results
+---------------------------------
+
+We evaluate the performance of classification models by looking at how
+well each class in the data was predicted by the
+model. The **positive class** is the class of
+interest to us; all other classes are considered **negative classes**.
+In our red wine classification, the positive class is high quality,
+while the negative class is low quality. Despite
+our problem only being a binary classification problem, the metrics that
+are discussed in this section extend to multiclass classification
+problems.
+
+### Confusion matrix
+
+As we discussed in [*Lab
+8*],
+*Rule-Based Anomaly Detection*, a classification problem
+can be evaluated by comparing the predicted
+labels to the actual labels using a **confusion matrix**:
 
 
+![](./images/Figure_9.27_B16834.jpg)
 
-**Tip:** 
 
-We can pass `fill_method='ffill'` to
-`pd.merge_ordered()` to forward-fill the first `NaN`
-after a value, but it does not propagate beyond that; alternatively, we
-can chain a call to `fillna()`. There is an example of this in
-the notebook.
+Figure 9.27 -- Evaluating classification results with a confusion matrix
 
-The `pd.merge_ordered()` function also makes it possible to
-perform a group-wise merge, so be sure to check out the documentation
-for more information.
+Each prediction can be one of four outcomes,
+based on how it matches up to the actual value:
+
+-   **True Positive (TP)**: Correctly predicted to be the positive class
+
+-   **False Positive (FP)**: Incorrectly predicted to be the positive
+    class
+
+-   **True Negative (TN)**: Correctly predicted to not be the positive
+    class
+
+-   **False Negative (FN)**: Incorrectly predicted to not be the
+    positive class
+
+    Important note
+
+    False positives are also referred to as
+    **type I errors**, while false negatives are
+    **type II errors**. Given a certain classifier, an effort to reduce
+    one will cause an increase in the other.
+
+Scikit-learn provides the `confusion_matrix()` function, which
+we can pair with the `heatmap()` function from
+`seaborn` to visualize our confusion matrix. In the
+`ml_utils.classification` module, the
+`confusion_matrix_visual()` function handles this for us:
+
+```
+import matplotlib.pyplot as plt
+import numpy as np
+import seaborn as sns
+from sklearn.metrics import confusion_matrix
+def confusion_matrix_visual(y_true, y_pred, class_labels, 
+                            normalize=False, flip=False, 
+                            ax=None, title=None, **kwargs):
+    """
+    Create a confusion matrix heatmap
+    Parameters:
+        - y_test: The true values for y
+        - preds: The predicted values for y
+        - class_labels: What to label the classes.
+        - normalize: Whether to plot the values as percentages.
+        - flip: Whether to flip the confusion matrix. This is 
+          helpful to get TP in the top left corner and TN in 
+          the bottom right when dealing with binary 
+          classification with labels True and False.
+        - ax: The matplotlib `Axes` object to plot on.
+        - title: The title for the confusion matrix
+        - kwargs: Additional keyword arguments to pass down.
+    Returns: A matplotlib `Axes` object.
+    """
+    mat = confusion_matrix(y_true, y_pred)
+    if normalize:
+        fmt, mat = '.2%', mat / mat.sum()
+    else:
+        fmt = 'd'
+    if flip:
+        class_labels = class_labels[::-1]
+        mat = np.flip(mat)
+    axes = sns.heatmap(
+        mat.T, square=True, annot=True, fmt=fmt,
+        cbar=True, cmap=plt.cm.Blues, ax=ax, **kwargs
+    )
+    axes.set(xlabel='Actual', ylabel='Model Prediction')
+    tick_marks = np.arange(len(class_labels)) + 0.5
+    axes.set_xticks(tick_marks)
+    axes.set_xticklabels(class_labels)
+    axes.set_yticks(tick_marks)
+    axes.set_yticklabels(class_labels, rotation=0)
+    axes.set_title(title or 'Confusion Matrix')
+    return axes
+```
+
+Let\'s call our confusion matrix visualization function to see how we
+did for each of our classification models. First, we will look at how
+well the model identified high-quality red wines:
+
+```
+>>> from ml_utils.classification import confusion_matrix_visual
+>>> confusion_matrix_visual(
+...     r_y_test, quality_preds, ['low', 'high']
+... )
+```
+
+Using the confusion matrix, we can see that the
+model had trouble finding the high-quality red wines consistently
+(bottom row):
+
+
+![](./images/Figure_9.28_B16834.jpg)
+
+
+Figure 9.28 -- Results for the red wine quality model
+
+Now, let\'s look at how well the `white_or_red` model
+predicted the wine type:
+
+```
+>>> from ml_utils.classification import confusion_matrix_visual
+>>> confusion_matrix_visual(
+...     w_y_test, kind_preds, ['white', 'red']
+... )
+```
+
+It looks like this model had a much easier time,
+with very few incorrect predictions:
+
+\`
+
+
+![](./images/Figure_9.29_B16834.jpg)
+
+
+Figure 9.29 -- Results for the white or red wine model
+
+Now that we understand the composition of the confusion matrix, we can
+use it to calculate additional performance metrics.
+
+### Classification metrics
+
+Using the values in the confusion matrix, we can
+calculate metrics to help evaluate the performance of a classifier. The
+best metrics will depend on the goal for which we are building the model
+and whether our classes are balanced. The formulas in this section are
+derived from the data we get from the confusion
+matrix, where *TP* is the number of true
+positives, *TN* is the number of true negatives, and so on.
+
+#### Accuracy and error rate
+
+When our classes are roughly equal in size, we
+can use **accuracy**, which will give us the
+percentage of correctly classified values:
+
+
+![](./images/Formula_09_012.jpg)
+
+
+The `accuracy_score()` function in `sklearn.metrics`
+will calculate the accuracy as per the formula; however, the
+`score()` method of our model will also give us the accuracy
+(this isn\'t always the case, as we will see with grid search in
+[*Lab
+10*],
+*Making Better Predictions -- Optimizing Models*):
+
+```
+>>> red_quality_lr.score(r_X_test, r_y_test)
+0.775
+```
+
+Since accuracy is the percentage we correctly
+classified (our **success rate**), it follows that our **error rate**
+(the percentage we got wrong) can be calculated as follows:
+
+
+![](./images/Formula_09_013.jpg)
+
+
+Our accuracy score tells us that we got 77.5% of the red wines correctly
+classified according to their quality. Conversely, the
+`zero_one_loss()` function gives us the percentage of values
+that were misclassified, which is 22.5% for the red wine quality model:
+
+```
+>>> from sklearn.metrics import zero_one_loss
+>>> zero_one_loss(r_y_test, quality_preds)
+0.22499999999999998
+```
+
+Note that while both of these are easy to compute and understand, they
+require a threshold. By default, this is 50%, but we can use any
+probability we wish as a cutoff when predicting
+
+method in `scikit-learn`. In addition, accuracy and error rate
+can be misleading in cases of class imbalance.
+
+#### Precision and recall
+
+When we have a **class imbalance**, accuracy can
+become an unreliable metric for measuring our
+performance. For instance, if we had a 99/1 split between two classes, A
+and B, where the rare event, B, is our positive class, we could build a
+model that was 99% accurate by just saying everything belonged to class
+A. This problem stems from the fact that true negatives will be very
+large, and being in the numerator (in addition to the denominator), they
+will make the results look better than they are. Clearly, we shouldn\'t
+bother building a model if it doesn\'t do anything to identify class B;
+thus, we need different metrics that will discourage this behavior. For
+this, we use precision and recall instead of accuracy. **Precision** is
+the ratio of true positives to everything flagged
+positive:
+
+
+![](./images/Formula_09_014.jpg)
+
+
+**Recall** gives us the **true positive rate**
+(**TPR**), which is the ratio of true positives
+to everything that was actually positive:
+
+
+![](./images/Formula_09_015.jpg)
+
+
+In the case of the 99/1 split between classes A and B, the model that
+classifies everything as A would have a recall of 0% for the positive
+class, B (precision would be undefined---0/0). Precision and recall
+provide a better way of evaluating model performance in the face of a
+class imbalance. They will correctly tell us that the model has little
+value for our use case.
+
+Scikit-learn provides the `classification_report()` function,
+which will calculate precision and recall for us.
+In addition to calculating these metrics per class label, it also
+calculates the **macro** average (unweighted average between classes)
+and the **weighted** average (average between classes weighted by the
+number of observations in each class). The **support** column indicates
+the count of observations that belong to each class using the labeled
+data.
+
+The classification report indicates that our model does well at finding
+the low-quality red wines, but not so great with the high-quality red
+wines:
+
+```
+>>> from sklearn.metrics import classification_report
+>>> print(classification_report(r_y_test, quality_preds))
+              precision    recall  f1-score   support
+           0       0.95      0.78      0.86       138
+           1       0.35      0.73      0.47        22
+    accuracy                           0.78       160
+   macro avg       0.65      0.75      0.66       160
+weighted avg       0.86      0.78      0.80       160
+```
+
+Given that the quality scores are very subjective and not necessarily
+related to the chemical properties, it is no surprise that this simple
+model doesn\'t perform too well. On the other hand, chemical properties
+are different between red and white wines, so this information is more
+useful for the `white_or_red` model. As we can imagine, based
+on the confusion matrix for the `white_or_red` model, the
+metrics are good:
+
+```
+>>> from sklearn.metrics import classification_report
+>>> print(classification_report(w_y_test, kind_preds))
+              precision    recall  f1-score   support
+           0       0.99      1.00      0.99      1225
+           1       0.99      0.98      0.98       400
+    accuracy                           0.99      1625
+   macro avg       0.99      0.99      0.99      1625
+weighted avg       0.99      0.99      0.99      1625
+```
+
+Just like accuracy, both precision and recall are
+easy to compute and understand, but require thresholds. In addition,
+precision and recall each only consider half of the confusion matrix:
+
+
+![](./images/Figure_9.30_B16834.jpg)
+
+
+Figure 9.30 -- Confusion matrix coverage for precision and recall
+
+There is typically a trade-off between maximizing recall and maximizing
+precision, and we have to decide which is more important to us. This
+preference can be quantified using the F score.
+
+#### F score
+
+The classification report also includes the
+**F**[1]{.subscript} **score**, which helps us
+balance precision and recall using the **harmonic
+mean** of the two:
+
+
+![](./images/Formula_09_016.jpg)
+
+
+Important note
+
+The harmonic mean is the reciprocal of the arithmetic mean, and is used
+with rates to get a more accurate average (compared to the arithmetic
+mean of the rates). Both precision and recall are proportions in the
+range \[0, 1\], which we can treat as rates.
+
+The **F**[β]{.subscript} **score**, pronounced *F-beta*, is the more
+general formulation for the F score. By varying β, we can put more
+weight on precision (β between 0 and 1) or on recall (β greater than 1),
+where β is how many more times recall is valued over precision:
+
+
+![](./images/Formula_09_017.jpg)
+
+
+Some commonly used values for β are as follows:
+
+-   **F**[0.5]{.subscript} **score**: Precision twice as important as
+    recall
+-   **F**[1]{.subscript} **score**: Harmonic mean (equal importance)
+-   **F**[2]{.subscript} **score**: Recall twice as important as
+    precision
+
+The F score is also easy to compute and relies on thresholds. However,
+it doesn\'t consider true negatives and is hard to optimize due to the
+trade-offs between precision and recall. Note that when working with
+large class imbalances, we are typically more concerned with predicting
+the positive class correctly, meaning that we may be less interested in
+true negatives, so using a metric that ignores them isn\'t necessarily
+an issue.
+
+Tip
+
+Functions for precision, recall, F[1]{.subscript} score, and
+F[β]{.subscript} score can be found in the `sklearn.metrics`
+module.
+
+#### Sensitivity and specificity
+
+Along the lines of the precision and recall trade-off, we have another
+pair of metrics that can be used to illustrate
+the delicate balance we strive to achieve with classification problems:
+sensitivity and specificity.
+
+**Sensitivity** is the true positive rate, or
+recall, which we saw previously. **Specificity**, however, is the **true
+negative rate**, or the proportion of true negatives
+to everything that should have been classified as
+negative:
+
+
+![](./images/Formula_09_021.jpg)
+
+
+Note that, together, specificity and sensitivity consider the full
+confusion matrix:
+
+
+![](./images/Figure_9.31_B16834.jpg)
+
+
+Figure 9.31 -- Confusion matrix coverage for sensitivity and specificity
+
+We would like to maximize both sensitivity and specificity; however, we
+could easily maximize specificity by decreasing
+the number of times we classify something as the positive class, which
+would decrease sensitivity. Scikit-learn doesn\'t offer specificity as a
+metric---preferring precision and recall---however, we can easily make
+our own by writing a function or using the `make_scorer()`
+function from `scikit-learn`. We are discussing them here
+because they form the basis of the sensitivity-specificity plot, or ROC
+curve, which is the topic of the following section.
+
+### ROC curve
+
+In addition to using metrics to evaluate classification problems, we can
+turn to visualizations. By plotting the true positive rate
+(*sensitivity*) versus the false positive rate (*1 - specificity*), we
+get the **Receiver Operating Characteristic** (**ROC**) **curve**. This
+curve allows us to visualize the trade-off
+between the true positive rate and the false positive rate. We can
+identify a false positive rate that we are willing to accept and use
+that to find the threshold to use as a cutoff when predicting the class
+with probabilities using the `predict_proba()` method in
+`scikit-learn`. Say that we find the threshold to be 60%---we
+would require `predict_proba()` to return a value greater than
+or equal to 0.6 to predict the positive class (`predict()`
+uses 0.5 as the cutoff).
+
+The `roc_curve()` function from `scikit-learn`
+calculates the false and true positive rates at thresholds from 0 to
+100% using the probabilities of an observation belonging
+to a given class, as determined by the model. We
+can then plot this, with the goal being to maximize the **area under the
+curve** (**AUC**), which is in the range \[0, 1\]; values below 0.5 are
+worse than guessing and good scores are above 0.8. Note that when
+referring to the area under a ROC curve, the AUC
+may also be written as **AUROC**. The AUROC
+summarizes the model\'s performance across thresholds.
+
+The following are examples of good ROC curves. The dashed line would be
+random guessing (no predictive value) and is used as a baseline;
+anything below that is considered worse than guessing. We want to be
+toward the top-left corner:
+
+
+![](./images/Figure_9.32_B16834.jpg)
+
+
+Figure 9.32 -- Comparing ROC curves
+
+The `ml_utils.classification` module contains a function for
+plotting our ROC curve. Let\'s take a look at it:
+
+```
+import matplotlib.pyplot as plt
+from sklearn.metrics import auc, roc_curve
+def plot_roc(y_test, preds, ax=None):
+    """
+    Plot ROC curve to evaluate classification.
+    Parameters:
+        - y_test: The true values for y
+        - preds: The predicted values for y as probabilities
+        - ax: The `Axes` object to plot on
+    Returns: 
+        A matplotlib `Axes` object.
+    """
+    if not ax:
+        fig, ax = plt.subplots(1, 1)
+    fpr, tpr, thresholds = roc_curve(y_test, preds)
+    ax.plot(
+        [0, 1], [0, 1], color='navy', lw=2, 
+        linestyle='--', label='baseline'
+    )
+    ax.plot(fpr, tpr, color='red', lw=2, label='model')
+    ax.legend(loc='lower right')
+    ax.set_title('ROC curve')
+    ax.set_xlabel('False Positive Rate (FPR)')
+    ax.set_ylabel('True Positive Rate (TPR)')
+    ax.annotate(
+        f'AUC: {auc(fpr, tpr):.2}', xy=(0.5, 0),
+        horizontalalignment='center'
+    )
+    return ax
+```
+
+As we can imagine, our `white_or_red` model will have a very
+good ROC curve. Let\'s see what that looks like
+by calling the `plot_roc()` function. Since we need to pass
+the probabilities of each entry belonging to the positive class, we need
+to use the `predict_proba()` method instead of
+`predict()`. This gives us the probabilities that each
+observation belongs to each class.
+
+Here, for every row in `w_X_test`, we have a NumPy array of
+`[P(white), P(red)]`. Therefore, we use slicing to select the
+probabilities that the wine is red for the ROC curve
+(`[:,1]`):
+
+```
+>>> from ml_utils.classification import plot_roc
+>>> plot_roc(
+...     w_y_test, white_or_red.predict_proba(w_X_test)[:,1]
+... )
+```
+
+Just as we expected, the ROC curve for the `white_or_red`
+model is very good, with an AUC of nearly 1:
+
+
+![](./images/Figure_9.33_B16834.jpg)
+
+
+Figure 9.33 -- ROC curve for the white or red wine model
+
+Given the other metrics we have looked at, we don\'t expect the red wine
+quality prediction model to have a great ROC
+curve. Let\'s call our function to see what the ROC curve for the red
+wine quality model looks like:
+
+```
+>>> from ml_utils.classification import plot_roc
+>>> plot_roc(
+...     r_y_test, red_quality_lr.predict_proba(r_X_test)[:,1]
+... )
+```
+
+This ROC curve isn\'t as good as the previous one, as expected:
+
+
+![](./images/Figure_9.34_B16834.jpg)
+
+
+Figure 9.34 -- ROC curve for the red wine quality model
+
+Our AUROC is 0.85; however, note that the AUROC provides optimistic
+estimates under class imbalance (since it
+considers true negatives). For this reason, we should also look at the
+precision-recall curve.
+
+### Precision-recall curve
+
+When faced with a class imbalance, we use **precision-recall curves**
+instead of ROC curves. This curve shows precision
+versus recall at various probability thresholds. The baseline is a
+horizontal line at the percentage of the data that
+belongs to the positive class. We want our curve
+above this line, with an **area under the precision-recall curve**
+(**AUPR**) greater than that percentage (the higher the better).
+
+The `ml_utils.classification` module contains the
+`plot_pr_curve()` function for drawing precision-recall curves
+and providing the AUPR:
+
+```
+import matplotlib.pyplot as plt
+from sklearn.metrics import (
+    auc, average_precision_score, precision_recall_curve
+)
+def plot_pr_curve(y_test, preds, positive_class=1, ax=None):
+    """
+    Plot precision-recall curve to evaluate classification.
+    Parameters:
+        - y_test: The true values for y
+        - preds: The predicted values for y as probabilities
+        - positive_class: Label for positive class in the data
+        - ax: The matplotlib `Axes` object to plot on
+    Returns: A matplotlib `Axes` object.
+    """
+    precision, recall, thresholds = \
+        precision_recall_curve(y_test, preds)
+    if not ax:
+        fig, ax = plt.subplots()
+    ax.axhline(
+        sum(y_test == positive_class) / len(y_test), 
+        color='navy', lw=2, linestyle='--', label='baseline'
+    )
+    ax.plot(
+        recall, precision, color='red', lw=2, label='model'
+    )
+    ax.legend()
+    ax.set_title(
+        'Precision-recall curve\n'
+        f"""AP: {average_precision_score(
+            y_test, preds, pos_label=positive_class
+        ):.2} | """
+        f'AUC: {auc(recall, precision):.2}'
+    )
+    ax.set(xlabel='Recall', ylabel='Precision')
+    ax.set_xlim(-0.05, 1.05)
+    ax.set_ylim(-0.05, 1.05)
+    return ax
+```
+
+Since the implementation of the AUC calculation
+in `scikit-learn` uses interpolation, it may give an
+optimistic result, so our function also calculates **average precision**
+(**AP**), which summarizes the precision-recall curve as the
+weighted mean of the precision scores
+(*P*[n]{.subscript}) achieved at various thresholds. The weights are
+derived from the change in recall (*R*[n]{.subscript}) between one
+threshold and the next. Values are between 0 and 1, with higher values
+being better:
+
+
+![](./images/Formula_09_022.jpg)
+
+
+Let\'s take a look at the precision-recall curve for the red wine
+quality model:
+
+```
+>>> from ml_utils.classification import plot_pr_curve
+>>> plot_pr_curve(
+...     r_y_test, red_quality_lr.predict_proba(r_X_test)[:,1]
+... )
+```
+
+This still shows that our model is better than
+the baseline of random guessing; however, the performance reading we get
+here seems more in line with the lackluster performance we saw in the
+classification report. We can also see that the model loses lots of
+precision when going from a recall of 0.2 to 0.4. Here, the trade-off
+between precision and recall is evident, and we will likely choose to
+optimize one:
+
+
+![](./images/Figure_9.35_B16834.jpg)
+
+
+Figure 9.35 -- Precision-recall curve for the red wine quality model
+
+Since we have a class imbalance between the high-quality and low-quality
+red wines (less than 14% are high quality), we must make a choice as to
+whether we optimize precision or recall. Our choice would depend on who
+we work for in the wine industry. If we are renowned for producing
+high-quality wine, and we are choosing which wines to provide to critics
+for reviews, we want to make sure we pick the best ones and would rather
+miss out on good ones (false negatives) than tarnish our name with
+low-quality ones that the model classifies as high quality (false
+positives). However, if we are trying to make the best profit from
+selling the wines, we wouldn\'t want to sell such a high-quality wine
+for the same price as a low-quality wine (false negative), so we would
+rather overprice some low-quality wines (false positives).
+
+Note that we could easily have classified
+everything as low quality to never disappoint or as high quality to
+maximize our profit selling them; however, this isn\'t too practical.
+It\'s clear that we need to strike an acceptable balance between false
+positives and false negatives. To do so, we need to quantify this
+trade-off between the two extremes in terms of what matters to us more.
+Then, we can use the precision-recall curve to find a threshold that
+meets our precision and recall targets. In [*Lab
+11*],
+*Machine Learning Anomaly Detection*, we will work through an example of
+this.
+
+Let\'s now take a look at the precision-recall curve for our white or
+red wine classifier:
+
+```
+>>> from ml_utils.classification import plot_pr_curve
+>>> plot_pr_curve(
+...     w_y_test, white_or_red.predict_proba(w_X_test)[:,1]
+... )
+```
+
+Note that this curve is in the upper right-hand corner. With this model,
+we can achieve high precision and high recall:
+
+
+![](./images/Figure_9.36_B16834.jpg)
+
+
+Figure 9.36 -- Precision-recall curve for the white or red wine model
+
+As we saw with the red wine quality model, AUPR works very well with
+class imbalance. However, it can\'t be compared
+across datasets, is expensive to compute, and is hard to optimize. Note
+that this was just a subset of the metrics we can use to evaluate
+classification problems. All the classification metrics offered by
+`scikit-learn` can be found at
+<https://scikit-learn.org/stable/modules/classes.html#classification-metrics>.
 
 
 Summary
 =======
 
 
-In this lab, we discussed how to join dataframes, how to determine
-the data we will lose for each type of join using set operations, and
-how to query dataframes as we would a database. We then went over some
-more involved transformations on our columns, such as binning and
-ranking, and how to do so efficiently with the `apply()`
-method. We also learned the importance of vectorized operations in
-writing efficient `pandas` code. Then, we explored window
-calculations and using pipes for cleaner code. Our discussion of window
-calculations served as a primer for aggregating across whole dataframes
-and by groups. We also went over how to generate pivot tables and
-crosstabs. Finally, we looked at some time series-specific functionality
-in `pandas` for everything from selection and aggregation to
-merging.
+This lab served as an introduction to machine learning in Python. We
+discussed the terminology that\'s commonly used to describe learning
+types and tasks. Then, we practiced EDA using the skills we learned
+throughout this course to get a feel for the wine and planet datasets.
+This gave us some ideas about what kinds of models we would want to
+build. A thorough exploration of the data is essential before attempting
+to build a model.
+
+Next, we learned how to prepare our data for use in machine learning
+models and the importance of splitting the data into training and
+testing sets before modeling. In order to prepare our data efficiently,
+we used pipelines in `scikit-learn` to package up everything
+from our preprocessing through our model.
+
+We used unsupervised k-means to cluster the planets using their
+semi-major axis and period; we also discussed how to use the elbow point
+method to find a good value for *k*. Then, we moved on to supervised
+learning and made a linear regression model to predict the period of a
+planet using its semi-major axis, eccentricity of orbit, and mass. We
+learned how to interpret the model coefficients and how to evaluate the
+model\'s predictions. Finally, we turned to classification to identify
+high-quality red wines (which had a class imbalance) and distinguish
+between red and white wine by their chemical properties. Using
+precision, recall, F[1]{.subscript} score, confusion matrices, ROC
+curves, and precision-recall curves, we discussed how to evaluate
+classification models.
+
+It\'s important to remember that machine learning models make
+assumptions about the underlying data, and while this wasn\'t a lab
+on the mathematics of machine learning, we should make sure that we
+understand that there are consequences for violating these assumptions.
+In practice, when looking to build models, it\'s crucial that we have a
+solid understanding of statistics and domain-level expertise. We saw
+that there is a multitude of metrics for evaluating our models. Each
+metric has its strengths and weaknesses, and, depending on the problem,
+some are better than others; we must take care to choose the appropriate
+metrics for the task at hand.
+
+In the next lab, we will learn how to tune our models to improve
+their performance, so make sure to complete the exercises to practice
+this lab\'s material before moving on.
+
 
 Exercises
 =========
 
-Using the CSV files in the `exercises/` folder and what we
-have learned so far in this course, complete the following exercises:
 
-1.  With the `earthquakes.csv` file, select all the
-    earthquakes in Japan with a magnitude of 4.9 or greater using the
-    `mb` magnitude type.
+Practice building and evaluating machine learning models in
+`scikit-learn` with the following exercises:
 
-2.  Create bins for each full number of earthquake magnitude (for
-    instance, the first bin is (0, 1\], the second is (1, 2\], and so
-    on) with the `ml` magnitude type and count how many are in
-    each bin.
+1.  Build a clustering model to distinguish between red and white wine
+    by their chemical properties:
 
-3.  Using the `faang.csv` file, group by the ticker and
-    resample to monthly frequency. Make the following aggregations:
+    a\) Combine the red and white wine datasets
+    (`data/winequality-red.csv` and
+    `data/winequality-white.csv`, respectively) and add a
+    column for the kind of wine (red or white).
 
-    a\) Mean of the opening price
+    b\) Perform some initial EDA.
 
-    b\) Maximum of the high price
+    c\) Build and fit a pipeline that scales the data and then uses
+    k-means clustering to make two clusters. Be sure not to use the
+    `quality` column.
 
-    c\) Minimum of the low price
+    d\) Use the Fowlkes-Mallows Index (the
+    `fowlkes_mallows_score()` function is in
+    `sklearn.metrics`) to evaluate how well k-means is able to
+    make the distinction between red and white wine.
 
-    d\) Mean of the closing price
+    e\) Find the center of each cluster.
 
-    e\) Sum of the volume traded
+2.  Predict star temperature:
 
-4.  Build a crosstab with the earthquake data between the
-    `tsunami` column and the `magType` column.
-    Rather than showing the frequency count, show the maximum magnitude
-    that was observed for each combination. Put the magnitude type along
-    the columns.
+    a\) Using the `data/stars.csv` file, perform some initial
+    EDA and then build a linear regression model of all the numeric
+    columns to predict the temperature of the star.
 
-5.  Calculate the rolling 60-day aggregations of the OHLC data by ticker
-    for the FAANG data. Use the same aggregations as exercise *3*.
+    b\) Train the model on 75% of the initial data.
 
-6.  Create a pivot table of the FAANG data that compares the stocks. Put
-    the ticker in the rows and show the averages of the OHLC and volume
-    traded data.
+    c\) Calculate the R[2]{.superscript} and RMSE of the model.
 
-7.  Calculate the Z-scores for each numeric column of Amazon\'s data
-    (`ticker` is AMZN) in Q4 2018 using `apply()`.
+    d\) Find the coefficients for each regressor and the intercept of
+    the linear regression equation.
 
-8.  Add event descriptions:
+    e\) Visualize the residuals using the `plot_residuals()`
+    function from the `ml_utils.regression` module.
 
-    a\) Create a dataframe with the following three columns:
-    `ticker`, `date`, and `event`. The
-    columns should have the following values:
+3.  Classify planets that have shorter years than Earth:
 
-    i\) `ticker`: `'FB'`
+    a\) Using the `data/planets.csv` file, build a logistic
+    regression model with the `eccentricity`,
+    `semimajoraxis`, and `mass` columns as
+    regressors. You will need to make a new column to use for the *y*
+    (year shorter than Earth).
 
-    ii\) `date`:
-    `['2018-07-25', '2018-03-19', '2018-03-20']`
+    b\) Find the accuracy score.
 
-    iii\) `event`:
-    `['Disappointing user growth announced after close.', 'Cambridge Analytica story', 'FTC investigation']`
+    c\) Use the `classification_report()` function from
+    `scikit-learn` to see the precision, recall, and
+    F[1]{.subscript} score for each class.
 
-    b\) Set the index to `['date', 'ticker']`.
+    d\) With the `plot_roc()` function from the
+    `ml_utils.classification` module, plot the ROC curve.
 
-    c\) Merge this data with the FAANG data using an outer join.
+    e\) Create a confusion matrix using the
+    `confusion_matrix_visual()` function from the
+    `ml_utils.classification` module.
 
-9.  Use the `transform()` method on the FAANG data to
-    represent all the values in terms of the first date in the data. To
-    do so, divide all the values for each ticker by the values for the
-    first date in the data for that ticker. This is referred to as an
-    **index**, and the data for the first date is the **base**
-    (<https://ec.europa.eu/eurostat/statistics-explained/index.php/Beginners:Statistical_concept_-_Index_and_base_year>).
-    When data is in this format, we can easily see growth over time.
-    Hint: `transform()` can take a function name.
+4.  Multiclass classification of white wine quality:
 
-10. The **European Centre for Disease Prevention and Control**
-    (**ECDC**) provides an open dataset on COVID-19 cases called *daily
-    number of new reported cases of COVID-19 by country worldwide*
-    (<https://www.ecdc.europa.eu/en/publications-data/download-todays-data-geographic-distribution-covid-19-cases-worldwide>).
-    This dataset is updated daily, but we will use a snapshot that
-    contains data through September 18, 2020. Complete the following
-    tasks to practice the skills you\'ve learned up to this point in the
-    course:
+    a\) Using the `data/winequality-white.csv` file, perform
+    some initial EDA on the white wine data. Be sure to look at how many
+    wines had a given quality score.
 
-    a\) Prepare the data:
+    b\) Build a pipeline to standardize the data and fit a multiclass
+    logistic regression model. Pass
+    `multi_class='multinomial'` and `max_iter=1000`
+    to the `LogisticRegression` constructor.
 
-    i\) Read in the data in the `covid19_cases.csv` file.
+    c\) Look at the classification report for your model.
 
-    ii\) Create a `date` column by parsing the
-    `dateRep` column into a datetime.
+    d\) Create a confusion matrix using the
+    `confusion_matrix_visual()` function from the
+    `ml_utils.classification` module. This will work as is for
+    multiclass classification problems.
 
-    iii\) Set the `date` column as the index.
+    e\) Extend the `plot_roc()` function to work for multiple
+    class labels. To do so, you will need to create a ROC curve for each
+    class label (which are quality scores here), where a true positive
+    is correctly predicting that quality score and a false positive is
+    predicting any other quality score. Note that `ml_utils`
+    has a function for this, but try to build your own implementation.
 
-    iv\) Use the `replace()` method to update all occurrences
-    of `United_States_of_America` and
-    `United_Kingdom` to `USA` and `UK`,
-    respectively.
+    f\) Extend the `plot_pr_curve()` function to work for
+    multiple class labels by following a similar method to part *e)*.
+    However, give each class its own subplot. Note that
+    `ml_utils` has a function for this, but try to build your
+    own implementation.
 
-    v\) Sort the index.
+5.  We have seen how easy the `scikit-learn` API is to
+    navigate, making it a cinch to change which algorithm we are using
+    for our model. Rebuild the red wine quality model that we created in
+    this lab using an SVM instead of logistic regression. We
+    haven\'t discussed this model, but you should still be able to use
+    it in `scikit-learn`. Check out the link in the *Further
+    reading* section to learn more about the algorithm. Some guidance
+    for this exercise is as follows:
 
-    b\) For the five countries with the most cases (cumulative), find
-    the day with the largest number of cases.
+    a\) You will need to use the `SVC` (support vector
+    classifier) class from `scikit-learn`, which can be found
+    at
+    <https://scikit-learn.org/stable/modules/generated/sklearn.svm.SVC.html>.
 
-    c\) Find the 7-day average change in COVID-19 cases for the last
-    week in the data for the five countries with the most cases.
+    b\) Use `C=5` as an argument to the `SVC`
+    constructor.
 
-    d\) Find the first date that each country other than China had
-    cases.
+    c\) Pass `probability=True` to the `SVC`
+    constructor to be able to use the `predict_proba()`
+    method.
 
-    e\) Rank the countries by cumulative cases using percentiles.
+    d\) Build a pipeline first using the `StandardScaler`
+    class and then the `SVC` class.
+
+    e\) Be sure to look at the classification report, precision-recall
+    curve, and confusion matrix for the model.

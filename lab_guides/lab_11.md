@@ -1,2261 +1,2061 @@
 <img align="right" src="./logo.png">
 
 
-Lab 11: Plotting with Seaborn and Customization Techniques
-================================================================
+*Lab 11*: Machine Learning Anomaly Detection
+=====================================================================
 
+
+For our final application lab, we will be revisiting **anomaly
+detection** on login attempts. Let\'s imagine we work for a company that
+launched its web application at the beginning of 2018. This web
+application has been collecting log events for all login attempts since
+it launched. We know the IP address that the attempt was made from, the
+result of the attempt, when it was made, and which username was entered.
+What we don\'t know is whether the attempt was made by one of our valid
+users or a nefarious party.
+
+Our company has been expanding and, since data breaches seem to be in
+the news every day, has created an information security department to
+monitor the traffic. The CEO saw our rule-based approach to identifying
+hackers from [*Lab
+8*],
+*Rule-Based Anomaly Detection*, and was intrigued by our initiative, but
+wants us to move beyond using rules and thresholds for such a vital
+task. We have been tasked with developing a machine learning model for
+anomaly detection of the login attempts on the web application.
+
+Since this will require a good amount of data, we have been given access
+to all the logs from January 1, 2018 through December 31, 2018. In
+addition, the newly formed **security operations center** (**SOC**) will
+be auditing all this traffic now and will indicate which time frames
+contain nefarious users based on their investigations. Since the SOC
+members are subject matter experts, this data will be exceptionally
+valuable to us. We will be able to use the labeled data they provide to
+build a supervised learning model for future use; however, it will take
+them some time to sift through all the traffic, so we should get started
+with some unsupervised learning until they have that ready for us.
 
 In this lab, we will cover the following topics:
 
--   Utilizing seaborn for more advanced plot types
--   Formatting plots with matplotlib
--   Customizing visualizations
-
-
-#### Pre-reqs:
-- Google Chrome (Recommended)
-
-#### Lab Environment
-Notebooks are ready to run. All packages have been installed. There is no requirement for any setup.
-
-All examples are present in `~/work/machine-learning-essentials-module1/lab_11` folder. 
+-   Exploring the simulated login attempts data
+-   Utilizing unsupervised methods of anomaly detection
+-   Implementing supervised anomaly detection
+-   Incorporating a feedback loop with online learning
 
 
 Lab materials
 =================
 
-We will be working with three datasets once again, all of which can be
-found in the `data/` directory. In the
-`fb_stock_prices_2018.csv` file, we have Facebook\'s stock
-price for all trading days in 2018. This data is the OHLC data (opening,
-high, low, and closing price), along with the volume traded. It was
-gathered using the `stock_analysis` package, which we will
-build in *Lab 12*. The stock market
-is closed on the weekends, so we only have data for the trading days.
 
-The `earthquakes.csv` file contains earthquake data pulled
-from the **United States Geological Survey** (**USGS**) API
-(<https://earthquake.usgs.gov/fdsnws/event/1/>) for September 18, 2018,
-through October 13, 2018. For each earthquake, we have the magnitude
-(the `mag` column), the scale it was measured on (the
-`magType` column), when (the `time` column), and
-where (the `place` column) it occurred; we also have the
-`parsed_place` column, which indicates the state or country in
-which the earthquake occurred. Other unnecessary columns have been
-removed.
+The materials for this lab can be found at
+<https://github.com/fenago/data-analysis-pandas/tree/master/lab_11>.
+In this lab, we will be revisiting attempted login data; however,
+the `simulate.py` script has been updated to allow additional
+command-line arguments. We won\'t be running the simulation this time,
+but be sure to take a look at the script and check out the process that
+was followed to generate the data files and create the database for this
+lab in the `0-simulating_the_data.ipynb` notebook. The
+`user_data/` directory contains the files used for this
+simulation, but we won\'t be using them directly in this lab.
 
-In the `covid19_cases.csv` file, we have an export from the
-*daily number of new reported cases of COVID-19 by country worldwide*
-dataset provided by the **European Centre for Disease Prevention and
-Control** (**ECDC**), which can be found at
-<https://www.ecdc.europa.eu/en/publications-data/download-todays-data-geographic-distribution-covid-19-cases-worldwide>.
-For scripted or automated collection of this data, the ECDC makes the
-current day\'s CSV file available via this link:
-<https://opendata.ecdc.europa.eu/covid19/casedistribution/csv>. The
-snapshot we will be using was collected on September 19, 2020 and
-contains the number of new COVID-19 cases per country from December 31,
-2019 through September 18, 2020 with partial data for September 19,
-2020. For this lab, we will look at the 8-month span from January
-18, 2020 through September 18, 2020.
+The simulated log data we will be using for this lab can be found in
+the `logs/` directory. The `logs_2018.csv` and
+`hackers_2018.csv` files are logs of login attempts and a
+record of hacker activity from all 2018 simulations, respectively. Files
+with the `hackers` prefix are treated as the labeled data we
+will receive from the SOC, so we will pretend we don\'t have them
+initially. The files with `2019` instead of `2018`
+in the name are the data from simulating the first quarter of 2019,
+rather than the full year. In addition, the CSV files have been written
+to the `logs.db` SQLite database. The `logs` table
+contains the data from `logs_2018.csv` and
+`logs_2019.csv`; the `attacks` table contains the
+data from `hackers_2018.csv` and `hackers_2019.csv`.
 
-Throughout this lab, we will be working through three Jupyter
-Notebooks. These are all numbered according to their order of use. We
-will begin exploring the capabilities of `seaborn` in the
-`1-introduction_to_seaborn.ipynb` notebook. Next, we will move
-on to the `2-formatting_plots.ipynb` notebook as we discuss
-formatting and labeling our plots. Finally, in the
-`3-customizing_visualizations.ipynb` notebook, we will learn
-how to add reference lines, shade regions, include annotations, and
-customize our visualizations. The text will prompt us when to switch
-notebooks.
+The parameters of the simulation vary per month, and in most months, the
+hackers are varying their IP addresses for each username they attempt to
+log in with. This will make our method from [*Lab
+8*],
+*Rule-Based Anomaly Detection*, useless because we were looking for IP
+addresses with many attempts and high failure rates. If the hackers now
+vary their IP addresses, we won\'t have many attempts associated with
+them. Therefore, we won\'t be able to flag them with that strategy, so
+we will have to find another way around this:
 
 
-In addition, we have two Python (`.py`) files that contain
-functions we will use throughout the lab:
-`viz.py` and `color_utils.py`. Let\'s
-get started by exploring `seaborn`.
-
-Utilizing seaborn for advanced plotting
-=======================================
+![](./images/Figure_11.1_B16834.jpg)
 
 
-As we saw in the previous lab,
-`pandas` provides implementations for most visualizations we
-would want to create; however, there is another library,
-`seaborn`, that provides additional
-functionality for more involved visualizations and makes creating
-visualizations with long-format data much easier than
-`pandas`. These also tend to look much nicer than standard
-visualizations generated by `matplotlib`.
+Figure 11.1 -- Simulation parameters
 
-For this section, we will be working with the
-`1-introduction_to_seaborn.ipynb` notebook. First, we must
-import `seaborn`, which is traditionally aliased as
-`sns`:
+Important note
+
+The `merge_logs.py` file contains the Python code to merge the
+logs from each of the individual simulations, and
+`run_simulations.sh` contains a Bash script for running the
+entire process. These are provided for completeness, but we don\'t need
+to use them (or worry about Bash).
+
+Our workflow for this lab has been split across several notebooks,
+which are all preceded by a number indicating their order. Before we
+have the labeled data, we will conduct some EDA in the
+`1-EDA_unlabeled_data.ipynb` notebook, and then move on to the
+`2-unsupervised_anomaly_detection.ipynb` notebook to try out
+some unsupervised anomaly detection methods. Once we have the labeled
+data, we will perform some additional EDA in the
+`3-EDA_labeled_data.ipynb` notebook, and then move on to the
+`4-supervised_anomaly_detection.ipynb` notebook for supervised
+methods. Finally, we will use the `5-online_learning.ipynb`
+notebook for our discussion of online learning. As usual, the text will
+indicate when it is time to switch between notebooks.
+
+
+Exploring the simulated login attempts data
+===========================================
+
+
+We don\'t have labeled data yet, but we can still
+examine the data to see whether there is something that stands out. This
+data is different from the data in [*Lab
+8*],
+*Rule-Based Anomaly Detection*. The hackers are smarter in this
+simulation---they don\'t always try as many users or stick with the same
+IP address every time. Let\'s see whether we can come up with some
+features that will help with anomaly detection by performing some EDA in
+the `1-EDA_unlabeled_data.ipynb` notebook.
+
+As usual, we begin with our imports. These will be the same for all
+notebooks, so it will be reproduced in this section only:
 
 ```
+>>> %matplotlib inline
+>>> import matplotlib.pyplot as plt
+>>> import numpy as np
+>>> import pandas as pd
 >>> import seaborn as sns
 ```
 
-
-Let\'s also import `numpy`, `matplotlib.pyplot`, and
-`pandas`, and then read in the CSV files for the Facebook
-stock prices and earthquake data:
+Next, we read in the 2018 logs from the
+`logs` table in the SQLite database:
 
 ```
->>> %matplotlib inline
->>> import matplotlib.pyplot as plt
->>> import numpy as np
->>> import pandas as pd 
->>> fb = pd.read_csv(
-...     'data/fb_stock_prices_2018.csv',
-...     index_col='date', 
-...     parse_dates=True
+>>> import sqlite3
+>>> with sqlite3.connect('logs/logs.db') as conn:
+...     logs_2018 = pd.read_sql(
+...         """
+...         SELECT * 
+...         FROM logs 
+...         WHERE
+...             datetime BETWEEN "2018-01-01" AND "2019-01-01";
+...         """, 
+...         conn, parse_dates=['datetime'],
+...         index_col='datetime'
+...     )
+```
+
+Tip
+
+If the SQLAlchemy package (<https://www.sqlalchemy.org/>) is installed
+in the environment we are working with (as is the
+case for us), we have the option of providing the database **uniform
+resource identifier** (**URI**) for the connection when calling
+`pd.read_sql()`, eliminating the need for the `with`
+statement. In our case, this would be
+`sqlite:///logs/logs.db`, where `sqlite` is the
+dialect and `logs/logs.db` is the path to the file. Note that
+there are three `/` characters in a row.
+
+Our data looks like this:
+
+
+![](./images/Figure_11.2_B16834.jpg)
+
+
+Figure 11.2 -- Login attempt logs for 2018
+
+Our data types will be the same as in [*Lab
+8*],
+*Rule-Based Anomaly Detection*, with the exception of the
+`success` column. SQLite doesn\'t support Boolean values, so
+this column was converted to the binary
+representation of its original form (stored as an integer) upon writing
+the data to the database:
+
+```
+>>> logs_2018.dtypes
+source_ip         object
+username          object
+success            int64
+failure_reason    object
+dtype: object
+```
+
+
+Using the `info()` method, we see that
+`failure_reason` is the only column with nulls. It is null
+when the attempt is successful. When looking to build a model, we should
+also pay attention to the memory usage of our
+data. Some models will require increasing the dimensionality of our
+data, which can quickly get too large to hold in memory:
+
+```
+>>> logs_2018.info()
+<class 'pandas.core.frame.DataFrame'>
+DatetimeIndex: 38700 entries, 
+2018-01-01 00:05:32.988414 to 2018-12-31 23:29:42.482166
+Data columns (total 4 columns):
+ #   Column          Non-Null Count  Dtype 
+---  ------          --------------  ----- 
+ 0   source_ip       38700 non-null  object
+ 1   username        38700 non-null  object
+ 2   success         38700 non-null  int64 
+ 3   failure_reason  11368 non-null  object
+dtypes: int64(1), object(3)
+memory usage: 1.5+ MB
+```
+
+Running the `describe()` method tells us that the most common
+reason for failure is providing the wrong password. We can also see that
+the number of unique usernames tried (1,797) is well over the number of
+users in our user base (133), indicating some suspicious activity. The
+most frequent IP address made 314 attempts, but since that isn\'t even
+one per day (remember we are looking at the full year of 2018), we
+can\'t make any assumptions:
+
+```
+>>> logs_2018.describe(include='all')
+           source_ip username      success       failure_reason
+count          38700    38700 38700.000000                11368
+unique          4956     1797          NaN                    3
+top   168.123.156.81   wlopez          NaN error_wrong_password
+freq             314      387          NaN                 6646
+mean             NaN      NaN     0.706253                  NaN
+std              NaN      NaN     0.455483                  NaN
+min              NaN      NaN     0.000000                  NaN
+25%              NaN      NaN     0.000000                  NaN
+50%              NaN      NaN     1.000000                  NaN
+75%              NaN      NaN     1.000000                  NaN
+max              NaN      NaN     1.000000                  NaN
+```
+
+We can look at the unique usernames with
+attempted logins per IP address, as in [*Lab
+8*],
+*Rule-Based Anomaly Detection*, which shows us that most of the IP
+addresses have a few usernames, but there is at least one with many:
+
+```
+>>> logs_2018.groupby('source_ip')\
+...     .agg(dict(username='nunique'))\
+...     .username.describe()
+count    4956.000000
+mean        1.146287
+std         1.916782
+min         1.000000
+25%         1.000000
+50%         1.000000
+75%         1.000000
+max       129.000000
+Name: username, dtype: float64
+```
+
+Let\'s calculate the metrics per IP address:
+
+```
+>>> pivot = logs_2018.pivot_table(
+...     values='success', index='source_ip', 
+...     columns=logs_2018.failure_reason.fillna('success'), 
+...     aggfunc='count', fill_value=0
 ... )
->>> quakes = pd.read_csv('data/earthquakes.csv')
+>>> pivot.insert(0, 'attempts', pivot.sum(axis=1))
+>>> pivot = pivot\
+...     .sort_values('attempts', ascending=False)\
+...     .assign(
+...         success_rate=lambda x: x.success / x.attempts,
+...         error_rate=lambda x: 1 - x.success_rate
+...     )
+>>> pivot.head()
 ```
 
-
-While `seaborn` offers alternatives to
-many of the plot types we covered in the previous lab, for the most
-part, we will only cover new types that `seaborn` makes
-possible and leave learning about the rest as an
-exercise. Additional available functions using the `seaborn`
-API can be found at <https://seaborn.pydata.org/api.html>.
+The top five IP addresses with the most attempts appear to be valid
+users since they have relatively high success rates:
 
 
-
-Categorical data
-----------------
-
-There was a devastating tsunami in Indonesia on
-September 28, 2018; it came after a 7.5 magnitude earthquake occurred
-near Palu, Indonesia
-(<https://www.livescience.com/63721-tsunami-earthquake-indonesia.html>).
-Let\'s create a visualization to understand which magnitude types are
-used in Indonesia, the range of magnitudes recorded, and how many of the
-earthquakes were accompanied by a tsunami. To do this, we need a way to
-plot relationships in which one of the variables is categorical
-(`magType`) and the other is numeric (`mag`).
-
-**Important note:**
-
-Information on the different magnitude types can be found at
-<https://www.usgs.gov/natural-hazards/earthquake-hazards/science/magnitude-types>.
+![](./images/Figure_11.3_B16834.jpg)
 
 
-Let\'s create this visualization with
-`stripplot()`. We pass the subset of earthquakes occurring in
-Indonesia to the `data` parameter, and specify that we want to
-put `magType` on the *x*-axis (`x`), magnitudes on
-the *y*-axis (`y`), and color the points by whether the
-earthquake was accompanied by a tsunami (`hue`):
+Figure 11.3 -- Metrics per IP address
+
+Let\'s use this dataframe to plot successes
+versus attempts per IP address to see whether there is a pattern we can
+exploit to separate valid activity from malicious activity:
 
 ```
->>> sns.stripplot(
-...     x='magType', 
-...     y='mag', 
-...     hue='tsunami',
-...     data=quakes.query('parsed_place == "Indonesia"')
-... )
-```
-
-
-Using the resulting plot, we can see that the earthquake in question is
-the highest orange point in the `mww` column (don\'t forget to
-call `plt.show()` if not using the Jupyter Notebook provided):
-
-
-![](./images/fig_6.1.jpg)
-
-
-
-For the most part, the tsunamis occurred with higher magnitude
-earthquakes, as we would expect; however, due to the high concentration
-of points at lower magnitudes, we can\'t really see all the points. We
-could try to adjust the `jitter` argument, which controls how
-much random noise to add to the point in an attempt to reduce overlaps,
-or the `alpha` argument for
-transparency, as we did in the previous lab; fortunately, there is
-another function, `swarmplot()`, that will reduce the overlap
-as much as possible, so we will use that instead:
-
-```
->>> sns.swarmplot(
-...     x='magType', 
-...     y='mag', 
-...     hue='tsunami',
-...     data=quakes.query('parsed_place == "Indonesia"'),
-...     size=3.5 # point size
-... )
-```
-
-
-The **swarm plot** (or bee swarm plot) also has
-the bonus of giving us a glimpse of what the distribution might be. We
-can now see many more earthquakes in the lower section of the
-`mb` column:
-
-
-![](./images/fig_6.2.jpg)
-
-
-
-In the *Plotting with pandas* section in the previous lab, when we
-discussed how to visualize distributions, we discussed the box plot.
-Seaborn provides an enhanced box plot for large datasets,
-which shows additional quantiles for more
-information on the shape of the distribution, particularly in the tails.
-Let\'s use the enhanced box plot to compare earthquake magnitudes across
-different magnitude types:
-
-```
->>> sns.boxenplot(
-...     x='magType', y='mag', data=quakes[['magType', 'mag']]
-... )
->>> plt.title('Comparing earthquake magnitude by magType')
-```
-
-
-This results in the following plot:
-
-
-![](./images/fig_6.3.jpg)
-
-
-
-**Tip:** 
-
-The enhanced box plot was introduced in the paper *Letter-value plots:
-Boxplots for large data,* by Heike Hofmann, Karen Kafadar, and Hadley
-Wickham, which can be found at
-<https://vita.had.co.nz/papers/letter-value-plot.html>.
-
-Box plots are great for visualizing the quantiles of our data, but we
-lose information about the distribution. As we saw, an enhanced box plot
-is one way to address this---another strategy is to use a
-violin plot, which combines a kernel density
-estimate (estimation of the underlying distribution) and a box plot:
-
-```
->>> fig, axes = plt.subplots(figsize=(10, 5))
->>> sns.violinplot(
-...     x='magType', y='mag', data=quakes[['magType', 'mag']], 
-...     ax=axes, scale='width' # all violins have same width
-... )
->>> plt.title('Comparing earthquake magnitude by magType')
-```
-
-
-The box plot portion runs through the center of
-each violin plot; the **kernel density estimate** (**KDE**) is then
-drawn on both sides using the box plot as its *x*-axis. We can read the
-KDE from either side of the box plot since it is symmetrical:
-
-
-![](./images/fig_6.4.jpg)
-
-
-
-The `seaborn` documentation also lists out the plotting
-functions by the type of data being plotted; the full offering of
-categorical plots is available at
-<https://seaborn.pydata.org/api.html#categorical-plots>. Be sure to
-check out the `countplot()` and `barplot()`
-functions for variations on the bar plots we
-created with `pandas` in the previous lab.
-
-
-
-Correlations and heatmaps
--------------------------
-
-We will make a heatmap of the correlations between the OHLC stock prices, the log of
-volume traded, and the daily difference between
-the highest and lowest prices (`max_abs_change`); however,
-this time, we will use `seaborn`, which gives us the
-`heatmap()` function for an easier way to produce this
-visualization:
-
-```
->>> sns.heatmap(
-...     fb.sort_index().assign(
-...         log_volume=np.log(fb.volume), 
-...         max_abs_change=fb.high - fb.low
-...     ).corr(), 
-...     annot=True, 
-...     center=0, 
-...     vmin=-1, 
-...     vmax=1
+>>> pivot.plot(
+...     kind='scatter', x='attempts', y='success', 
+...     title='successes vs. attempts by IP address',
+...     alpha=0.25
 ... )
 ```
 
-
-**Tip:** 
-
-When using `seaborn`, we can still use functions from
-`matplotlib`, such as `plt.savefig()` and
-`plt.tight_layout()`. Note that if there are issues with
-`plt.tight_layout()`, pass `bbox_inches='tight'` to
-`plt.savefig()` instead.
-
-We pass in `center=0` so that `seaborn` puts values
-of `0` (no correlation) at the center of the colormap it uses.
-In order to set the bounds of the color scale to that of the correlation
-coefficient, we need to provide `vmin=-1` and
-`vmax=1` as well. Notice that we also passed in
-`annot=True` to write the correlation coefficients in each
-box---we get the benefit of the numerical data and the visual data all
-in one plot with a single function call:
+There appear to be a few points at the bottom that don\'t belong, but
+notice the scales on the axes don\'t perfectly line up. The majority of
+the points are along a line that is slightly less than a 1:1
+relationship of attempts to successes. Recall that this lab\'s
+simulation is more realistic than the one we used in [*Lab
+8*],
+*Rule-Based Anomaly Detection*; as such, if we compare *Figure 8.11* to
+this plot, we can observe that it is much more difficult to separate
+valid from malicious activity here:
 
 
-![](./images/fig_6.5.jpg)
+![](./images/Figure_11.4_B16834.jpg)
 
 
-
-Seaborn also provides us with an alternative to
-the `scatter_matrix()` function provided in the
-`pandas.plotting` module, called `pairplot()`. We
-can use this to see the correlations between the
-columns in the Facebook data as scatter plots
-instead of the heatmap:
-
-```
->>> sns.pairplot(fb)
-```
+Remember, this is a binary classification problem where we want to find
+a way to distinguish between valid user and attacker login activity. We
+want to build a model that will learn some
+decision boundary that separates valid users from attackers. Since valid
+users have a higher probability of entering their password correctly,
+the relationship between attempts and successes will be closer to 1:1
+compared to the attackers. Therefore, we may imagine the separation
+boundary looking something like this:
 
 
-This result makes it easy to understand the near-perfect positive
-correlation between the OHLC columns shown in the heatmap, while also
-showing us histograms for each column along the diagonal:
+![](./images/Figure_11.5_B16834.jpg)
 
 
-![](./images/fig_6.6.jpg)
+Figure 11.5 -- A possible decision boundary
 
-
-
-Facebook\'s performance in the latter half of 2018
-was markedly worse than in the first half, so we
-may be interested to see how the distribution of the data changed each
-quarter of the year. As with the
-`pandas.plotting.scatter_matrix()` function, we can specify
-what to do along the diagonal with the `diag_kind` argument;
-however, unlike `pandas`, we can easily color everything based
-on other data with the `hue` argument. To do so, we just add
-the `quarter` column and then provide it to the
-`hue` argument:
+Now, the question is, which of those two groups is the attackers? Well,
+if more of the IP addresses are the attackers (since they use different
+IP addresses for each username they attempt), then the valid users would
+be considered outliers, and the attackers would be considered
+\"inliers\" with a box plot. Let\'s create one to see if that is what is
+happening:
 
 ```
->>> sns.pairplot(
-...     fb.assign(quarter=lambda x: x.index.quarter), 
-...     diag_kind='kde', hue='quarter'
+>>> pivot[['attempts', 'success']].plot(
+...     kind='box', subplots=True, figsize=(10, 3), 
+...     title='stats per IP address'
 ... )
 ```
 
+Indeed, this appears to be what is happening. Our
+valid users have more successes than the attackers because they only use
+1-3 different IP addresses:
 
-We can now see how the distributions of the OHLC
-columns had lower standard deviations (and,
-subsequently, lower variances) in the first quarter and how the stock
-price lost a lot of ground in the fourth quarter (the distribution
-shifts to the left):
 
+![](./images/Figure_11.6_B16834.jpg)
 
-![](./images/fig_6.7.jpg)
 
+Figure 11.6 -- Looking for outliers using metrics per IP address
 
-
-**Tip:** 
-
-We can also pass `kind='reg'` to
-`pairplot()` to show regression lines.
-
-If we only want to compare two variables, we can use
-`jointplot()`, which will give us a scatter plot along with
-the distribution of each variable along the side. Let\'s look once again
-at how the log of volume traded correlates with the difference between
-the daily high and low prices in Facebook stock:
-
-```
->>> sns.jointplot(
-...     x='log_volume', 
-...     y='max_abs_change', 
-...     data=fb.assign(
-...         log_volume=np.log(fb.volume), 
-...         max_abs_change=fb.high - fb.low
-...     )
-... )
-```
-
-
-Using the default value for the `kind` argument, we get
-histograms for the distributions and a plain scatter plot in the center:
-
-
-![](./images/fig_6.8.jpg)
-
-
-
-Seaborn gives us plenty of alternatives for the
-`kind` argument. For example, we can use hexbins because there
-is a significant overlap when we use the scatter
-plot:
-
-```
->>> sns.jointplot(
-...     x='log_volume', 
-...     y='max_abs_change', 
-...     kind='hex',
-...     data=fb.assign(
-...         log_volume=np.log(fb.volume), 
-...         max_abs_change=fb.high - fb.low
-...     )
-... )
-```
-
-
-We can now see the large concentration of points in the lower-left
-corner:
-
-
-![](./images/fig_6.9.jpg)
-
-
-
-Another way of viewing the concentration
-of values is to use `kind='kde'`, which
-gives us a **contour plot** to represent the joint
-density estimate along with KDEs for each of the variables:
-
-```
->>> sns.jointplot(
-...     x='log_volume', 
-...     y='max_abs_change', 
-...     kind='kde',
-...     data=fb.assign(
-...         log_volume=np.log(fb.volume), 
-...         max_abs_change=fb.high - fb.low
-...     )
-... )
-```
-
-
-Each curve in the contour plot contains points of
-a given density:
-
-
-![](./images/fig_6.10.jpg)
-
-
-
-Furthermore, we can plot a regression in the
-center and get KDEs in addition to histograms along the sides:
-
-```
->>> sns.jointplot(
-...     x='log_volume', 
-...     y='max_abs_change', 
-...     kind='reg',
-...     data=fb.assign(
-...         log_volume=np.log(fb.volume), 
-...         max_abs_change=fb.high - fb.low
-...     )
-... )
-```
-
-
-This results in a linear regression line being
-drawn through the scatter plot, along with a
-confidence band surrounding the line in a lighter color:
-
-
-![](./images/fig_6.11.jpg)
-
-
-
-The relationship appears to be linear, but we
-should look at the **residuals** to check. Residuals are the observed
-values minus the values predicted using the regression line. We can look
-directly at the residuals that would result from the previous regression
-with `kind='resid'`:
-
-```
->>> sns.jointplot(
-...     x='log_volume', 
-...     y='max_abs_change', 
-...     kind='resid',
-...     data=fb.assign(
-...         log_volume=np.log(fb.volume), 
-...         max_abs_change=fb.high - fb.low
-...     )
-... )
-# update y-axis label (discussed next section)
->>> plt.ylabel('residuals')
-```
-
-
-Notice that the residuals appear to be getting
-further away from zero at higher quantities of volume traded, which
-could mean this isn\'t the right way to model this
-relationship:
-
-
-![](./images/fig_6.12.jpg)
-
-
-
-We just saw that we can use `jointplot()` to get a regression
-plot or a residuals plot; naturally, `seaborn` exposes
-functions to make these directly without the overhead of creating the
-entire joint plot. Let\'s discuss those next.
-
-
-
-Regression plots
-----------------
-
-The `regplot()` function will calculate a regression line and
-plot it, while the `residplot()` function will calculate the
-regression and plot only the residuals. We can write a function to
-combine these for us, but first, some setup.
-
-Our function will plot all permutations of any two columns (as opposed
-to combinations; order matters with permutations, for example,
-`(open, close)` is not equivalent to
-`(close, open)`). This allows us to see each column as the
-regressor and as the dependent variable; since we don\'t know the
-direction of the relationship, we let the viewer decide after calling
-the function. This generates many subplots, so we will create a new
-dataframe with just a few columns from our Facebook data.
-
-We\'ll be looking at the logarithm of the volume traded
-(`log_volume`) and the daily difference between the highest
-and lowest price of Facebook stock (`max_abs_change`). Let\'s
-use `assign()` to create these new columns and save them in a
-new dataframe called `fb_reg_data`:
-
-```
->>> fb_reg_data = fb.assign(
-...     log_volume=np.log(fb.volume), 
-...     max_abs_change=fb.high - fb.low
-... ).iloc[:,-2:]
-```
-
-
-Next, we need to import `itertools`, which is part of the
-Python standard library
-(<https://docs.python.org/3/library/itertools.html>). When writing
-plotting functions, `itertools` can be extremely helpful; it
-makes it very easy to create efficient iterators for things such as
-permutations, combinations, and infinite cycles or repeats:
-
-```
->>> import itertools
-```
-
-
-**Iterables** are objects that can be iterated
-over. When we start a loop, an **iterator** is created from the
-iterable. At each iteration, the iterator provides
-its next value, until it is exhausted; this means that once we complete
-a single iteration through all its items, there is nothing left, and it
-can\'t be reused. Iterators are iterables, but not all iterables are
-iterators. Iterables that aren\'t iterators can be used repeatedly.
-
-The iterators we get back when using `itertools` can only be
-used once through:
-
-```
->>> iterator = itertools.repeat("I'm an iterator", 1)
->>> for i in iterator:
-...     print(f'-->{i}')
--->I'm an iterator
->>> print(
-...     'This printed once because the iterator '
-...     'has been exhausted'
-... )
-This printed once because the iterator has been exhausted
->>> for i in iterator:
-...     print(f'-->{i}')
-```
-
-
-A list, on the other hand, is an iterable; we can
-write something that loops over all the elements in the list, and we
-will still have a list for later reuse:
-
-```
->>> iterable = list(itertools.repeat("I'm an iterable", 1))
->>> for i in iterable:
-...     print(f'-->{i}')
--->I'm an iterable
->>> print('This prints again because it\'s an iterable:')
-This prints again because it's an iterable:
->>> for i in iterable:
-...     print(f'-->{i}')
--->I'm an iterable
-```
-
-
-Now that we have some background on `itertools` and iterators,
-let\'s write the function for our regression and
-residuals permutation plots:
-
-```
-def reg_resid_plots(data):
-    """
-    Using `seaborn`, plot the regression and residuals plots 
-    side-by-side for every permutation of 2 columns in data.
-    Parameters:
-        - data: A `pandas.DataFrame` object
-    Returns:
-        A matplotlib `Axes` object.
-    """
-    num_cols = data.shape[1]
-    permutation_count = num_cols * (num_cols - 1)
-    fig, ax = \
-        plt.subplots(permutation_count, 2, figsize=(15, 8))
-    for (x, y), axes, color in zip(
-        itertools.permutations(data.columns, 2), 
-        ax,
-        itertools.cycle(['royalblue', 'darkorange'])
-    ):
-        for subplot, func in zip(
-            axes, (sns.regplot, sns.residplot)
-        ):
-            func(x=x, y=y, data=data, ax=subplot, color=color)
-            if func == sns.residplot:
-                subplot.set_ylabel('residuals')
-    return fig.axes
-```
-
-
-In this function, we can see that all the material
-covered so far in this lab and from the previous lab is coming
-together; we calculate how many subplots we need, and since we will have
-two plots for each permutation, we just need the number of permutations
-to determine the row count. We take advantage of the `zip()`
-function, which gives us values from multiple iterables at once in
-tuples, and tuple unpacking to easily iterate over the permutation
-tuples and the 2D NumPy array of `Axes` objects. Take some
-time to make sure you understand what is going on here; there are also
-resources on `zip()` and tuple unpacking in the *Further
-reading* section at the end of this lab.
-
-**Important note:**
-
-If we provide different length iterables to `zip()`, we will
-only get a number of tuples equal to the shortest length. For this
-reason, we can use infinite iterators, such as those we get when using
-`itertools.repeat()`, which repeats the same value infinitely
-(when we don\'t specify the number of times to repeat the value), and
-`itertools.cycle()`, which cycles between all the values
-provided infinitely.
-
-Calling our function is effortless, with only a single parameter:
-
-```
->>> from viz import reg_resid_plots
->>> reg_resid_plots(fb_reg_data)
-```
-
-
-The first row of subsets is what we saw earlier with the joint plots,
-and the second row is the regression when flipping the `x` and
-`y` variables:
-
-
-![](./images/fig_6.13.jpg)
-
-
-
-**Tip:** 
-
-The `regplot()` function supports polynomial and logistic
-regression through the `order` and `logistic`
-parameters, respectively.
-
-Seaborn also makes it easy to plot regressions
-across different subsets of our data with `lmplot()`. We can
-split our regression plots with `hue`, `col`, and
-`row`, which will color by values in a given column, make a
-new column for each value, and make a new row for each value,
-respectively.
-
-We saw that Facebook\'s performance was different across each quarter of
-the year, so let\'s calculate a regression per quarter with the Facebook
-stock data, using the volume traded and the daily difference between the
-highest and lowest price, to see whether this relationship also changes:
-
-```
->>> sns.lmplot(
-...     x='log_volume', 
-...     y='max_abs_change', 
-...     col='quarter',
-...     data=fb.assign(
-...         log_volume=np.log(fb.volume), 
-...         max_abs_change=fb.high - fb.low,
-...         quarter=lambda x: x.index.quarter
-...     )
-... )
-```
-
-
-Notice that the regression line in the fourth
-quarter has a much steeper slope than previous quarters:
-
-
-![](./images/fig_6.14.jpg)
-
-
-
-Note that the result of running `lmplot()` is a
-`FacetGrid` object, which is a powerful feature of
-`seaborn`. Let\'s now discuss how we can make these directly
-with any plot inside.
-
-
-
-Faceting
---------
-
-Faceting allows us to plot subsets (facets) of our
-data across subplots. We already saw a few as a
-result of some `seaborn` functions; however, we can easily
-make them for ourselves for use with any plotting function. Let\'s
-create a visualization that will allow us to compare the distributions
-of earthquake magnitudes in Indonesia and Papua New Guinea depending on
-whether there was a tsunami.
-
-First, we create a `FacetGrid` object with the data we will be
-using and define how it will be subset with the `row` and
-`col` arguments:
-
-```
->>> g = sns.FacetGrid(
-...     quakes.query(
-...         'parsed_place.isin('
-...         '["Indonesia", "Papua New Guinea"]) '
-...         'and magType == "mb"'
-...     ),   
-...     row='tsunami',
-...     col='parsed_place',
-...     height=4
-... )
-```
-
-
-Then, we use the `FacetGrid.map()` method to run a plotting
-function on each of the subsets, passing along any necessary arguments.
-We will make histograms with KDEs for the location and tsunami data
-subsets using the `sns.histplot()` function:
-
-```
->>> g = g.map(sns.histplot, 'mag', kde=True)
-```
-
-
-For both locations, we can see that tsunamis occurred when the
-earthquake magnitude was 5.0 or greater:
-
-
-![](./images/fig_6.15.jpg)
-
-
-
-This concludes our discussion of the plotting
-capabilities of `seaborn`; however, I encourage you to check
-out the API (<https://seaborn.pydata.org/api.html>) to see additional
-functionality. Also, be sure to consult the *Choosing the appropriate
-visualization* section in the *Appendix* as a reference when looking to
-plot some data.
-
-
-Formatting plots with matplotlib
-================================
-
-
-A big part of making our visualizations
-presentable is choosing the right plot type and having them well labeled
-so they are easy to interpret. By carefully tuning
-the final appearance of our visualizations, we make them easier to read
-and understand.
-
-Let\'s now move to the `2-formatting_plots.ipynb` notebook,
-run the setup code to import the packages we need,
-and read in the Facebook stock data and COVID-19 daily new cases data:
-
-```
->>> %matplotlib inline
->>> import matplotlib.pyplot as plt
->>> import numpy as np
->>> import pandas as pd 
->>> fb = pd.read_csv(
-...     'data/fb_stock_prices_2018.csv', 
-...     index_col='date', 
-...     parse_dates=True
-... ) 
->>> covid = pd.read_csv('data/covid19_cases.csv').assign(
-...     date=lambda x: \
-...         pd.to_datetime(x.dateRep, format='%d/%m/%Y')
-... ).set_index('date').replace(
-...     'United_States_of_America', 'USA'
-... ).sort_index()['2020-01-18':'2020-09-18']
-```
-
-
-In the next few sections, we will discuss how to add titles, axis
-labels, and legends to our plots, as well as how to customize the axes.
-Note that everything in this section needs to be called before running
-`plt.show()` or within the same Jupyter Notebook cell if using
-the `%matplotlib inline` magic command.
-
-
-
-Titles and labels
------------------
-
-Some of the visualizations we have created thus
-far didn\'t have titles or axis labels. We know what is going on in the
-figure, but if we were to present them to others,
-there could be some confusion. It\'s good practice to be explicit with
-our labels and titles.
-
-We saw that, when plotting with `pandas`, we could add a title
-by passing the `title` argument to the `plot()`
-method, but we can also do this with `matplotlib` using
-`plt.title()`. Note that we can pass
-`x`/`y` values to `plt.title()` to control
-the placement of our text. We can also change the font and its size.
-Labeling our axes is just as easy; we can use `plt.xlabel()`
-and `plt.ylabel()`. Let\'s plot the Facebook closing price and
-label everything using `matplotlib`:
-
-```
->>> fb.close.plot()
->>> plt.title('FB Closing Price')
->>> plt.xlabel('date')
->>> plt.ylabel('price ($)')
-```
-
-
-This results in the following plot:
-
-
-![](./images/fig_6.16.jpg)
-
-
-
-When working with subplots, we have to take a different approach. To see
-this firsthand, let\'s make subplots of Facebook
-stock\'s OHLC data and use `plt.title()` to give the entire
-plot a title, along with `plt.ylabel()`
-to give each subplot\'s *y*-axis a label:
-
-```
->>> fb.iloc[:,:4]\
-...     .plot(subplots=True, layout=(2, 2), figsize=(12, 5))
->>> plt.title('Facebook 2018 Stock Data')
->>> plt.ylabel('price ($)')
-```
-
-
-Using `plt.title()` puts the title on the last subplot,
-instead of being the title for the plots as a whole, as we intended. The
-same thing happens to the *y*-axis label:
-
-
-![](./images/fig_6.17.jpg)
-
-
-
-In the case of subplots, we want to give the entire figure a title;
-therefore, we use `plt.suptitle()` instead. Conversely, we
-want to give each subplot a *y*-axis label, so we use the
-`set_ylabel()` method on each of the `Axes` objects
-returned by the call to `plot()`. Note that the
-`Axes` objects are returned in a NumPy array of the same
-dimensions as the subplot layout, so for easier iteration, we call
-`flatten()`:
-
-```
->>> axes = fb.iloc[:,:4]\
-...     .plot(subplots=True, layout=(2, 2), figsize=(12, 5))
->>> plt.suptitle('Facebook 2018 Stock Data')
->>> for ax in axes.flatten():
-...     ax.set_ylabel('price ($)')
-```
-
-
-This results in a title for the plot as a whole
-and *y*-axis labels for each of the subplots:
-
-
-![](./images/fig_6.18.jpg)
-
-
-
-Note that the `Figure` class also has a `suptitle()`
-method and that the `Axes` class\'s `set()` method
-lets us label the axes, title the plot, and much more in a single call,
-for example, `set(xlabel='…', ylabel='…', title='…', …)`.
-Depending on what we are trying to do, we may need to call methods on
-`Figure` or `Axes` objects directly, so it\'s
-important to be aware of them.
-
-
-
-Legends
--------
-
-Matplotlib makes it possible to control many
-aspects of the legend through the `plt.legend()` function and
-the `Axes.legend()` method. For example, we can specify the
-legend\'s location and format how the legend looks, including
-customizing the fonts, colors, and much more. Both the
-`plt.legend()` function and the `Axes.legend()`
-method can also be used to show a legend when the plot doesn\'t have one
-initially. Here is a sampling of some commonly
-used parameters:
-
-
-![](./images/fig_6.19.jpg)
-
-
-
-The legend will use the label of each object that was plotted. If we
-don\'t want something to show up, we can make its label an empty string.
-However, if we simply want to alter how something shows up, we can pass
-its display name through the `label` argument. Let\'s plot
-Facebook stock\'s closing price and the 20-day moving average, using the
-`label` argument to provide a descriptive name for the legend:
-
-```
->>> fb.assign(
-...     ma=lambda x: x.close.rolling(20).mean()
-... ).plot(
-...     y=['close', 'ma'], 
-...     title='FB closing price in 2018',
-...     label=['closing price', '20D moving average'],
-...     style=['-', '--']
-... )
->>> plt.legend(loc='lower left')
->>> plt.ylabel('price ($)')
-```
-
-
-By default, `matplotlib` tries to find the best location for
-the plot, but sometimes it covers up parts of the plot as in this case.
-Therefore, we chose to place the legend in the lower-left corner of
-the plot. Note that the text in the legend is what
-we provided in the `label` argument to `plot()`:
-
-
-![](./images/fig_6.20.jpg)
-
-
-
-Notice that we passed a string to the `loc` argument to
-specify the legend location; we also have the option of passing the code
-as an integer or a tuple for the `(x, y)` coordinates to draw
-the lower-left corner of the legend box. The following table contains
-the possible location strings:
-
-
-![](./images/fig_6.21.jpg)
-
-
-
-Let\'s now take a look at styling the legend with
-the `framealpha`, `ncol`, and `title`
-arguments. We will plot the percentage of the world\'s daily new
-COVID-19 cases that occurred in Brazil, China, Italy, Spain, and the USA
-over the 8-month period from January 18, 2020 through September 18,
-2020. In addition, we will remove the top and right spines of the plot
-to make it look cleaner:
-
-```
->>> new_cases = covid.reset_index().pivot(
-...     index='date',
-...     columns='countriesAndTerritories',
-...     values='cases'
-... ).fillna(0)
->>> pct_new_cases = new_cases.apply(
-...     lambda x: x / new_cases.apply('sum', axis=1), axis=0
-... )[
-...     ['Italy', 'China', 'Spain', 'USA', 'India', 'Brazil']
-... ].sort_index(axis=1).fillna(0)
->>> ax = pct_new_cases.plot(
-...     figsize=(12, 7),
-...     style=['-'] * 3 + ['--', ':', '-.'],
-...     title='Percentage of the World\'s New COVID-19 Cases'
-...           '\n(source: ECDC)'
-... )
->>> ax.legend(title='Country', framealpha=0.5, ncol=2)
->>> ax.set_xlabel('')
->>> ax.set_ylabel('percentage of the world\'s COVID-19 cases')
->>> for spine in ['top', 'right']:
-...     ax.spines[spine].set_visible(False)
-```
-
-
-Our legend is neatly arranged in two columns and
-contains a title. We also increased the transparency of the legend\'s
-border:
-
-
-![](./images/fig_6.22.jpg)
-
-
-
-**Tip:** 
-
-Don\'t get overwhelmed trying to memorize all of
-the available options. It is easier if we don\'t try to learn every
-possible customization, but rather look up the functionality that
-matches what we have in mind for our visualization when needed.
-
-
-
-Formatting axes
----------------
-
-Back in *Lab 1*, we discussed how our axis limits can
-make for misleading plots if we aren\'t careful.
-We have the option of passing this as a tuple to the
-`xlim`/`ylim` arguments when using the
-`plot()` method from `pandas`. Alternatively, with
-`matplotlib`, we can adjust the limits of each axis with the
-`plt.xlim()`/`plt.ylim()` function or the
-`set_xlim()`/`set_ylim()` method on an
-`Axes` object. We pass values for the minimum and maximum,
-separately; if we want to keep what was automatically generated, we can
-pass in `None`. Let\'s modify the previous plot of the
-percentage of the world\'s daily new COVID-19 cases per country to start
-the *y*-axis at zero:
-
-```
->>> ax = pct_new_cases.plot(
-...     figsize=(12, 7),
-...     style=['-'] * 3 + ['--', ':', '-.'],
-...     title='Percentage of the World\'s New COVID-19 Cases'
-...           '\n(source: ECDC)'
-... )
->>> ax.legend(framealpha=0.5, ncol=2)
->>> ax.set_xlabel('')
->>> ax.set_ylabel('percentage of the world\'s COVID-19 cases')
->>> ax.set_ylim(0, None)
->>> for spine in ['top', 'right']:
-...     ax.spines[spine].set_visible(False)
-```
-
-
-Notice that the *y*-axis now begins at zero:
-
-
-![](./images/fig_6.23.jpg)
-
-
-
-If we instead want to change the scale of the axis, we can use
-`plt.xscale()`/`plt.yscale()` and pass the type of
-scale we want. So, `plt.yscale('log')`, for example, will use
-the log scale for the *y*-axis; we saw how to do this with
-`pandas` in the previous lab.
-
-We can also control which tick marks show up and what they are labeled
-as by passing in the tick locations and labels to
-`plt.xticks()` or `plt.yticks()`. Note that we can
-also call these functions to obtain the tick locations and labels. For
-example, since our data starts and ends on the 18[th] of
-the month, let\'s move the tick marks in the previous plot to the
-18[th] of each month and then label the ticks accordingly:
-
-```
->>> ax = pct_new_cases.plot(
-...     figsize=(12, 7),
-...     style=['-'] * 3 + ['--', ':', '-.'],
-...     title='Percentage of the World\'s New COVID-19 Cases'
-...           '\n(source: ECDC)'
-... )
->>> tick_locs = covid.index[covid.index.day == 18].unique()
->>> tick_labels = \
-...     [loc.strftime('%b %d\n%Y') for loc in tick_locs]
->>> plt.xticks(tick_locs, tick_labels)
->>> ax.legend(framealpha=0.5, ncol=2)
->>> ax.set_xlabel('')
->>> ax.set_ylabel('percentage of the world\'s COVID-19 cases')
->>> ax.set_ylim(0, None)
->>> for spine in ['top', 'right']:
-...     ax.spines[spine].set_visible(False)
-```
-
-
-After moving the tick marks, we have a tick label
-on the first data point in the plot (January 18, 2020) and on the last
-(September 18, 2020):
-
-
-![](./images/fig_6.24.jpg)
-
-
-
-We are currently representing the percentages as
-decimals, but we may wish to format the labels to be written using the
-percent sign. Note that there is no need to use the
-`plt.yticks()` function to do so; instead, we can use the
-`PercentFormatter` class from the
-`matplotlib.ticker` module:
-
-```
->>> from matplotlib.ticker import PercentFormatter
->>> ax = pct_new_cases.plot(
-...     figsize=(12, 7),
-...     style=['-'] * 3 + ['--', ':', '-.'],
-...     title='Percentage of the World\'s New COVID-19 Cases'
-...           '\n(source: ECDC)'
-... )
->>> tick_locs = covid.index[covid.index.day == 18].unique()
->>> tick_labels = \
-...     [loc.strftime('%b %d\n%Y') for loc in tick_locs]
->>> plt.xticks(tick_locs, tick_labels)
->>> ax.legend(framealpha=0.5, ncol=2)
->>> ax.set_xlabel('')
->>> ax.set_ylabel('percentage of the world\'s COVID-19 cases')
->>> ax.set_ylim(0, None)
->>> ax.yaxis.set_major_formatter(PercentFormatter(xmax=1))
->>> for spine in ['top', 'right']:
-...     ax.spines[spine].set_visible(False)
-```
-
-
-By specifying `xmax=1`, we are
-indicating that our values should be divided by 1 (since they are
-already percentages), before multiplying by 100 and appending the
-percent sign. This results in percentages along the *y*-axis:
-
-
-![](./images/fig_6.25.jpg)
-
-
-
-Another useful formatter is the
-`EngFormatter` class, which will automatically handle
-formatting numbers as thousands, millions, and so on using **engineering
-notation**. Let\'s use this to plot the cumulative COVID-19 cases
-per continent in millions:
-
-```
->>> from matplotlib.ticker import EngFormatter
->>> ax = covid.query('continentExp != "Other"').groupby([
-...     'continentExp', pd.Grouper(freq='1D')
-... ]).cases.sum().unstack(0).apply('cumsum').plot(
-...     style=['-', '-', '--', ':', '-.'],
-...     title='Cumulative COVID-19 Cases per Continent'
-...           '\n(source: ECDC)'
-... )
->>> ax.legend(title='', loc='center left')
->>> ax.set(xlabel='', ylabel='total COVID-19 cases')
->>> ax.yaxis.set_major_formatter(EngFormatter())
->>> for spine in ['top', 'right']:
-...     ax.spines[spine].set_visible(False)
-```
-
-
-Notice that we didn\'t need to divide the
-cumulative case counts by 1 million to get these numbers---the
-`EngFormatter` object that we passed to
-`set_major_formatter()` automatically figured out that it
-should use millions (M) based on the data:
-
-
-![](./images/fig_6.26.jpg)
-
-
-
-Both the `PercentFormatter` and `EngFormatter`
-classes format the tick labels, but sometimes we want to change the
-location of the ticks rather than format them. One way of doing so is
-with the `MultipleLocator` class, which makes it easy for us
-to place the ticks at multiples of a number of our choosing. To
-illustrate how we could use this, let\'s take a look at the daily new
-COVID-19 cases in New Zealand from April 18, 2020 through September 18,
-2020:
-
-```
->>> ax = new_cases.New_Zealand['2020-04-18':'2020-09-18'].plot(
-...     title='Daily new COVID-19 cases in New Zealand'
-...           '\n(source: ECDC)'
-... )
->>> ax.set(xlabel='', ylabel='new COVID-19 cases')
->>> for spine in ['top', 'right']:
-...     ax.spines[spine].set_visible(False)
-```
-
-
-Without us intervening with the tick locations, `matplotlib`
-is showing the ticks in increments of 2.5. We know
-that there is no such thing as half of a case, so it makes more sense to
-show this data with only integer ticks:
-
-
-![](./images/fig_6.27.jpg)
-
-
-
-Let\'s fix this by using the `MultipleLocator` class. Here, we
-aren\'t formatting the axis labels, but rather controlling which ones
-are shown; for this reason, we have to call the
-`set_major_locator()` method instead of
-`set_major_formatter()`:
+Clearly, looking at the data like this isn\'t helping too much, so
+let\'s see whether a smaller granularity can help us. Let\'s visualize
+the distributions of attempts, the number of usernames, and the number
+of failures per IP address on a minute-by-minute resolution for January
+2018:
 
 ```
 >>> from matplotlib.ticker import MultipleLocator
->>> ax = new_cases.New_Zealand['2020-04-18':'2020-09-18'].plot(
-...     title='Daily new COVID-19 cases in New Zealand'
-...           '\n(source: ECDC)'
+>>> ax = logs_2018.loc['2018-01'].assign(
+...     failures=lambda x: 1 - x.success
+... ).groupby('source_ip').resample('1min').agg({
+...     'username': 'nunique', 
+...     'success': 'sum', 
+...     'failures': 'sum'
+... }).assign(
+...     attempts=lambda x: x.success + x.failures
+... ).dropna().query('attempts > 0').reset_index().plot(
+...     y=['attempts', 'username', 'failures'], kind='hist',
+...     subplots=True, layout=(1, 3), figsize=(20, 3),
+...     title='January 2018 distributions of minutely stats'
+...           'by IP address'
 ... )
->>> ax.set(xlabel='', ylabel='new COVID-19 cases') 
->>> ax.yaxis.set_major_locator(MultipleLocator(base=3))
->>> for spine in ['top', 'right']:
-...     ax.spines[spine].set_visible(False)
+>>> for axes in ax.flatten():
+...     axes.xaxis.set_major_locator(MultipleLocator(1))
+```
+
+It looks like most of the IP addresses have just
+a single username associated with them; however, some IP addresses also
+have multiple failures for their attempts:
+
+
+![](./images/Figure_11.7_B16834.jpg)
+
+
+Figure 11.7 -- Distribution of metrics per minute per IP address
+
+Perhaps a combination of unique usernames and failures will give us
+something that doesn\'t rely on the IP address being constant. Let\'s
+visualize the number of usernames with failures per minute over 2018:
+
+```
+>>> logs_2018.loc['2018'].assign(
+...     failures=lambda x: 1 - x.success
+... ).query('failures > 0').resample('1min').agg(
+...     {'username': 'nunique', 'failures': 'sum'}
+... ).dropna().rename(
+...     columns={'username': 'usernames_with_failures'}
+... ).usernames_with_failures.plot(
+...     title='usernames with failures per minute in 2018', 
+...     figsize=(15, 3)
+... ).set_ylabel('usernames with failures')
+```
+
+This looks promising; we should definitely be
+looking into spikes in usernames with failures. It could be an issue
+with our website, or something malicious:
+
+
+![](./images/Figure_11.8_B16834.jpg)
+
+
+Figure 11.8 -- Usernames with failures over time
+
+After a thorough exploration of the data we will be working with, we
+have an idea of what features we could use when
+building machine learning models. Since we don\'t yet have the labeled
+data, let\'s try out some unsupervised models next.
+
+
+Utilizing unsupervised methods of anomaly detection
+===================================================
+
+
+If the hackers are conspicuous and distinct from our valid users,
+unsupervised methods may prove pretty effective.
+This is a good place to start before we have labeled data, or if the
+labeled data is difficult to gather or not guaranteed to be
+representative of the full spectrum we are looking to flag. Note that,
+in most cases, we won\'t have labeled data, so it is crucial that we are
+familiar with some unsupervised methods.
+
+In our initial EDA, we identified the number of usernames with a failed
+login attempt in a given minute as a feature for anomaly detection. We
+will now test out some unsupervised anomaly detection algorithms, using
+this feature as the jumping-off point. Scikit-learn provides a few such
+algorithms. In this section, we will look at
+isolation forest and local outlier factor; a
+third method, using a one-class **support vector machine** (**SVM**), is
+in the *Exercises* section.
+
+Before we can try out these methods, we need to prepare our training
+data. Since the SOC will be sending over the labeled data for January
+2018 first, we will use just the January 2018 minute-by-minute data for
+our unsupervised models. Our features will be the day of the week
+(one-hot encoded), the hour of the day (one-hot encoded), and the number
+of usernames with failures. See the *Encoding data* section in *Lab
+9*, *Getting Started with Machine Learning in Python*, for a refresher
+on one-hot encoding, if needed.
+
+Let\'s turn to the `2-unsupervised_anomaly_detection.ipynb`
+notebook and write a utility function to grab this data easily:
+
+```
+>>> def get_X(log, day):
+...     """
+...     Get data we can use for the X
+...
+...     Parameters:
+...         - log: The logs dataframe
+...         - day: A day or single value we can use as a
+...                datetime index slice
+...
+...     Returns: 
+...         A `pandas.DataFrame` object
+...     """
+...     return pd.get_dummies(
+...         log.loc[day].assign(
+...             failures=lambda x: 1 - x.success
+...         ).query('failures > 0').resample('1min').agg(
+...             {'username': 'nunique', 'failures': 'sum'}
+...         ).dropna().rename(
+...             columns={'username': 'usernames_with_failures'}
+...         ).assign(
+...             day_of_week=lambda x: x.index.dayofweek, 
+...             hour=lambda x: x.index.hour
+...         ).drop(columns=['failures']),
+...         columns=['day_of_week', 'hour']
+...     )
+```
+
+Now, we can grab January and store it in
+`X`:
+
+```
+>>> X = get_X(logs_2018, '2018-01')
+>>> X.columns
+Index(['usernames_with_failures', 'day_of_week_0',
+       'day_of_week_1', 'day_of_week_2', 'day_of_week_3',
+       'day_of_week_4', 'day_of_week_5', 'day_of_week_6',
+       'hour_0', 'hour_1', ..., 'hour_22', 'hour_23'],
+      dtype='object')
 ```
 
 
-Since we passed in `base=3`, our *y*-axis
-now contains integers in increments of three:
+
+Isolation forest
+----------------
+
+The **isolation forest** algorithm uses splitting techniques to isolate
+outliers from the rest of the data; therefore, it can be used for
+anomaly detection. Under the hood, it is a random forest
+where the splits are made on randomly chosen
+features. A random value of that feature between its maximum and its
+minimum is selected to split on. Note that this
+range is from the range of the feature at that node in the tree, not the
+starting data.
+
+A single tree in the forest will look something like the following:
 
 
-![](./images/fig_6.28.jpg)
+![](./images/Figure_11.9_B16834.jpg)
 
 
+Figure 11.9 -- Example of a single tree in an isolation forest
 
-These were only three of the features provided with the
-`matplotlib.ticker` module, so I highly recommend you check
-out the documentation for more information. There is also a link in the
-*Further reading* section at the end of this lab.
+The average length of the path that must be traveled from the top of
+each tree in the forest to the leaf containing a given point is used to
+score a point as an outlier or inlier. The outliers
+have much shorter paths, since they will be one
+of the few on a given side of a split and have
+less in common with other points. Conversely, points with many
+dimensions in common will take more splits to separate.
 
+Important note
 
-Customizing visualizations
-==========================
+More information on this algorithm can be found
+at
+<https://scikit-learn.org/stable/modules/outlier_detection.html#isolation-forest>.
 
-
-So far, all of the code we\'ve learned for creating
-data visualizations has been for making the
-visualization itself. Now that we have a strong foundation, we
-are ready to learn how to add reference lines,
-control colors and textures, and include annotations.
-
-In the `3-customizing_visualizations.ipynb` notebook, let\'s
-handle our imports and read in the Facebook stock prices and earthquake
-datasets:
+Let\'s implement an isolation forest with a pipeline that first
+standardizes our data:
 
 ```
->>> %matplotlib inline
->>> import matplotlib.pyplot as plt
->>> import pandas as pd
->>> fb = pd.read_csv(
-...     'data/fb_stock_prices_2018.csv', 
-...     index_col='date', 
-...     parse_dates=True
+>>> from sklearn.ensemble import IsolationForest
+>>> from sklearn.pipeline import Pipeline
+>>> from sklearn.preprocessing import StandardScaler
+>>> iso_forest_pipeline = Pipeline([
+...     ('scale', StandardScaler()),
+...     ('iforest', IsolationForest(
+...         random_state=0, contamination=0.05
+...     ))
+... ]).fit(X)
+```
+
+We had to specify how much of the data was expected to be outliers
+(`contamination`), which we estimated to be 5%; this will be
+difficult to choose since we don\'t have labeled data. There is an
+`auto` option that will determine a value for us but, in this
+case, it gives us no outliers, so it\'s clear that that value isn\'t the
+one we want. In practice, we could perform a statistical analysis on the
+data to determine an initial value or consult domain experts.
+
+The `predict()` method can be used to check whether each data
+point is an outlier. Anomaly detection algorithms implemented in
+`scikit-learn` typically return `1` or
+`-1` if the point is an inlier or outlier, respectively:
+
+```
+>>> isolation_forest_preds = iso_forest_pipeline.predict(X)
+>>> pd.Series(np.where(
+...     isolation_forest_preds == -1, 'outlier', 'inlier'
+... )).value_counts()
+inlier     42556
+outlier     2001
+dtype: int64
+```
+
+Since we don\'t have the labeled
+data yet, we will come back to evaluate this
+later; for now, let\'s take a look at the second unsupervised algorithm
+that we will discuss in this lab.
+
+
+
+Local outlier factor
+--------------------
+
+While inliers are typically located in denser regions of the dataset
+(32-dimensional here), outliers tend to be
+located in sparser, more isolated regions with few neighboring points.
+The **local outlier factor** (**LOF**) algorithm
+looks for these sparsely populated regions to
+identify outliers. It scores all points based on the ratio of the
+density around each point to that of its nearest neighbors. Points that
+are considered normal will have similar densities to their neighbors;
+those with few others nearby will be considered abnormal.
+
+Important note
+
+More information on this algorithm can be found
+at
+<https://scikit-learn.org/stable/modules/outlier_detection.html#local-outlier-factor>.
+
+Let\'s build another pipeline, but swap out the isolation forest for
+LOF. Note that we have to guess the best value for the
+`n_neighbors` parameter, because `GridSearchCV` has
+nothing to score models on if we don\'t have labeled data. We are using
+the default value for this parameter, which is `20`:
+
+```
+>>> from sklearn.neighbors import LocalOutlierFactor
+>>> from sklearn.pipeline import Pipeline
+>>> from sklearn.preprocessing import StandardScaler
+>>> lof_pipeline = Pipeline([
+...     ('scale', StandardScaler()),
+...     ('lof', LocalOutlierFactor())
+... ]).fit(X)
+```
+
+Now, let\'s see how many outliers we have
+this time. LOF doesn\'t have a
+`predict()` method, so we have to check the
+`negative_outlier_factor_` attribute of the LOF object to see
+the scores of each of the data points we fit it with:
+
+```
+>>> lof_preds = lof_pipeline.named_steps['lof']\
+...     .negative_outlier_factor_ 
+>>> lof_preds
+array([-1.33898756e+10, -1.00000000e+00, -1.00000000e+00, ...,
+       -1.00000000e+00, -1.00000000e+00, -1.11582297e+10])
+```
+
+There is another difference between LOF and isolation forests: the
+values for the `negative_outlier_factor_` attribute aren\'t
+strictly `-1` or `1`. In fact, they can be any
+number---take a look at the first and last values in the previous
+result, and you\'ll see that they are way less than `-1`. This
+means we can\'t use the method we used with the isolation forest to
+count the inliers and outliers. Instead, we need to compare the
+`negative_outlier_factor_` attribute to the
+`offset_` attribute of the LOF model, which
+tells us the cutoff value as determined by the
+LOF model during training (using the `contamination`
+parameter):
+
+```
+>>> pd.Series(np.where(
+...     lof_preds < lof_pipeline.named_steps['lof'].offset_, 
+...     'outlier', 'inlier'
+... )).value_counts()
+inlier     44248
+outlier      309
+dtype: int64
+```
+
+Now that we have two unsupervised models, we need
+to compare them to see which one would be more beneficial to our
+stakeholders.
+
+
+
+Comparing models
+----------------
+
+LOF indicates fewer outliers than the isolation
+forest, but perhaps they don\'t even agree with each other. As we
+learned in [*Lab
+10*],
+*Making Better Predictions -- Optimizing Models*, we can use the
+`cohen_kappa_score()` function from
+`sklearn.metrics` to check their level of agreement:
+
+```
+>>> from sklearn.metrics import cohen_kappa_score
+>>> is_lof_outlier = np.where(
+...     lof_preds < lof_pipeline.named_steps['lof'].offset_, 
+...     'outlier', 'inlier'
 ... )
->>> quakes = pd.read_csv('data/earthquakes.csv')
-```
-
-
-Adding reference lines
-----------------------
-
-Our two horizontal reference lines will be at the support of \$124.46
-and the resistance of \$138.53. Both these numbers were derived using
-the `stock_analysis` package, which we will build in *Lab 12*,
-*Financial Analysis -- Bitcoin and the Stock Market*. We simply need to
-create an instance of the `StockAnalyzer` class to calculate
-these metrics:
-
-```
->>> from stock_analysis import StockAnalyzer
->>> fb_analyzer = StockAnalyzer(fb)
->>> support, resistance = (
-...     getattr(fb_analyzer, stat)(level=3)
-...     for stat in ['support', 'resistance']
+>>> is_iso_outlier = np.where(
+...     isolation_forest_preds == -1, 'outlier', 'inlier'
 ... )
->>> support, resistance
-(124.4566666666667, 138.5266666666667)
+>>> cohen_kappa_score(is_lof_outlier, is_iso_outlier)
+0.25862517997335677
 ```
 
+They have a low level of agreement, indicating that it\'s not so obvious
+which data points are anomalies. Without labeled data, however, it
+really is impossible for us to tell which one is better. We would have
+to work with the consumers of the results to determine which
+model gives them the most useful data.
+Thankfully, the SOC has just sent over the January 2018 labeled data, so
+we can determine which of our models is better and let them start using
+it until we get a supervised model ready.
 
-We will use the `plt.axhline()` function for this task, but
-note that this will also work on the `Axes` object. Remember
-that the text we provide to the `label` arguments will be
-populated in the legend:
+First, we will read in the labeled data they wrote to the database in
+the `attacks` table and add some columns indicating the minute
+the attack started, the duration, and when it ended:
 
 ```
->>> fb.close['2018-12']\
-...     .plot(title='FB Closing Price December 2018')
->>> plt.axhline(
-...     y=resistance, color='r', linestyle='--',
-...     label=f'resistance (${resistance:,.2f})'
+>>> with sqlite3.connect('logs/logs.db') as conn:
+...     hackers_jan_2018 = pd.read_sql(
+...         """
+...         SELECT * 
+...         FROM attacks 
+...         WHERE start BETWEEN "2018-01-01" AND "2018-02-01";
+...         """, conn, parse_dates=['start', 'end']
+...     ).assign(
+...         duration=lambda x: x.end - x.start,
+...         start_floor=lambda x: x.start.dt.floor('min'),
+...         end_ceil=lambda x: x.end.dt.ceil('min')
+...     )
+>>> hackers_jan_2018.shape
+(7, 6)
+```
+
+Note that the SOC only has a single IP address for the ones involved in
+each attack, so it\'s a good thing we aren\'t relying on that anymore.
+Instead, the SOC wants us to tell them at which
+minute there was suspicious activity so that they can investigate
+further. Also note that while the attacks are quick in duration, our
+minute-by-minute data means we will trigger many alerts per attack:
+
+
+![](./images/Figure_11.10_B16834.jpg)
+
+
+Figure 11.10 -- Labeled data for evaluating our models
+
+Using the `start_floor` and `end_ceil` columns, we
+can create a range of datetimes and can check whether the data we marked
+as outliers falls within that range. For this, we will use the following
+function:
+
+```
+>>> def get_y(datetimes, hackers, resolution='1min'):
+...     """
+...     Get data we can use for the y (whether or not a
+...     hacker attempted a log in during that time).
+...
+...     Parameters:
+...         - datetimes: The datetimes to check for hackers
+...         - hackers: The dataframe indicating when the 
+...                    attacks started and stopped
+...         - resolution: The granularity of the datetime. 
+...                       Default is 1 minute.
+...
+...     Returns: `pandas.Series` of Booleans.
+...     """
+...     date_ranges = hackers.apply(
+...         lambda x: pd.date_range(
+...             x.start_floor, x.end_ceil, freq=resolution
+...         ), 
+...         axis=1
+...     )
+...     dates = pd.Series(dtype='object')
+...     for date_range in date_ranges:
+...         dates = pd.concat([dates, date_range.to_series()])
+...     return datetimes.isin(dates)
+```
+
+Now, let\'s find the datetimes in our
+`X` data that had hacker activity:
+
+```
+>>> is_hacker = \
+...     get_y(X.reset_index().datetime, hackers_jan_2018)
+```
+
+We now have everything we need to make a classification report and a
+confusion matrix. Since we will be passing in the `is_hacker`
+series a lot, we will make some partials to reduce our typing a bit:
+
+```
+>>> from functools import partial
+>>> from sklearn.metrics import classification_report
+>>> from ml_utils.classification import confusion_matrix_visual
+>>> report = partial(classification_report, is_hacker)
+>>> conf_matrix = partial(
+...     confusion_matrix_visual, is_hacker, 
+...     class_labels=[False, True]
 ... )
->>> plt.axhline(
-...     y=support, color='g', linestyle='--',
-...     label=f'support (${support:,.2f})'
+```
+
+Let\'s start with the classification reports,
+which indicate that the isolation forest is much better in terms of
+recall:
+
+```
+>>> iso_forest_predicts_hacker = isolation_forest_preds == - 1
+>>> print(report(iso_forest_predicts_hacker)) # iso. forest
+              precision    recall  f1-score   support
+       False       1.00      0.96      0.98     44519
+        True       0.02      0.82      0.03        38
+    accuracy                           0.96     44557
+   macro avg       0.51      0.89      0.50     44557
+weighted avg       1.00      0.96      0.98     44557
+>>> lof_predicts_hacker = \
+...     lof_preds < lof_pipeline.named_steps['lof'].offset_ 
+>>> print(report(lof_predicts_hacker)) # LOF
+              precision    recall  f1-score   support
+       False       1.00      0.99      1.00     44519
+        True       0.03      0.26      0.06        38
+    accuracy                           0.99     44557
+   macro avg       0.52      0.63      0.53     44557
+weighted avg       1.00      0.99      1.00     44557
+```
+
+To better understand the results in the
+classification report, let\'s create confusion matrices for our
+unsupervised methods and place them side-by-side for comparison:
+
+```
+>>> fig, axes = plt.subplots(1, 2, figsize=(15, 5))
+>>> conf_matrix(
+...     iso_forest_predicts_hacker, 
+...     ax=axes[0], title='Isolation Forest'
 ... )
->>> plt.ylabel('price ($)')
->>> plt.legend()
-```
-
-
-We should already be familiar with the f-string
-format from earlier labs, but notice the additional text after the
-variable name here (`:,.2f`). The support and resistance are
-stored as floats in the `support` and `resistance`
-variables, respectively. The colon (`:`) precedes the **format
-specifier** (commonly written as `format_spec`), which tells
-Python how to format that variable; in this case, we are formatting it
-as a decimal (`f`) with a comma as the thousands separator
-(`,`) and two digits of precision after the decimal
-(`.2`). This will also work with the `format()`
-method, in which case it would look like
-`'{:,.2f}'.format(resistance)`. This formatting makes for an
-informative legend in our plot:
-
-
-![](./images/fig_6.29.jpg)
-
-
-Turning back to the earthquake data, let\'s use
-`plt.axvline()` to draw vertical
-reference lines for the number of standard deviations from the mean on
-the distribution of earthquake magnitudes in Indonesia. The
-`std_from_mean_kde()` function located in the
-`viz.py` module in the GitHub repository uses
-`itertools` to easily make the combinations of the colors and
-values we need to plot:
-
-```
-import itertools
-def std_from_mean_kde(data):
-    """
-    Plot the KDE along with vertical reference lines
-    for each standard deviation from the mean.
-    Parameters:
-        - data: `pandas.Series` with numeric data
-    Returns:
-        Matplotlib `Axes` object.
-    """
-    mean_mag, std_mean = data.mean(), data.std()
-    ax = data.plot(kind='kde')
-    ax.axvline(mean_mag, color='b', alpha=0.2, label='mean')
-    colors = ['green', 'orange', 'red']
-    multipliers = [1, 2, 3]
-    signs = ['-', '+']
-    linestyles = [':', '-.', '--']
-    for sign, (color, multiplier, style) in itertools.product(
-        signs, zip(colors, multipliers, linestyles)
-    ):
-        adjustment = multiplier * std_mean
-        if sign == '-':
-            value = mean_mag – adjustment
-            label = '{} {}{}{}'.format(
-                r'$\mu$', r'$\pm$', multiplier, r'$\sigma$'
-            )
-        else:
-            value = mean_mag + adjustment
-            label = None # label each color only once
-        ax.axvline(
-            value, color=color, linestyle=style, 
-            label=label, alpha=0.5
-        )
-    ax.legend()
-    return ax
-```
-
-
-The `product()` function from `itertools` will give
-us all combinations of items from any number of iterables. Here, we have
-zipped the colors, multipliers, and line styles since we always want a
-green dotted line for a multiplier of 1; an orange dot-dashed line for a
-multiplier of 2; and a red dashed line for a
-multiplier of 3. When `product()` uses these tuples, we get
-positive- and negative-signed combinations for everything. To keep our
-legend from getting too crowded, we only label each color once using the
-± sign. Since we have combinations between a string and a tuple at each
-iteration, we unpack the tuple in our `for` statement for
-easier use.
-
-
-Let\'s use the `std_from_mean_kde()` function to see which
-parts of the estimated distribution of earthquake magnitudes in
-Indonesia are within one, two, or three standard
-deviations from the mean:
-
-```
->>> from viz import std_from_mean_kde
->>> ax = std_from_mean_kde(
-...     quakes.query(
-...         'magType == "mb" and parsed_place == "Indonesia"'
-...     ).mag
+>>> conf_matrix(
+...     lof_predicts_hacker, 
+...     ax=axes[1], title='Local Outlier Factor'
 ... )
->>> ax.set_title('mb magnitude distribution in Indonesia')
->>> ax.set_xlabel('mb earthquake magnitude')
 ```
 
-
-Notice the KDE is right-skewed---it has a longer tail on the right side,
-and the mean is to the right of the mode:
-
-
-![](./images/fig_6.30.jpg)
+The isolation forest has more true positives and a greater number of
+false positives compared to LOF, but it has fewer false negatives:
 
 
-
-**Tip:** 
-
-To make a straight line of arbitrary slope, simply pass the endpoints of
-the line as two `x` values and two `y` values (for
-example, `[0, 2]` and `[2, 0]`) to
-`plt.plot()` using the same `Axes` object. For lines
-that aren\'t straight, `np.linspace()` can be used to create a
-range of evenly-spaced points on `[start, stop)`, which can be
-used for the `x` values and to calculate the `y`
-values. As a reminder, when specifying a range, square brackets mean
-inclusive of both endpoints and round brackets are exclusive, so \[0, 1)
-goes from 0 to as close to 1 as possible without
-being 1. We see these when using `pd.cut()` and
-`pd.qcut()` if we don\'t name the buckets.
+![](./images/Figure_11.11_B16834.jpg)
 
 
+Figure 11.11 -- Confusion matrices for our unsupervised models
 
-Shading regions
----------------
+The SOC has informed us that false negatives are much more costly than
+false positives. However, they would like us to keep false positives in
+check to avoid bogging down the team with an
+excessive number of false alarms. This tells us
+that recall (the **true positive rate** (**TPR**)) is more valuable than
+precision as a performance metric. The SOC wants us to target a *recall
+of at least 70%*.
 
-In some cases, the reference line itself isn\'t so
-interesting, but the area between two of them is; for this purpose, we
-have `axvspan()` and `axhspan()`. Let\'s revisit the
-support and resistance of Facebook stock\'s closing price. We can use
-`axhspan()` to shade the area that falls between the two:
+Since we have a very large class imbalance, the
+**false positive rate** (**FPR**) won\'t be too informative for us.
+Remember, the FPR is the ratio of false positives to the sum of false
+positives and true negatives (everything belonging to the negative
+class). Due to the nature of the attacks being rare, we will have a very
+large number of true negatives and, therefore, our FPR will remain very
+low. Consequently, the secondary metric determined by the SOC is to
+attain a *precision of 85% or greater*.
 
-```
->>> ax = fb.close.plot(title='FB Closing Price')
->>> ax.axhspan(support, resistance, alpha=0.2)
->>> plt.ylabel('Price ($)')
-```
-
-
-Note that the color of the shaded region is determined by the
-`facecolor` argument. For this example, we accepted the
-default:
-
-
-![](./images/fig_6.31.jpg)
+The isolation forest model exceeds our target recall, but the precision
+is too low. Since we were able to obtain some labeled data, we can now
+use supervised learning to find the minutes with suspicious activity
+(note that this won\'t always be the case). Let\'s see whether we can
+use this extra information to find the minutes of interest more
+precisely.
 
 
+Implementing supervised anomaly detection
+=========================================
 
-When we are interested in shading the area between two curves, we can
-use the `plt.fill_between()` and
-`plt.fill_betweenx()` functions. The
-`plt.fill_between()` function accepts
-one set of `x` values and two sets of `y` values; we
-can use `plt.fill_betweenx()` if we require the opposite.
-Let\'s shade the area between Facebook\'s high price and low price each
-day of the fourth quarter using `plt.fill_between()`:
+
+The SOC has finished up labeling the 2018 data, so we should revisit our
+EDA to make sure our plan of looking at the
+number of usernames with failures on a minute resolution does separate
+the data. This EDA is in the `3-EDA_labeled_data.ipynb`
+notebook. After some data wrangling, we are able to create the following
+scatter plot, which shows that this strategy does indeed appear to
+separate the suspicious activity:
+
+
+![](./images/Figure_11.12_B16834.jpg)
+
+In the `4-supervised_anomaly_detection.ipynb` notebook, we
+will create some supervised models. This time we need to read in all the
+labeled data for 2018. Note that the code for reading in the logs is
+omitted since it is the same as in the previous section:
 
 ```
->>> fb_q4 = fb.loc['2018-Q4']
->>> plt.fill_between(fb_q4.index, fb_q4.high, fb_q4.low)
->>> plt.xticks([
-...     '2018-10-01', '2018-11-01', '2018-12-01', '2019-01-01'
+>>> with sqlite3.connect('logs/logs.db') as conn:
+...     hackers_2018 = pd.read_sql(
+...         """
+...         SELECT * 
+...         FROM attacks 
+...         WHERE start BETWEEN "2018-01-01" AND "2019-01-01";
+...         """, conn, parse_dates=['start', 'end']
+...     ).assign(
+...         duration=lambda x: x.end - x.start,
+...         start_floor=lambda x: x.start.dt.floor('min'),
+...         end_ceil=lambda x: x.end.dt.ceil('min')
+...     )
+```
+
+Before we build our models, however, let\'s create a new function that
+will create both `X` and `y` at
+ function
+will use the `get_X()` and `get_y()` functions we
+made earlier, returning both `X` and `y`:
+
+```
+>>> def get_X_y(log, day, hackers):
+...     """
+...     Get the X, y data to build a model with.
+...
+...     Parameters:
+...         - log: The logs dataframe
+...         - day: A day or single value we can use as a 
+...                datetime index slice
+...         - hackers: The dataframe indicating when the 
+...                    attacks started and stopped
+...
+...     Returns:
+...         X, y tuple where X is a `pandas.DataFrame` object
+...         and y is a `pandas.Series` object
+...     """
+...     X = get_X(log, day)
+...     y = get_y(X.reset_index().datetime, hackers)
+...     return X, y
+```
+
+Now, let\'s make a training set with January 2018
+data and a testing set with February 2018 data, using our new function:
+
+```
+>>> X_train, y_train = \
+...     get_X_y(logs_2018, '2018-01', hackers_2018)
+>>> X_test, y_test = \
+...     get_X_y(logs_2018, '2018-02', hackers_2018)
+```
+
+Important note
+
+While we have a very large class imbalance, we don\'t jump right to
+balancing the training sets. It\'s crucial to try out the model without
+premature optimization. If we build our model and see that it is being
+affected by the class imbalance, then we can try those techniques.
+Remember to be very cautious with over-/under-sampling techniques, as
+some make assumptions of the data that aren\'t always applicable or
+realistic. Think about SMOTE---would we really expect all future
+attackers to be similar to the ones we have in the data?
+
+Let\'s use this data to build some supervised anomaly detection models.
+Remember that the SOC has given us the performance requirements in terms
+of recall (at least 70%) and precision (85% or greater), so we will use
+those metrics to evaluate our models.
+
+
+
+Baselining
+----------
+
+Our first step will be to build
+some baseline models, so we know that our machine
+learning algorithms are performing better than some simpler models and
+have predictive value. We will build two such models:
+
+-   A dummy classifier that will predict labels based on the
+    stratification in the data.
+-   A Naive Bayes model that will predict the labels leveraging Bayes\'
+    theorem.
+
+### Dummy classifier
+
+A dummy classifier will give us a model that is
+equivalent to the baseline we have been drawing on our ROC curves. The
+results will be poor on purpose. We will never use this classifier to
+actually make predictions; rather, we can use it
+to see whether the models we are building are better than random
+guessing strategies. In the `dummy` module,
+`scikit-learn` provides the `DummyClassifier` class
+precisely for this purpose.
+
+Using the `strategy` parameter, we can specify how the dummy
+classifier will make its predictions. Some
+interesting options are as follows:
+
+-   `uniform`: The classifier will guess each time whether or
+    not the observation belongs to a hacking attempt.
+-   `most_frequent`: The classifier will always predict the
+    most frequent label, which, in our case, will result in never
+    marking anything as nefarious. This will achieve high accuracy, but
+    be useless since the minority class is the class of interest.
+-   `stratified`: The classifier will use the class
+    distribution from the training data and maintain that ratio with its
+    guesses.
+
+Let\'s build a dummy classifier with the `stratified`
+strategy:
+
+```
+>>> from sklearn.dummy import DummyClassifier
+>>> dummy_model = DummyClassifier(
+...     strategy='stratified', random_state=0
+... ).fit(X_train, y_train)
+>>> dummy_preds = dummy_model.predict(X_test)
+```
+
+Now that we have our first baseline model, let\'s measure its
+performance for comparisons. We will be using both the ROC curve and the
+precision-recall curve to show how the class imbalance can make the ROC
+curve optimistic of performance. To reduce typing, we will once again
+make some partials:
+
+```
+>>> from functools import partial
+>>> from sklearn.metrics import classification_report
+>>> from ml_utils.classification import (
+...     confusion_matrix_visual, plot_pr_curve, plot_roc
+... )
+>>> report = partial(classification_report, y_test)
+>>> roc = partial(plot_roc, y_test)
+>>> pr_curve = partial(plot_pr_curve, y_test)
+>>> conf_matrix = partial(
+...     confusion_matrix_visual, y_test, 
+...     class_labels=[False, True]
+... )
+```
+
+Recall from our initial discussion of ROC curves
+in *Lab 9*, *Getting Started with Machine Learning in Python*, that
+the diagonal line was random guessing of a dummy model. If our
+performance isn\'t better than this line, our model has no predictive
+value. The dummy model we just created is equivalent to this line.
+Let\'s visualize the baseline ROC curve, precision-recall curve, and
+confusion matrix using subplots:
+
+```
+>>> fig, axes = plt.subplots(1, 3, figsize=(20, 5))
+>>> roc(dummy_model.predict_proba(X_test)[:,1], ax=axes[0])
+>>> conf_matrix(dummy_preds, ax=axes[1])
+>>> pr_curve(
+...     dummy_model.predict_proba(X_test)[:,1], ax=axes[2]
+... )
+>>> plt.suptitle('Dummy Classifier with Stratified Strategy')
+```
+
+The dummy classifier wasn\'t able to flag any of the attackers. The ROC
+curve (TPR versus FPR) indicates that the dummy
+model has no predictive value, with an **area under the curve**
+(**AUC**) of 0.5. Note that the area under the precision-recall curve is
+nearly zero:
+
+
+![](./images/Figure_11.13_B16834.jpg)
+
+
+Figure 11.13 -- Baselining with a dummy classifier
+
+Since we have a very large class imbalance, the
+stratified random guessing strategy should perform horrendously on the
+minority class and very well on the majority class. We can observe this
+by examining the classification report:
+
+```
+>>> print(report(dummy_preds))
+              precision    recall  f1-score   support
+       False       1.00      1.00      1.00     39958
+        True       0.00      0.00      0.00         5
+    accuracy                           1.00     39963
+   macro avg       0.50      0.50      0.50     39963
+weighted avg       1.00      1.00      1.00     39963
+```
+
+### Naive Bayes
+
+Our last baseline model will be a Naive Bayes
+classifier. Before we discuss this model, we need to
+review a few concepts of probability. The first
+is conditional probability. When dealing with two events, *A* and *B*,
+the probability of event *A* happening *given* that event *B* happened
+is the **conditional probability** and is written
+as *P(A\|B)*. When events *A* and *B* are independent, meaning *B*
+happening doesn\'t tell us anything about *A* happening and vice versa,
+*P(A\|B)* is *P(A)*.
+
+The conditional probability is defined as the
+**joint probability** of both *A* and *B* occurring (which is the
+intersection of these events), written as *P(A* *∩* *B)*, divided by the
+probability of *B* occurring (provided this is not zero):
+
+
+![](./images/Formula_11_001.jpg)
+
+
+This equation can be rearranged as follows:
+
+
+![](./images/Formula_11_002.png)
+
+
+The joint probability of *A* *∩* *B* is equivalent to *B* *∩* *A*;
+therefore, we get the following equation:
+
+
+![](./images/Formula_11_003.jpg)
+
+
+It then follows that we can change the first equation to use conditional
+probabilities instead of the joint probability. This gives us **Bayes\'
+theorem**:
+
+
+![](./images/Formula_11_004.jpg)
+
+
+When working with the previous equation, *P(A)*
+is referred to as the **prior probability**, or initial degree of belief
+that event *A* will happen. After accounting for event *B* occurring,
+this initial belief gets updated; this is represented as *P(A\|B)* and
+is called the **posterior probability**. The
+**likelihood** of event *B* given event *A* is *P(B\|A)*. The support
+that event *B* occurring gives to our belief of observing event *A* is
+the following:
+
+
+![](./images/Formula_11_005.jpg)
+
+
+Let\'s take a look at an example---say we are building a spam filter,
+and we find that 10% of emails are spam. This 10% is our prior, or
+*P(spam)*. We want to know the probability an email we
+just received is spam given that it contains the
+word *free*---we want to find *P(spam\|free)*. In order to find this, we
+need the probability that the word *free* is in
+an email given that it is spam, or
+*P(free\|spam)*, and the probability of the word *free* being in an
+email, or *P(free)*.
+
+Suppose we learned that 12% of emails contained the word *free* and 20%
+of the emails that were determined to be spam contained the word *free*.
+Plugging all this into the equation from before, we see that once we
+know an email contains the word *free*, our belief that it is spam
+increases from 10% to 16.7%, which is our posterior probability:
+
+
+![](./images/Formula_11_006.jpg)
+
+
+Bayes\' theorem can be leveraged in a type of classifier called **Naive
+Bayes**. Depending on the assumptions we make of the data, we get a
+different member of the Naive Bayes family of classifiers. These models
+are very fast to train because they make a simplifying assumption of
+conditional independence of each pair of the `X` features,
+given the `y` variable (meaning
+*P(x*[i]{.subscript}*\|y,x*[1]{.subscript}*\...x*[n]{.subscript}*)* is
+equivalent to *P(x*[i]{.subscript}*\|y)*). They are called *naive*
+because this assumption is often incorrect; however, these classifiers
+have traditionally worked well in building spam filters.
+
+Let\'s say we also find multiple dollar signs in the email and the word
+*prescription*, and we want to know the probability of it being spam.
+While some of these features may depend on each other, the Naive Bayes
+model will treat them as conditionally independent. This means our
+equation for the posterior probability is now the following:
+
+
+![](./images/Formula_11_007_New.jpg)
+
+
+Suppose we find out that 5% of spam emails
+contain multiple dollar signs, 55% of spam emails contain the word
+*prescription*, 25% of emails contain multiple
+dollar signs, and the word *prescription* is
+found in 2% of emails overall. This means that our belief of the email
+being spam, given that it has the words *free* and *prescription* and
+multiple dollar signs, increases from 10% to 91.7%:
+
+
+![](./images/Formula_11_008.jpg)
+
+
+Now that we understand the basics of the algorithm, let\'s build a Naive
+Bayes classifier. Note that `scikit-learn` provides various
+Naive Bayes classifiers that differ by the assumed distributions of the
+likelihoods of the features, which we defined as
+*P(x*[i]{.subscript}*\|y,x*[1]{.subscript}*\...x*[n]{.subscript}*)*. We
+will use the version that assumes they are normally distributed,
+`GaussianNB`:
+
+```
+>>> from sklearn.naive_bayes import GaussianNB
+>>> from sklearn.pipeline import Pipeline
+>>> from sklearn.preprocessing import StandardScaler
+>>> nb_pipeline = Pipeline([
+...     ('scale', StandardScaler()),
+...     ('nb', GaussianNB())
+... ]).fit(X_train, y_train)
+>>> nb_preds = nb_pipeline.predict(X_test)
+```
+
+We can retrieve the class priors from the model, which, in this case,
+tells us that the prior for a minute containing normal activity is
+99.91% versus 0.09% for abnormal activity:
+
+```
+>>> nb_pipeline.named_steps['nb'].class_prior_
+array([9.99147160e-01, 8.52840182e-04])
+```
+
+Naive Bayes makes a nice baseline model because
+we don\'t have to tune any hyperparameters, and
+it is quick to train. Let\'s see how it performs on the test data
+(February 2018):
+
+```
+>>> fig, axes = plt.subplots(1, 3, figsize=(20, 5))
+>>> roc(nb_pipeline.predict_proba(X_test)[:,1], ax=axes[0])
+>>> conf_matrix(nb_preds, ax=axes[1])
+>>> pr_curve(
+...     nb_pipeline.predict_proba(X_test)[:,1], ax=axes[2]
+... )
+>>> plt.suptitle('Naive Bayes Classifier')
+```
+
+The Naive Bayes classifier finds all five attackers and is above the
+baseline (the dashed line) in both the ROC curve and precision-recall
+curve, meaning this model has some predictive value:
+
+
+![](./images/Figure_11.14_B16834.jpg)
+
+
+Figure 11.14 -- Performance of the Naive Bayes classifier
+
+Unfortunately, we are triggering an enormous quantity of false positives
+(8,218). For the month of February, roughly 1 out of every 1,644 attack
+classifications was indeed an attack. This has the effect of
+desensitizing the users of these classifications. They may choose to
+always ignore our classifications because they are too noisy and,
+consequently, miss a real issue. This trade-off can be captured in the
+metrics of the classification report:
+
+```
+>>> print(report(nb_preds))
+              precision    recall  f1-score   support
+       False       1.00      0.79      0.89     39958
+        True       0.00      1.00      0.00         5
+    accuracy                           0.79     39963
+   macro avg       0.50      0.90      0.44     39963
+weighted avg       1.00      0.79      0.89     39963
+```
+
+While the Naive Bayes classifier outperforms the
+dummy classifier, it does not meet the requirements of our stakeholders.
+Precision rounds to zero for the target class
+because we have lots of false positives. Recall is higher than precision
+because the model is better with false negatives than false positives
+(since it isn\'t very discerning). This leaves the F[1]{.subscript}
+score at zero. Now, let\'s try to beat these baseline models.
+
+
+
+Logistic regression
+-------------------
+
+Since logistic regression is another
+simple model, let\'s try it out next. We used
+logistic regression in *Lab 9*, *Getting Started with Machine
+Learning in Python*, for classification problems, so we already know how
+it works. As we learned in [*Lab
+10*],
+*Making Better Predictions -- Optimizing Models*, we will use a grid
+search to find a good value for the regularization hyperparameter in our
+desired search space, using `recall_macro` for scoring.
+Remember there is a large cost associated with false negatives, so we
+are focusing on recall. The `_macro` suffix indicates that we
+want to average the recall between the positive and negative classes,
+instead of looking at it overall (due to the class imbalance).
+
+Tip
+
+If we know exactly how much more valuable recall is to us over
+precision, we can replace this with a custom scorer made using the
+`make_scorer()` function in `sklearn.metrics`. The
+notebook we are working in has an example.
+
+When using grid search, warnings from
+`scikit-learn` may be printed at each iteration. Therefore, to
+avoid having to scroll through all that, we will
+use the `%%capture` magic command to capture everything that
+would have been printed, keeping our notebook clean:
+
+```
+>>> %%capture
+>>> from sklearn.linear_model import LogisticRegression
+>>> from sklearn.model_selection import GridSearchCV
+>>> from sklearn.pipeline import Pipeline
+>>> from sklearn.preprocessing import StandardScaler
+>>> lr_pipeline = Pipeline([
+...     ('scale', StandardScaler()),
+...     ('lr', LogisticRegression(random_state=0))
 ... ])
->>> plt.xlabel('date')
->>> plt.ylabel('price ($)')
->>> plt.title(
-...     'FB differential between high and low price Q4 2018'
+>>> search_space = {'lr__C': [0.1, 0.5, 1, 2]}
+>>> lr_grid = GridSearchCV(
+...     lr_pipeline, search_space, scoring='recall_macro', cv=5
+... ).fit(X_train, y_train)
+>>> lr_preds = lr_grid.predict(X_test) 
+```
+
+Tip
+
+With `%%capture`, all errors and output will be captured by
+default. We have the option of writing `--no-stderr` to hide
+errors only and `--no-stdout` to hide output only. These go
+after `%%capture`; for example,
+`%%capture --no-stderr`.
+
+If we want to hide specific errors, we can use the `warnings`
+module, instead. For example, after importing `filterwarnings`
+from the `warnings` module, we can run the following to ignore
+warnings of future deprecations:
+`filterwarnings('ignore',               category=DeprecationWarning)`
+
+Now that we have our logistic regression
+model trained, let\'s check on the performance:
+
+```
+>>> fig, axes = plt.subplots(1, 3, figsize=(20, 5))
+>>> roc(lr_grid.predict_proba(X_test)[:,1], ax=axes[0])
+>>> conf_matrix(lr_preds, ax=axes[1])
+>>> pr_curve(lr_grid.predict_proba(X_test)[:,1], ax=axes[2])
+>>> plt.suptitle('Logistic Regression Classifier')
+```
+
+This model has no false positives and is much better than the baselines.
+The ROC curve is significantly closer to the top-left corner, as is the
+precision-recall curve to the top-right corner. Notice that the ROC
+curve is a bit more optimistic about the performance:
+
+
+![](./images/Figure_11.15_B16834.jpg)
+
+
+Figure 11.15 -- Performance using logistic regression
+
+This model meets the requirements
+of the SOC. Our recall is at least 70% and our
+precision is at least 85%:
+
+```
+>>> print(report(lr_preds))
+              precision    recall  f1-score   support
+       False       1.00      1.00      1.00     39958
+        True       1.00      0.80      0.89         5
+    accuracy                           1.00     39963
+   macro avg       1.00      0.90      0.94     39963
+weighted avg       1.00      1.00      1.00     39963
+```
+
+The SOC has given us data for January and February 2019, and they want
+us to update our model. Unfortunately, our model has already been
+trained, so we have the choice of rebuilding from scratch or ignoring
+this new data. Ideally, we would build a model with a feedback loop to
+incorporate this (and future) new data. In the next section, we will
+discuss how to do this.
+
+
+Incorporating a feedback loop with online learning
+==================================================
+
+
+There are some big issues with the models we have built so far. Unlike
+the data we worked with in *Lab 9*, *Getting Started with Machine
+Learning in Python*, and [*Lab
+10*],
+*Making Better Predictions -- Optimizing Models*, we wouldn\'t expect
+the attacker behavior to be static over time. There is also a limit to
+how much data we can hold in memory, which limits
+how much data we can train our model on.
+Therefore, we will now build an online learning model to flag anomalies
+in usernames with failures per minute. An
+**online learning** model is constantly getting updated (in near real
+time via streaming, or in batches). This allows us to learn from new
+data as it comes and then get rid of it (to keep space in memory).
+
+In addition, the model can evolve over time and adapt to changes in the
+underlying distribution of the data. We will also be providing our model
+with feedback as it learns so that we are able to
+make sure it stays robust to changes in the hacker behavior over time.
+This is called **active learning**. Not all models in
+`scikit-learn` support this kind of behavior; so, we are
+limited to the models that offer a `partial_fit()` method
+(models without this need to be trained from scratch with new data).
+
+Tip
+
+Scikit-learn refers to models implementing the
+`partial_fit()` method as **incremental learners**. More
+information, including which models support this, can be found at
+<https://scikit-learn.org/stable/computing/scaling_strategies.html#incremental-learning>.
+
+Our data is currently being rolled up to the minute and then passed to
+the model, so this will be batch learning, not streaming; however, note
+that if we were to put this into production, we could update our model
+each minute, if desired.
+
+
+
+Creating the PartialFitPipeline subclass
+----------------------------------------
+
+We saw in *Lab 9*, *Getting Started with Machine Learning in
+Python*, that the `Pipeline` class made
+streamlining our machine learning processes a cinch, but unfortunately,
+we can\'t use it with the `partial_fit()` method. To get
+around this, we can create our own `PartialFitPipeline` class,
+which is a subclass of the `Pipeline` class but supports
+calling `partial_fit()`. The `PartialFitPipeline`
+class is located in the `ml_utils.partial_fit_pipeline`
+module.
+
+We simply inherit from
+`sklearn.pipeline.Pipeline` and define a single new
+method---`partial_fit()`---which will call
+`fit_transform()` on all the steps except the last one, and
+`partial_fit()` on the last step:
+
+```
+from sklearn.pipeline import Pipeline
+class PartialFitPipeline(Pipeline):
+    """
+    Subclass of sklearn.pipeline.Pipeline that supports the 
+    `partial_fit()` method.
+    """
+    def partial_fit(self, X, y):
+        """
+        Run `partial_fit()` for online learning estimators 
+        when used in a pipeline.
+        """
+        # for all but last step
+        for _, step in self.steps[:-1]: # (name, object) tuples
+            X = step.fit_transform(X)
+        # grab object from tuple position 1 for partial_fit()
+        self.steps[-1][1].partial_fit(X, y)
+        return self
+```
+
+Now that we have the
+`PartialFitPipeline` class, the last piece that remains is to
+select a model capable of online learning.
+
+
+
+Stochastic gradient descent classifier
+--------------------------------------
+
+Our logistic regression model performed well---it met the requirements
+for recall and precision. However, the `LogisticRegression`
+class does not support online learning because
+the method it uses to calculate the coefficients is a closed-form
+solution. We have the option of using an optimization algorithm, such as
+gradient descent, to determine the coefficients instead; this will be
+capable of online learning.
+
+Rather than use a different incremental learner, we can train a new
+logistic regression model with the `SGDClassifier` class. It
+uses **stochastic gradient descent** (**SGD**) to optimize the loss
+function of our choice. For this example, we will be using log loss,
+which gives us a logistic regression where the coefficients are found
+using SGD.
+
+Whereas standard gradient descent optimization looks at all the samples
+or batches to estimate the gradient, SGD reduces the computational cost
+by selecting samples at random (stochastically). How much the model
+learns from each sample is determined by the **learning rate**, with
+earlier updates having more of an effect than later ones. A single
+iteration of SGD is carried out as follows:
+
+1.  Shuffle the training data.
+2.  For each sample in the training data, estimate the gradient and
+    update the model with decreasing strength as determined by the
+    learning rate.
+3.  Repeat *step 2* until all samples have been used.
+
+In machine learning, we use **epochs** to refer to the number of times
+the full training set is used. The process of SGD
+we just outlined is for a single epoch. When we train for multiple
+epochs, we repeat the preceding steps for the desired number of epochs,
+continuing each time from where we left off.
+
+Now that we understand how SGD works, we are
+ready to build our model. Here\'s an overview of the process we will
+follow before presenting it to the SOC:
+
+
+![](./images/Figure_11.16_B16834.jpg)
+
+
+Figure 11.16 -- Process for preparing our online learning model
+
+Let\'s now turn to the `5-online_learning.ipynb` notebook to
+build our online learning model.
+
+### Building our initial model
+
+First, we will use the `get_X_y()` function to get our
+`X` and `y` training data using the full year of
+2018:
+
+```
+>>> X_2018, y_2018 = get_X_y(logs_2018, '2018', hackers_2018)
+```
+
+Since we will be updating this model in batches,
+our test set will always be the data we are using for our current
+predictions. After we do so, it will become the training set and be used
+to update the model. Let\'s build our initial model trained on the 2018
+labeled data. Note that the `PartialFitPipeline` object is
+created in the same way we create a `Pipeline` object:
+
+```
+>>> from sklearn.linear_model import SGDClassifier
+>>> from sklearn.preprocessing import StandardScaler
+>>> from ml_utils.partial_fit_pipeline import \
+...     PartialFitPipeline
+>>> model = PartialFitPipeline([
+...     ('scale', StandardScaler()), 
+...     ('sgd', SGDClassifier(
+...         random_state=10, max_iter=1000, 
+...         tol=1e-3, loss='log', average=1000,
+...         learning_rate='adaptive', eta0=0.01
+...     ))
+... ]).fit(X_2018, y_2018)
+```
+
+Our pipeline will first standardize the data, and then pass it to the
+model. We start building our model using the `fit()` method so
+that we have a good starting point for our updates with
+`partial_fit()` later. The `max_iter` parameter
+defines the number of epochs for the training.
+The `tol` parameter (tolerance) specifies when to stop
+iterating, which occurs when the loss from the current iteration is
+greater than the previous loss minus the tolerance (or we have reached
+`max_iter` iterations). We specified `loss='log'` to
+use logistic regression; however, there are many other options for the
+loss functions, including the default value of `'hinge'` for a
+linear SVM.
+
+Here, we also passed in a value for the `average` parameter,
+telling the `SGDClassifier` object to store the coefficients
+as averages of the results once 1,000 samples have been seen; note that
+this parameter is optional and, by default, this won\'t be calculated.
+Examining these coefficients can be achieved as follows:
+
+```
+>>> [(col, coef) for col, coef in 
+...  zip(X_2018.columns, model.named_steps['sgd'].coef_[0])]
+[('usernames_with_failures', 0.9415581997027198),
+ ('day_of_week_0', 0.05040751530926895),
+ ...,
+ ('hour_23', -0.02176726532333003)]
+```
+
+Lastly, we passed in `eta0=0.01` for our starting learning
+rate and specified to only adjust the learning rate when we have failed
+to improve our loss by the tolerance defined for
+a given number of consecutive epochs
+(`learning_rate='adaptive'`). This number of epochs is defined
+by the `n_iter_no_change` parameter, which will be
+`5` (the default), since we aren\'t setting it explicitly.
+
+### Evaluating the model
+
+Since we now have labeled data for January and February 2019, we can
+evaluate how the model performs each month. First, we read in the 2019
+data from the database:
+
+```
+>>> with sqlite3.connect('logs/logs.db') as conn:
+...     logs_2019 = pd.read_sql(
+...         """
+...         SELECT * 
+...         FROM logs 
+...         WHERE
+...             datetime BETWEEN "2019-01-01" AND "2020-01-01";
+...         """, 
+...         conn, parse_dates=['datetime'],
+...         index_col='datetime'
+...     )
+...     hackers_2019 = pd.read_sql(
+...         """
+...         SELECT * 
+...         FROM attacks 
+...         WHERE start BETWEEN "2019-01-01" AND "2020-01-01";
+...         """, 
+...         conn, parse_dates=['start', 'end']
+...     ).assign(
+...         start_floor=lambda x: x.start.dt.floor('min'),
+...         end_ceil=lambda x: x.end.dt.ceil('min')
+...     )
+```
+
+Next, we isolate the January 2019 data:
+
+```
+>>> X_jan, y_jan = get_X_y(logs_2019, '2019-01', hackers_2019)
+```
+
+The classification report indicates that this
+model performs pretty well, but our recall for the positive class is
+lower than our target:
+
+```
+>>> from sklearn.metrics import classification_report
+>>> print(classification_report(y_jan, model.predict(X_jan)))
+              precision    recall  f1-score   support
+       False       1.00      1.00      1.00     44559
+        True       1.00      0.64      0.78        44
+    accuracy                           1.00     44603
+   macro avg       1.00      0.82      0.89     44603
+weighted avg       1.00      1.00      1.00     44603
+```
+
+Remember, our stakeholders have specified we must achieve a recall (TPR)
+of at least 70% and a precision of at least 85%. Let\'s write a function
+that will show us the ROC curve, confusion matrix, and precision-recall
+curve and indicate the region we need to be in as well as where we
+currently are:
+
+```
+>>> from ml_utils.classification import (
+...     confusion_matrix_visual, plot_pr_curve, plot_roc
+... )
+>>> def plot_performance(model, X, y, threshold=None, 
+...                      title=None, show_target=True):
+...     """
+...     Plot ROC, confusion matrix, and precision-recall curve.
+...     
+...     Parameters:
+...         - model: The model object to use for prediction.
+...         - X: The features to pass in for prediction.
+...         - y: The actuals to evaluate the prediction.
+...         - threshold: Value to use as when predicting 
+...                      probabilities.
+...         - title: A title for the subplots.
+...         - show_target: Whether to show the target regions.
+...         
+...     Returns: 
+...         Matplotlib `Axes` object.
+...     """
+...     fig, axes = plt.subplots(1, 3, figsize=(20, 5))
+...     # plot each visualization
+...     plot_roc(y, model.predict_proba(X)[:,1], ax=axes[0])
+...     confusion_matrix_visual(
+...         y, 
+...         model.predict_proba(X)[:,1] >= (threshold or 0.5), 
+...         class_labels=[False, True], ax=axes[1]
+...     )
+...     plot_pr_curve(
+...         y, model.predict_proba(X)[:,1], ax=axes[2]
+...     )
+...
+...     # show the target regions if desired
+...     if show_target:
+...         axes[0]\
+...             .axvspan(0, 0.1, color='lightgreen', alpha=0.5)
+...         axes[0]\
+...             .axhspan(0.7, 1, color='lightgreen', alpha=0.5)
+...         axes[0].annotate(
+...             'region with acceptable\nFPR and TPR', 
+...             xy=(0.1, 0.7), xytext=(0.17, 0.65), 
+...             arrowprops=dict(arrowstyle='->')
+...         )
+...
+...         axes[2]\
+...             .axvspan(0.7, 1, color='lightgreen', alpha=0.5)
+...         axes[2].axhspan(
+...             0.85, 1, color='lightgreen', alpha=0.5
+...         )
+...         axes[2].annotate(
+...             'region with acceptable\nprecision and recall', 
+...             xy=(0.7, 0.85), xytext=(0.3, 0.6), 
+...             arrowprops=dict(arrowstyle='->')
+...         )
+...
+...         # mark the current performance
+...         tn, fn, fp, tp = \
+...             [int(x.get_text()) for x in axes[1].texts]
+...         precision, recall = tp / (tp + fp), tp / (tp + fn)
+...         fpr = fp / (fp + tn)
+...
+...         prefix = 'current performance' if not threshold \
+...                  else f'chosen threshold: {threshold:.2%}'
+...         axes[0].annotate(
+...             f'{prefix}\n- FPR={fpr:.2%}'
+...             f'\n- TPR={recall:.2%}',
+...             xy=(fpr, recall), xytext=(0.05, 0.45), 
+...             arrowprops=dict(arrowstyle='->')
+...         )
+...         axes[2].annotate(
+...             f'{prefix}\n- precision={precision:.2%}'
+...             f'\n- recall={recall:.2%}', 
+...             xy=(recall, precision), xytext=(0.2, 0.85), 
+...             arrowprops=dict(arrowstyle='->')
+...         )
+...
+...     if title: # show the title if specified
+...         plt.suptitle(title)
+... 
+...     return axes
+```
+
+Now, let\'s call the function to see how we are
+doing:
+
+```
+>>> axes = plot_performance(
+...     model, X_jan, y_jan, 
+...     title='Stochastic Gradient Descent Classifier '
+...           '(Tested on January 2019 Data)'
 ... )
 ```
 
-
-This gives us a better idea of the variation in price on a given day;
-the taller the vertical distance, the higher the fluctuation:
-
-
-![](./images/fig_6.32.jpg)
+Notice we are not currently meeting the specifications of our
+stakeholders; our performance is not in the target region:
 
 
-
-By providing a Boolean mask to the
-`where` argument, we can specify when to fill the area between
-the curves. Let\'s fill in only December from the previous example. We
-will add dashed lines for the high price curve and the low price curve
-throughout the time period to see what is happening:
-
-```
->>> fb_q4 = fb.loc['2018-Q4']
->>> plt.fill_between(
-...     fb_q4.index, fb_q4.high, fb_q4.low, 
-...     where=fb_q4.index.month == 12, 
-...     color='khaki', label='December differential'
-... )
->>> plt.plot(fb_q4.index, fb_q4.high, '--', label='daily high')
->>> plt.plot(fb_q4.index, fb_q4.low, '--', label='daily low') 
->>> plt.xticks([
-...     '2018-10-01', '2018-11-01', '2018-12-01', '2019-01-01'
-... ])
->>> plt.xlabel('date')
->>> plt.ylabel('price ($)')
->>> plt.legend()
->>> plt.title(
-...     'FB differential between high and low price Q4 2018'
-... )
-```
+![](./images/Figure_11.17_B16834.jpg)
 
 
-This results in the following plot:
+Figure 11.17 -- Model performance with a default threshold
 
+Our resulting recall (TPR) is 63.64%, which doesn\'t meet the goal of
+70% or better. By default, when we use the `predict()` method,
+our probability threshold is 50%. If we are targeting a specific
+precision/recall or TPR/FPR region, we may have to change the threshold
+and use `predict_proba()` to get the desired performance.
 
-![](./images/fig_6.33.jpg)
-
-
-
-With reference lines and shaded regions, we are
-able to draw attention to certain areas, and can even label them in the
-legend, but we are limited in the text we can use to explain them.
-Let\'s now discuss how to annotate our plot for additional context.
-
-
-
-Annotations
------------
-
-We will often find the need to annotate specific
-points in our visualizations either to point out events, such as the
-days on which Facebook\'s stock price dropped due to certain news
-stories breaking, or to label values that are important for comparisons.
-For example, let\'s use the `plt.annotate()` function to label
-the support and resistance:
+The `ml_utils.classification` module contains the
+`find_threshold_roc()` and `find_threshold_pr()`
+functions, which will help us pick a threshold along the ROC curve or
+precision-recall curve, respectively. Since we are targeting a specific
+precision/recall region, we will use the latter. This function uses the
+`precision_recall_curve()` function from
+`scikit-learn` also, but instead of
+plotting the resulting precision and recall data,
+we use it to select the thresholds that meet our criteria:
 
 ```
->>> ax = fb.close.plot(
-...     title='FB Closing Price 2018',
-...     figsize=(15, 3)
-... )
->>> ax.set_ylabel('price ($)')
->>> ax.axhspan(support, resistance, alpha=0.2)
->>> plt.annotate(
-...     f'support\n(${support:,.2f})',
-...     xy=('2018-12-31', support),
-...     xytext=('2019-01-21', support),
-...     arrowprops={'arrowstyle': '->'}
-... )
->>> plt.annotate(
-...     f'resistance\n(${resistance:,.2f})',
-...     xy=('2018-12-23', resistance)
-... ) 
->>> for spine in ['top', 'right']:
-...     ax.spines[spine].set_visible(False)
+from sklearn.metrics import precision_recall_curve
+def find_threshold_pr(y_test, y_preds, *, min_precision,  
+                      min_recall):
+    """
+    Find the threshold to use with `predict_proba()` for 
+    classification based on the minimum acceptable precision 
+    and the minimum acceptable recall.
+    Parameters:
+        - y_test: The actual labels.
+        - y_preds: The predicted labels.
+        - min_precision: The minimum acceptable precision.
+        - min_recall: The minimum acceptable recall.
+    Returns: The thresholds that meet the criteria.
+    """
+    precision, recall, thresholds = \
+        precision_recall_curve(y_test, y_preds)
+    # precision and recall have one extra value at the end 
+    # for plotting -- needs to be removed to make a mask 
+    return thresholds[
+        (precision[:-1] >= min_precision) & 
+        (recall[:-1] >= min_recall)
+    ]
 ```
 
+Important note
 
-Notice the annotations are different; when we annotated the resistance,
-we only provided the text for the annotation and the coordinates of the
-point being annotated with the `xy` argument. However, when we
-annotated the support, we also provided values for the
-`xytext` and `arrowprops` arguments; this allowed us
-to put the text somewhere other than where the value occurred and add an
-arrow indicating where it occurred. By doing so, we avoid obscuring the
-last few days of data with our label:
+The notebook also shows an example of finding a threshold for a TPR/FPR
+goal. Our current target precision/recall happens to give the same
+threshold as targeting a TPR (recall) of at least 70% and an FPR of at
+most 10%.
 
-
-![](./images/fig_6.34.jpg)
-
-
-
-The `arrowprops` argument gives us quite
-a bit of customization over the type of arrow we want, although it might
-be difficult to get it perfect. As an example, let\'s annotate the big
-decline in the price of Facebook in July with the percentage drop:
+Let\'s use this function to find a threshold that
+meets our stakeholders\' specifications. We take the max of the
+probabilities that fall in the desired region to pick the least
+sensitive of the candidate thresholds:
 
 ```
->>> close_price = fb.loc['2018-07-25', 'close']
->>> open_price = fb.loc['2018-07-26', 'open']
->>> pct_drop = (open_price - close_price) / close_price
->>> fb.close.plot(title='FB Closing Price 2018', alpha=0.5)
->>> plt.annotate(
-...     f'{pct_drop:.2%}', va='center',
-...     xy=('2018-07-27', (open_price + close_price) / 2),
-...     xytext=('2018-08-20', (open_price + close_price) / 2),
-...     arrowprops=dict(arrowstyle='-[,widthB=4.0,lengthB=0.2')
-... )
->>> plt.ylabel('price ($)')
+>>> from ml_utils.classification import find_threshold_pr
+>>> threshold = find_threshold_pr(
+...     y_jan, model.predict_proba(X_jan)[:,1], 
+...     min_precision=0.85, min_recall=0.7
+... ).max()
+>>> threshold
+0.0051533333839830974
 ```
 
-
-Notice that we were able to format the `pct_drop` variable as
-a percentage with two digits of precision by using `.2%` in
-the format specifier of the f-string. In addition, by specifying
-`va='center'`, we tell `matplotlib` to vertically
-center our annotation in the middle of the arrow:
-
-
-![](./images/fig_6.35.jpg)
-
-
-
-Matplotlib provides a lot of flexibility to
-customize these annotations---we can pass any option that the
-`Text` class in `matplotlib` supports
-(<https://matplotlib.org/api/text_api.html#matplotlib.text.Text>). To
-change colors, simply pass the desired color in the `color`
-argument. We can also control font size, weight, family, and style
-through the `fontsize`, `fontweight`,
-`fontfamily`, and `fontstyle` arguments,
-respectively.
-
-
-
-Colors
-------
-
-For the sake of consistency, the visualizations we
-produce should stick to a color scheme. Companies and academic
-institutions alike often have custom color palettes for presentations.
-We can easily adopt the same color palette in our visualizations too.
-
-So far, we have either been providing colors to the `color`
-argument with their single character names, such as `'b'` for
-blue and `'k'` for black, or their names (`'blue'`
-or `'black'`). We have also seen that `matplotlib`
-has many colors that can be specified by name; the full list can be
-found in the documentation at
-<https://matplotlib.org/examples/color/named_colors.html>.
-
-**Important note:**
-
-Remember that if we are providing a color with the `style`
-argument, we are limited to the colors that have a single-character
-abbreviation.
-
-In addition, we can provide a hex code for the
-color we want; those who have worked with HTML or CSS in the past will
-no doubt be familiar with these as a way to specify the exact color
-(regardless of what different places call it). For those unfamiliar with
-a hex color code, it specifies the amount of red, green, and blue used
-to make the color in question in the `#RRGGBB` format. Black
-is `#000000` and white is `#FFFFFF`
-(case-insensitive). This may be confusing because `F` is most
-definitely not a number; however, these are hexadecimal numbers (base
-16, not the base 10 we traditionally use), where `0-9` still
-represents `0-9`, but `A-F` represents
-`10-15`.
-
-Matplotlib accepts hex codes as a string to the `color`
-argument. To illustrate this, let\'s plot Facebook\'s opening price in
-`#8000FF`:
+This result tells us that we can reach the desired precision and recall
+if we flag results that have a 0.52% chance of being in the positive
+class. No doubt this seems like a very low probability, or that the
+model isn\'t sure of itself, but we can think about it this way: if the
+model thinks there is even a slight chance that the login activity is
+suspicious, we want to know. Let\'s see how our
+performance looks using this threshold:
 
 ```
->>> fb.plot(
-...     y='open',
-...     figsize=(5, 3),
-...     color='#8000FF',
-...     legend=False,
-...     title='Evolution of FB Opening Price in 2018'
-... )
->>> plt.ylabel('price ($)')
-```
-
-
-This results in a purple line plot:
-
-
-![](./images/fig_6.36.jpg)
-
-
-
-Alternatively, we may be given the values in RGB or **red, green, blue,
-alpha** (**RGBA**) values, in which case we can
-pass them to the `color` argument as a
-tuple. If we don\'t provide the alpha, it will default to `1`
-for opaque. One thing to note here is that, while we will find these
-numbers presented in the range \[0, 255\],
-`matplotlib` requires them to be in the range \[0, 1\], so we
-must divide each by 255. The following code is equivalent to the
-preceding example, except we use the RGB tuple instead of the hex code:
-
-```
-fb.plot(
-    y='open',
-    figsize=(5, 3),
-    color=(128 / 255, 0, 1),
-    legend=False,
-    title='Evolution of FB Opening Price in 2018'
-)
-plt.ylabel('price ($)')
-```
-
-
-In the previous lab, we saw several examples in which we needed many
-different colors for the varying data we were plotting, but where do
-these colors come from? Well, `matplotlib` has numerous
-colormaps that are used for this purpose.
-
-### Colormaps
-
-Rather than having to specify all the colors we
-want to use upfront, `matplotlib` can take a colormap and
-cycle through the colors there. When we discussed heatmaps in the
-previous lab, we considered the importance of using the proper class
-of colormap for the given task. There are three types of colormaps, each
-with its own purpose, as shown in the following table:
-
-
-![](./images/fig_6.37.jpg)
-
-
-
-**Tip:** 
-
-Browse colors by name, hex, and RGB values at
-<https://www.color-hex.com/>, and find the full color spectrum for the
-colormaps at
-<https://matplotlib.org/gallery/color/colormap_reference.html>.
-
-In Python, we can obtain a list of all the available colormaps by
-running the following:
-
-```
->>> from matplotlib import cm
->>> cm.datad.keys()
-dict_keys(['Blues', 'BrBG', 'BuGn', 'BuPu', 'CMRmap', 'GnBu', 
-           'Greens', 'Greys', 'OrRd', 'Oranges', 'PRGn', 
-           'PiYG', 'PuBu', 'PuBuGn', 'PuOr', 'PuRd', 'Purples', 
-           'RdBu', 'RdGy', 'RdPu', 'RdYlBu', 'RdYlGn', 
-           'Reds', ..., 'Blues_r', 'BrBG_r', 'BuGn_r', ...])
-```
-
-
-Notice that some of the colormaps are present
-twice where one is in the reverse order, signified by the `_r`
-suffix on the name. This is very helpful since we don\'t have to invert
-our data to map the values to the colors we want. Pandas accepts these
-colormaps as strings or `matplotlib` colormaps with the
-`colormap` argument of the `plot()` method, meaning
-we can pass in `'coolwarm_r'`,
-`cm.get_cmap('coolwarm_r')`, or `cm.coolwarm_r` and
-get the same result.
-
-Let\'s use the `coolwarm_r` colormap to show how Facebook
-stock\'s closing price oscillates between the 20-day rolling minimum and
-maximum prices:
-
-```
->>> ax = fb.assign(
-...     rolling_min=lambda x: x.low.rolling(20).min(),
-...     rolling_max=lambda x: x.high.rolling(20).max()
-... ).plot(
-...     y=['rolling_max', 'rolling_min'], 
-...     colormap='coolwarm_r', 
-...     label=['20D rolling max', '20D rolling min'],
-...     style=[':', '--'],
-...     figsize=(12, 3),
-...     title='FB closing price in 2018 oscillating between '
-...           '20-day rolling minimum and maximum price'
-... )
->>> ax.plot(
-...     fb.close, 'purple', alpha=0.25, label='closing price'
-... )
->>> plt.legend()
->>> plt.ylabel('price ($)')
-```
-
-
-Notice how easy it was to get red to represent hot
-performance (rolling maximum) and blue for cold (rolling minimum), by
-using the reversed colormap, rather than trying to make sure
-`pandas` plotted the rolling minimum first:
-
-
-![](./images/fig_6.38.jpg)
-
-
-
-The `colormap` object is a callable, meaning we can pass it
-values in the range \[0, 1\] and it will tell us the RGBA value for that
-point on the colormap, which we can use for the `color`
-argument. This gives us more fine-tuned control over the colors that we
-use from the colormap. We can use this technique to control how we
-spread the colormap across our data. For example, we can ask for the
-midpoint of the `ocean` colormap to use with the
-`color` argument:
-
-```
->>> cm.get_cmap('ocean')(.5)
-(0.0, 0.2529411764705882, 0.5019607843137255, 1.0)
-```
-
-Despite the wealth of colormaps available, we may find the need to
-create our own. Perhaps we have a color palette we like to work with or
-have some requirement that we use a specific color scheme. We can make
-our own colormaps with `matplotlib`. Let\'s make a blended
-colormap that goes from purple (`#800080`) to yellow
-(`#FFFF00`) with orange (`#FFA500`) in the center.
-All the functions we need for this are in `color_utils.py`. We
-can import the functions like this if we are running Python from the
-same directory as the file:
-
-```
->>> import color_utils
-```
-
-
-First, we need to translate these hex colors to
-their RGB equivalents, which is what the
-`hex_to_rgb_color_list()` function will do. Note that this
-function can also handle the shorthand hex codes of three digits when
-the RGB values use the same hexadecimal digit for both of the digits
-(for example, `#F1D` is the shorthand equivalent of
-`#FF11DD`):
-
-```
-import re
-def hex_to_rgb_color_list(colors):
-    """
-    Take color or list of hex code colors and convert them 
-    to RGB colors in the range [0,1].
-    Parameters:
-        - colors: Color or list of color strings as hex codes
-    Returns:
-        The color or list of colors in RGB representation.
-    """
-    if isinstance(colors, str):
-        colors = [colors]
-    for i, color in enumerate(
-        [color.replace('#', '') for color in colors]
-    ):
-        hex_length = len(color)
-        if hex_length not in [3, 6]:
-            raise ValueError(
-                'Colors must be of the form #FFFFFF or #FFF'
-            )
-        regex = '.' * (hex_length // 3)
-        colors[i] = [
-            int(val * (6 // hex_length), 16) / 255
-            for val in re.findall(regex, color)
-        ]
-    return colors[0] if len(colors) == 1 else colors
-```
-
-
-**Tip:** 
-
-Take a look at the `enumerate()` function; this lets us grab
-the index and the value at that index when we iterate, rather than
-looking up the value in the loop. Also, notice how easy it is for Python
-to convert base 10 numbers to hexadecimal numbers with the
-`int()` function by specifying the base. (Remember that
-`//` is integer division---we have to do this since
-`int()` expects an integer and not a float.)
-
-The next function we need is one to take those RGB
-colors and create the values for the colormap. This function will need
-to do the following:
-
-1.  Create a 4D NumPy array with 256 slots for color definitions. Note
-    that we don\'t want to change the transparency, so we will leave the
-    fourth dimension (alpha) alone.
-2.  For each dimension (red, green, and blue), use the
-    `np.linspace()` function to create even transitions
-    between the target colors (that is, transition from the red
-    component of color 1 to the red component of color 2, then to the
-    red component of color 3, and so on, before
-    repeating this process with the green components and finally the
-    blue components).
-3.  Return a `ListedColormap` object that we can use when
-    plotting.
-
-This is what the `blended_cmap()` function does:
-
-```
-from matplotlib.colors import ListedColormap
-import numpy as np
-def blended_cmap(rgb_color_list):
-    """
-    Create a colormap blending from one color to the other.
-    Parameters:
-        - rgb_color_list: List of colors represented as 
-          [R, G, B] values in the range [0, 1], like 
-          [[0, 0, 0], [1, 1, 1]], for black and white.
-    Returns: 
-        A matplotlib `ListedColormap` object
-    """
-    if not isinstance(rgb_color_list, list):
-        raise ValueError('Colors must be passed as a list.')
-    elif len(rgb_color_list) < 2:
-        raise ValueError('Must specify at least 2 colors.')
-    elif (
-        not isinstance(rgb_color_list[0], list)
-        or not isinstance(rgb_color_list[1], list)
-    ) or (
-        (len(rgb_color_list[0]) != 3 
-        or len(rgb_color_list[1]) != 3)
-    ):
-        raise ValueError(
-            'Each color should be a list of size 3.'
-        )
-    N, entries = 256, 4 # red, green, blue, alpha
-    rgbas = np.ones((N, entries))
-    segment_count = len(rgb_color_list) – 1
-    segment_size = N // segment_count
-    remainder = N % segment_count # need to add this back later
-    for i in range(entries - 1): # we don't alter alphas
-        updates = []
-        for seg in range(1, segment_count + 1):
-            # handle uneven splits due to remainder
-            offset = 0 if not remainder or seg > 1 \
-                     else remainder
-            updates.append(np.linspace(
-                start=rgb_color_list[seg - 1][i], 
-                stop=rgb_color_list[seg][i], 
-                num=segment_size + offset
-            ))
-        rgbas[:,i] = np.concatenate(updates)
-    return ListedColormap(rgbas)
-```
-
-
-We can use the `draw_cmap()` function to draw a colorbar,
-which allows us to visualize our colormap:
-
-```
-import matplotlib.pyplot as plt
-def draw_cmap(cmap, values=np.array([[0, 1]]), **kwargs):
-    """
-    Draw a colorbar for visualizing a colormap.
-    Parameters:
-        - cmap: A matplotlib colormap
-        - values: Values to use for the colormap
-        - kwargs: Keyword arguments to pass to `plt.colorbar()`
-    Returns:
-        A matplotlib `Colorbar` object, which you can save 
-        with: `plt.savefig(<file_name>, bbox_inches='tight')`
-    """
-    img = plt.imshow(values, cmap=cmap)
-    cbar = plt.colorbar(**kwargs)
-    img.axes.remove()
-    return cbar
-```
-
-
-This function makes it easy for us to add a
-colorbar with a custom colormap for any visualization we choose. Let\'s use these
-functions to create and visualize our colormap. We will be using them by
-importing the module (which we did earlier):
-
-```
->>> my_colors = ['#800080', '#FFA500', '#FFFF00']
->>> rgbs = color_utils.hex_to_rgb_color_list(my_colors)
->>> my_cmap = color_utils.blended_cmap(rgbs)
->>> color_utils.draw_cmap(my_cmap, orientation='horizontal')
-```
-
-
-This results in the following colorbar showing our colormap:
-
-
-![](./images/fig_6.39.jpg)
-
-
-
-As we have seen in the colorbar we created, these colormaps have the
-ability to show different gradients of the colors to capture values on a
-continuum. If we merely want each line in our line
-plot to be a different color, we most likely want to cycle between
-different colors. For that, we can use `itertools.cycle()`
-with a list of colors; they won\'t be blended, but we can cycle through
-them endlessly because it will be an infinite iterator. We used this
-technique earlier in the lab to define our own colors for the
-regression residuals plots:
-
-```
->>> import itertools
->>> colors = itertools.cycle(['#ffffff', '#f0f0f0', '#000000'])
->>> colors
-<itertools.cycle at 0x1fe4f300>
->>> next(colors)
-'#ffffff'
-```
-
-
-Even simpler would be the case where we have a list of colors somewhere,
-but rather than putting that in our plotting code and storing another
-copy in memory, we can write a simple **generator** that just *yields*
-from that master list. By using generators, we are
-being efficient with memory without crowding our plotting code with the
-color logic. Note that a generator is defined as a function, but instead
-of using `return`, it uses `yield`. The following
-snippet shows a mock-up for this scenario, which is similar to the
-`itertools` solution; however, it is not infinite. This just
-goes to show that we can find many ways to do something in Python; we
-have to find the implementation that best meets our needs:
-
-```
-from my_plotting_module import master_color_list
-def color_generator():
-    yield from master_color_list
-```
-
-
-Using `matplotlib`, the alternative would be to instantiate a
-`ListedColormap` object with the color list and define a large
-value for `N` so that it repeats for long enough (if we don\'t
-provide it, it will only go through the colors once):
-
-```
->>> from matplotlib.colors import ListedColormap
->>> red_black = ListedColormap(['red', 'black'], N=2000)
->>> [red_black(i) for i in range(3)]
-[(1.0, 0.0, 0.0, 1.0), 
- (0.0, 0.0, 0.0, 1.0), 
- (1.0, 0.0, 0.0, 1.0)]
-```
-
-
-Note that we can also use `cycler` from
-the `matplotlib` team, which adds additional flexibility by
-allowing us to define combinations of colors, line styles, markers, line
-widths, and more to cycle through.
-
-### Conditional coloring
-
-We can write a generator to determine plot color based on our data and
-only calculate it when it is asked for. Let\'s say we wanted to assign
-colors to years from 1992 to 200018 (no, that\'s not a typo) based on
-whether they are leap years, and distinguish why they aren\'t leap years
-(for example, we want a special color for years divisible by 100 but not
-400, which aren\'t leap years). We certainly don\'t want to keep a list
-this size in memory, so we create a generator to calculate the color on
-demand:
-
-```
-def color_generator():
-    for year in range(1992, 200019): # integers [1992, 200019)
-        if year % 100 == 0 and year % 400 != 0: 
-            # special case (divisible by 100 but not 400)
-            color = '#f0f0f0'
-        elif year % 4 == 0:
-            # leap year (divisible by 4)
-            color = '#000000'
-        else:
-            color = '#ffffff'
-        yield color
-```
-
-
-**Important note:**
-
-The modulo operator can be used to check the divisibility
-of one number by another and is often used to check whether a number is
-odd or even. Here, we are using it to see whether the conditions for
-being a leap year (which depend on divisibility) are met.
-
-Since we defined `year_colors` as a
-generator, Python will remember where we are in this function and resume
-when `next()` is called:
-
-```
->>> year_colors = color_generator()
->>> year_colors
-<generator object color_generator at 0x7bef148dfed0>
->>> next(year_colors)
-'#000000'
-```
-
-
-Simpler generators can be written with **generator
-expressions**. For example, if we don\'t care about the special case
-anymore, we can use the following:
-
-```
->>> year_colors = (
-...     '#ffffff'
-...     if (not year % 100 and year % 400) or year % 4
-...     else '#000000' for year in range(1992, 200019)
-... )
->>> year_colors
-<generator object <genexpr> at 0x7bef14415138>
->>> next(year_colors)
-'#000000'
-```
-
-
-Those not coming from Python might find it strange that our Boolean
-conditions in the previous code snippet are actually numbers
-(`year % 400` results in an integer). This is taking advantage
-of Python\'s *truthy*/*falsey* values; values that have zero value (such
-as the number `0`) or are empty (such as `[]` or
-`''`) are *falsey*. Therefore, while in the first generator,
-we wrote `year % 400 != 0` to show exactly what was going on,
-the more **Pythonic** way is `year % 400`, since if there is
-no remainder (evaluates to 0), the statement will
-be evaluated as `False`, and vice versa.
-Obviously, we will have times where we must choose between readability
-and being Pythonic, but it\'s good to be aware of
-how to write Pythonic code, as it will often be
-more efficient.
-
-**Tip:** 
-
-Run `import this` in Python to see **the Zen of Python**,
-which gives some ideas of what it means to be
-Pythonic.
-
-Now that we have some exposure to working with colors in
-`matplotlib`, let\'s consider another way we can make our data
-stand out. Depending on what we are plotting or how our visualization
-will be used (for example, in black and white), it might make sense to
-use textures along with, or instead of, colors.
-
-
-
-Textures
---------
-
-In addition to customizing the colors used in our
-visualizations, `matplotlib` also makes it possible to include
-textures with a variety of plotting functions. This is achieved via the
-`hatch` argument, which `pandas` will pass down for
-us. Let\'s create a bar plot of weekly volume traded in Facebook stock
-during Q4 2018 with textured bars:
-
-```
->>> weekly_volume_traded = fb.loc['2018-Q4']\
-...     .groupby(pd.Grouper(freq='W')).volume.sum()
->>> weekly_volume_traded.index = \
-...     weekly_volume_traded.index.strftime('W %W')
->>> ax = weekly_volume_traded.plot(
-...     kind='bar',
-...     hatch='*',
-...     color='lightgray',
-...     title='Volume traded per week in Q4 2018'
-... )
->>> ax.set(
-...     xlabel='week number', 
-...     ylabel='volume traded'
+>>> axes = plot_performance(
+...     model, X_jan, y_jan, threshold=threshold, 
+...     title='Stochastic Gradient Descent Classifier '
+...           '(Tested on January 2019 Data)'
 ... )
 ```
 
-
-With `hatch='*'`, our bars are filled with stars. Notice that
-we also set the color for each of the bars, so there is a lot of
-flexibility here:
+This threshold gives us a recall of 70.45%, satisfying our stakeholders.
+Our precision is in the acceptable range as well:
 
 
-![](./images/fig_6.40.jpg)
+![](./images/Figure_11.18_B16834.jpg)
 
 
+Figure 11.18 -- Model performance using a custom threshold
 
-Textures can also be combined to make new patterns and repeated to
-intensify the effect. Let\'s revisit the `plt.fill_between()`
-example where we colored the December section only. This
-time we will use textures to distinguish between each month, rather than
-only shading December; we will fill October with rings, November with
-slashes, and December with small dots:
+Using the custom threshold, we have correctly identified another three
+cases, reducing our false negatives, which are very costly for the SOC.
+Here, this improvement didn\'t come at the cost of additional false
+positives, but remember, there is often a trade-off between
+reducing false negatives (**type II error**) and
+reducing false positives (**type I error**). In some cases, we have a
+very low tolerance for type I errors (the FPR must be very small),
+whereas in others, we are more concerned with finding all the positive
+cases (the TPR must be high). In information security, we have a low
+tolerance for false negatives because they are very costly; therefore,
+we will move forward with the custom threshold.
+
+Important note
+
+Sometimes, the requirements of a model\'s performance aren\'t feasible.
+It\'s important to maintain an open line of communication with
+stakeholders to explain the issues and discuss relaxing criteria when
+necessary.
+
+### Updating the model
+
+Continuous updating will help the model adapt to changes in hacker
+behavior over time. Now that we have evaluated
+our January predictions, we can use them to update the model. To do so,
+we use the `partial_fit()` method and the labeled data for
+January, which will run a single epoch on the January data:
 
 ```
->>> import calendar
->>> fb_q4 = fb.loc['2018-Q4']
->>> for texture, month in zip(
-...     ['oo', '/\\/\\', '...'], [10, 11, 12]
-... ):
-...     plt.fill_between(
-...         fb_q4.index, fb_q4.high, fb_q4.low,
-...         hatch=texture, facecolor='white',
-...         where=fb_q4.index.month == month,
-...         label=f'{calendar.month_name[month]} differential'
-...     )
->>> plt.plot(fb_q4.index, fb_q4.high, '--', label='daily high')
->>> plt.plot(fb_q4.index, fb_q4.low, '--', label='daily low')
->>> plt.xticks([
-...     '2018-10-01', '2018-11-01', '2018-12-01', '2019-01-01'
-... ])
->>> plt.xlabel('date')
->>> plt.ylabel('price ($)')
->>> plt.title(
-...     'FB differential between high and low price Q4 2018'
+>>> model.partial_fit(X_jan, y_jan)
+```
+
+Our model has now been updated, so we can test its performance on the
+February data now. Let\'s grab the February data first:
+
+```
+>>> X_feb, y_feb = get_X_y(logs_2019, '2019-02', hackers_2019)
+```
+
+February had fewer attacks, but we caught a higher percentage of them
+(80%):
+
+```
+>>> print(classification_report(
+...     y_feb, model.predict_proba(X_feb)[:,1] >= threshold
+... ))
+              precision    recall  f1-score   support
+       False       1.00      1.00      1.00     40248
+        True       1.00      0.80      0.89        10
+    accuracy                           1.00     40258
+   macro avg       1.00      0.90      0.94     40258
+weighted avg       1.00      1.00      1.00     40258
+```
+
+Let\'s look at the performance plots for February
+to see how they changed:
+
+```
+>>> axes = plot_performance(
+...     model, X_feb, y_feb, threshold=threshold,
+...     title='Stochastic Gradient Descent Classifier '
+...           '(Tested on February 2019 Data)'
 ... )
->>> plt.legend()
 ```
 
-
-Using `hatch='o'` would yield thin rings, so we used
-`'oo'` to get thicker rings for October. For November, we
-wanted a crisscross pattern, so we combined two forward slashes and two
-backslashes (we actually have four backslashes
-because they must be escaped). To achieve the small dots for December,
-we used three periods---the more we add, the denser the texture becomes:
+Notice the area under the precision-recall curve has increased and more
+of the curve is in the target region:
 
 
-![](./images/fig_6.41.jpg)
+![](./images/Figure_11.19_B16834.jpg)
 
 
+Figure 11.19 -- Model performance after one update
 
-This concludes our discussion of plot customizations. By no means was
-this meant to be complete, so be sure to explore the
-`matplotlib` API for more.
+### Presenting our results
+
+The SOC has finished up the March data. They want us to implement into
+our model the feedback they gave on our February
+predictions, and then make predictions for the March data for them to
+review. They will be evaluating our performance on each minute in March,
+using the classification report, ROC curve, confusion matrix, and
+precision-recall curve. It\'s time to put our model to the test.
+
+First, we need to update our model for the February data:
+
+```
+>>> model.partial_fit(X_feb, y_feb)
+```
+
+Next, we grab the March data and make our predictions, using a threshold
+of 0.52%:
+
+```
+>>> X_march, y_march = \
+...     get_X_y(logs_2019, '2019-03', hackers_2019)
+>>> march_2019_preds = \
+...     model.predict_proba(X_march)[:,1] >= threshold
+```
+
+Our classification report looks good. We have a recall of 76%, a
+precision of 88%, and a solid F[1]{.subscript} score:
+
+```
+>>> from sklearn.metrics import classification_report
+>>> print(classification_report(y_march, march_2019_preds))
+              precision    recall  f1-score   support
+       False       1.00      1.00      1.00     44154
+        True       0.88      0.76      0.81        29
+    accuracy                           1.00     44183
+   macro avg       0.94      0.88      0.91     44183
+weighted avg       1.00      1.00      1.00     44183
+```
+
+Now, let\'s see how the plots look:
+
+```
+>>> axes = plot_performance(
+...     model, X_march, y_march, threshold=threshold,
+...     title='Stochastic Gradient Descent Classifier '
+...           '(Tested on March 2019 Data)'
+... )
+```
+
+Our AUC for the ROC curve is slightly higher now,
+while it dropped for the precision-recall curve:
+
+
+![](./images/Figure_11.20_B16834.jpg)
+
+
+Figure 11.20 -- Model performance after two updates
+
+### Further improvements
+
+The SOC is pleased with our results and now wants us to provide
+predictions each minute. They have also promised
+to provide feedback within an hour. We won\'t implement this request
+here, but we will briefly discuss how we could go about this.
+
+We have been using batch processing to update the model each month;
+however, in order to provide our stakeholders with what they want, we
+will need to shorten our feedback loop by performing the following
+actions:
+
+-   Running `predict_proba()` on our model every single minute
+    and having the predictions sent to our stakeholders. This will
+    require setting up a process to pass the logs one minute at a time
+    to a preprocessing function, and then to the model itself.
+-   Delivering the results to our stakeholders via an agreed-upon
+    medium. 
+-   Updating the model with `partial_fit()` every hour using
+    the feedback we receive from the stakeholders (once we have
+    determined how to have them share this information with us).
+
+After the aforementioned actions are implemented,
+all that remains is for us to put the model into production and
+determine the update and prediction frequencies everyone will be
+accountable for meeting.
+
 
 Summary
 =======
 
-In this lab, we learned how to create impressive and customized
-visualizations using `matplotlib`, `pandas`, and
-`seaborn`. We discussed how we can use `seaborn` for
-additional plotting types and cleaner versions of some familiar ones.
-Now we can easily make our own colormaps, annotate our plots, add
-reference lines and shaded regions, finesse the axes/legends/titles, and
-control most aspects of how our visualizations will appear. We also got
-a taste of working with `itertools` and creating our own
-generators.
+
+In practice, detecting attackers isn\'t easy. Real-life hackers are much
+savvier than the ones in this simulation. Attacks are also much less
+frequent, creating a huge class imbalance. Building machine learning
+models that will catch everything just isn\'t possible. That is why it
+is so vital that we work with those who have domain knowledge; they can
+help us squeeze some extra performance out of our models by really
+understanding the data and its peculiarities. No matter how experienced
+we become with machine learning, we should never turn down help from
+someone who often works with the data in question.
+
+Our initial attempts at anomaly detection were unsupervised while we
+waited for the labeled data from our subject matter experts. We tried
+LOF and isolation forest using `scikit-learn`. Once we
+received the labeled data and performance requirements from our
+stakeholders, we determined that the isolation forest model was better
+for our data.
+
+However, we didn\'t stop there. Since we had just been given the labeled
+data, we tried our hand at supervised methods. We learned how to build
+baseline models using dummy classifiers and Naive Bayes. Then, we
+revisited logistic regression to see whether it could help us. Our
+logistic regression model performed well; however, since it used a
+closed-form solution to find the coefficients, we were unable to
+incorporate a feedback loop without retraining the model from scratch.
+
+This limitation led us to build an online learning model, which is
+constantly updated. First, we had to make a subclass to allow pipelines
+to use the `partial_fit()` method. Then, we tried SGD
+classification with log loss. We were able to train on an entire year of
+data at once, and then update our model when we received new labeled
+data. This allows the model to adjust to changes in the distributions of
+the features over time.
+
+In the next lab, we will recap what we have learned throughout the
+course and introduce additional resources for finding data, as well as
+working with it in Python.
+
 
 Exercises
 =========
 
 
-Create the following visualizations using what we have learned so far in
-this course and the data from this lab. Be sure to add titles, axis
-labels, and legends (where appropriate) to the plots:
+Complete the following exercises for some practice with the machine
+learning workflow and exposure to some additional anomaly detection
+strategies:
 
-1.  Using `seaborn`, create a heatmap to visualize the
-    correlation coefficients between earthquake magnitude and whether
-    there was a tsunami for earthquakes measured with the `mb`
-    magnitude type.
+1.  A one-class SVM is another model that can be used for unsupervised
+    outlier detection. Build a one-class SVM with the default
+    parameters, using a pipeline with a `StandardScaler`
+    object followed by a `OneClassSVM` object. Train the model
+    on the January 2018 data, just as we did for the isolation forest.
+    Make predictions on that same data. Count the number of inliers and
+    outliers this model identifies.
 
-2.  Create a box plot of Facebook volume traded and closing prices, and
-    draw reference lines for the bounds of a Tukey fence with a
-    multiplier of 1.5. The bounds will be at *Q*[1]{.subscript} *− 1.5 ×
-    IQR* and *Q*[3]{.subscript} *+ 1.5 × IQR*. Be sure to use the
-    `quantile()` method on the data to make this easier. (Pick
-    whichever orientation you prefer for the plot, but make sure to use
-    subplots.)
+2.  Using the 2018 minutely data, build a k-means model with two
+    clusters after standardizing the data with a
+    `StandardScaler` object. With the labeled data in the
+    `attacks` table in the SQLite database
+    (`logs/logs.db`), see whether this model gets a good
+    Fowlkes-Mallows score (use the `fowlkes_mallows_score()`
+    function in `sklearn.metrics`).
 
-3.  Plot the evolution of cumulative COVID-19 cases worldwide, and add a
-    dashed vertical line on the date that it surpassed 1 million. Be
-    sure to format the tick labels on the *y*-axis accordingly.
+3.  Evaluate the performance of a random forest classifier for
+    supervised anomaly detection. Set `n_estimators` to
+    `100` and use the remaining defaults, including the
+    prediction threshold. Train on January 2018 and test on
+    February 2018.
 
-4.  Use `axvspan()` to shade a rectangle from
-    `'2018-07-25'` to `'2018-07-31'`, which marks
-    the large decline in Facebook price on a line plot of the closing
-    price.
+4.  The `partial_fit()` method isn\'t available with the
+    `GridSearchCV` class. Instead, we can use its
+    `fit()` method with a model that has a
+    `partial_fit()` method (or a
+    `PartialFitPipeline` object) to find the best
+    hyperparameters in our search space. Then, we can grab the best
+    model from the grid search (`best_estimator_`) and use
+    `partial_fit()` on it. Try this with the
+    `PassiveAggressiveClassifier` class from the
+    `sklearn.linear_model` module and a
+    `PartialFitPipeline` object. This online learning
+    classifier is passive when it makes a correct prediction, but
+    aggressive in correcting itself when it makes an incorrect
+    prediction. Don\'t worry about selecting a custom threshold. Be sure
+    to follow these steps:
 
-5.  Using the Facebook stock price data, annotate the following three
-    events on a line plot of the closing price:
+    a\) Run a grid search using the January 2018 data for the initial
+    training.
 
-    a\) **Disappointing user growth announced after close** on July 25,
-    2018
+    b\) Grab the tuned model with the `best_estimator_`
+    attribute.
 
-    b\) **Cambridge Analytica story breaks** on March 19, 2018 (when it
-    affected the market)
+    c\) Evaluate the best estimator with the February 2018 data.
 
-    c\) **FTC launches investigation** on March 20, 2018
+    d\) Make updates with the February 2018 data.
 
-6.  Modify the `reg_resid_plots()` function to use a
-    `matplotlib` colormap instead of cycling between two
-    colors. Remember, for this use case, we should pick a qualitative
-    colormap or make our own.
+    e\) Evaluate the final model on March through June 2018 data.

@@ -1,1915 +1,2236 @@
- 
 <img align="right" src="./logo.png">
 
 
-Lab 10: Visualizing Data with Pandas and Matplotlib
-=====================================================
+*Lab 10*: Making Better Predictions -- Optimizing Models
+========================================================
 
 
-So far, we have been working with data strictly in a tabular format.
-However, the human brain excels at picking out visual patterns; hence,
-our natural next step is learning how to visualize our data. In this lab, we will cover the following topics:
+In this lab, the following topics will be covered:
 
--   An introduction to matplotlib
--   Plotting with pandas
--   The pandas.plotting module
-
-
-#### Pre-reqs:
-- Google Chrome (Recommended)
-
-#### Lab Environment
-Notebooks are ready to run. All packages have been installed. There is no requirement for any setup.
-
-All examples are present in `~/work/machine-learning-essentials-module1/lab_10` folder. 
-
+-   Hyperparameter tuning with grid search
+-   Feature engineering
+-   Building ensemble models combining many estimators
+-   Inspecting classification prediction confidence
+-   Addressing class imbalance
+-   Penalizing high regression coefficients with regularization
 
 Lab materials
-==============
-
-We will be working with three datasets, all of which can be found in the
-`data/` directory. In the `fb_stock_prices_2018.csv`
-file, we have the daily opening, high, low, and closing prices of
-Facebook stock from January through December 2018, along with the volume
-traded. This was obtained using the `stock_analysis` package,
-which we will build in *Lab 12*,
-*Financial Analysis -- Bitcoin and the Stock Market*. The stock market
-is closed on the weekends, so we only have data for the trading days.
-
-The `earthquakes.csv` file contains earthquake data collected
-from the **United States Geological Survey** (**USGS**) API
-(<https://earthquake.usgs.gov/fdsnws/event/1/>) for September 18, 2018
-through October 13, 2018. For each earthquake, we have the value of the
-magnitude (the `mag` column), the scale it was measured on
-(the `magType` column), when (the `time` column) and
-where (the `place` column) it occurred, and the
-`parsed_place` column for the state or country where the
-earthquake occurred. Other unnecessary columns have been
-removed.
-
-In the `covid19_cases.csv` file, we have an export from the
-*daily number of new reported cases of COVID-19 by country worldwide*
-dataset provided by the **European Centre for Disease Prevention and Control** (**ECDC**), which can be found at
-<https://www.ecdc.europa.eu/en/publications-data/download-todays-data-geographic-distribution-covid-19-cases-worldwide>.
-For scripted or automated collection of this data, the ECDC makes the
-current day\'s CSV file available via
-<https://opendata.ecdc.europa.eu/covid19/casedistribution/csv>. The
-snapshot we will be using was collected on September 19, 2020 and
-contains the number of new COVID-19 cases per country from December 31,
-2019 through September 18, 2020, with partial data for September 19,
-2020. For this lab, we will look at the 8-month span from January
-18, 2020 through September 18, 2020.
-
-Throughout this lab, we will be working through three notebooks.
-These are numbered in the order they will be used---one for each of the
-main sections of this lab. We will begin our discussion of plotting
-in Python with an introduction to `matplotlib` in the
-`1-introducing_matplotlib.ipynb` notebook. Then, we will learn
-how to create visualizations using `pandas` in the
-`2-plotting_with_pandas.ipynb` notebook. Finally, we will
-explore some additional plotting options that `pandas`
-provides in the `3-pandas_plotting_module.ipynb` notebook. You
-will be prompted when it is time to switch between the notebooks.
+=================
 
 
+In this lab, we will be working with three datasets. The first two
+come from data on wine quality donated to the UCI Machine Learning Data
+Repository (<http://archive.ics.uci.edu/ml/index.php>) by P. Cortez, A.
+Cerdeira, F. Almeida, T. Matos, and J. Reis, and contain information on
+the chemical properties of various wine samples along with a rating of
+the quality from a blind tasting session by a panel of wine experts.
+These files can be found in the `data/` folder inside this
+lab\'s folder in the GitHub repository
+(<https://github.com/fenago/data-analysis-pandas/tree/master/lab_10>)
+as `winequality-red.csv` and `winequality-white.csv`
+for red and white wine, respectively.
 
-The basics
-----------
+Our third dataset was collected using the Open Exoplanet Catalogue
+database, at
+<https://github.com/OpenExoplanetCatalogue/open_exoplanet_catalogue/>,
+which provides data in XML format. The parsed planet data can be found
+in the `data/planets.csv` file. For the exercises, we will
+also be working with the star temperature data from [*Lab
+9*],
+*Getting Started with Machine Learning in Python*, which can be found in
+the `data/stars.csv` file.
 
-Rather than importing the whole `matplotlib` package, we will
-only import the `pyplot` module using the dot (`.`)
-notation; this reduces the amount of typing we need to do in order to
-access what we need, and we don\'t take up more space in memory with
-code we won\'t use. Note that `pyplot` is traditionally
-aliased as `plt`:
+For reference, the following data sources were used:
+
+-   *Open Exoplanet Catalogue database*, available at
+    <https://github.com/OpenExoplanetCatalogue/open_exoplanet_catalogue/#data-structure>.
+-   *P. Cortez, A. Cerdeira, F. Almeida, T. Matos and J. Reis. Modeling
+    wine preferences by data mining from physicochemical properties. In
+    Decision Support Systems, Elsevier, 47(4):547-553, 2009.* Available
+    online at <http://archive.ics.uci.edu/ml/datasets/Wine+Quality>.
+-   *Dua, D. and Karra Taniskidou, E. (2017). UCI Machine Learning
+    Repository (*<http://archive.ics.uci.edu/ml/index.php>*). Irvine,
+    CA: University of California, School of Information and Computer
+    Science.*
+
+We will be using the `red_wine.ipynb` notebook to predict red
+wine quality, `wine.ipynb` to distinguish between red and
+white wine based on their chemical properties, and the
+`planets_ml.ipynb` notebook to build a regression model to
+predict the year length of planets in Earth days.
+
+Before we get started, let\'s handle our imports and read in our data:
+
+```
+>>> %matplotlib inline
+>>> import matplotlib.pyplot as plt
+>>> import numpy as np
+>>> import pandas as pd
+>>> import seaborn as sns
+>>> planets = pd.read_csv('data/planets.csv') 
+>>> red_wine = pd.read_csv('data/winequality-red.csv')
+>>> white_wine = \
+...     pd.read_csv('data/winequality-white.csv', sep=';') 
+>>> wine = pd.concat([
+...     white_wine.assign(kind='white'),
+...     red_wine.assign(kind='red')
+... ])
+>>> red_wine['high_quality'] = pd.cut(
+...     red_wine.quality, bins=[0, 6, 10], labels=[0, 1]
+... )
+```
+
+Let\'s also create our training and testing sets for the red wine
+quality, wine type by chemical properties, and planets models:
+
+```
+>>> from sklearn.model_selection import train_test_split
+>>> red_y = red_wine.pop('high_quality')
+>>> red_X = red_wine.drop(columns='quality')
+>>> r_X_train, r_X_test, \
+... r_y_train, r_y_test = train_test_split(
+...     red_X, red_y, test_size=0.1, random_state=0,
+...     stratify=red_y
+... )
+>>> wine_y = np.where(wine.kind == 'red', 1, 0)
+>>> wine_X = wine.drop(columns=['quality', 'kind'])
+>>> w_X_train, w_X_test, \
+... w_y_train, w_y_test = train_test_split(
+...     wine_X, wine_y, test_size=0.25, 
+...     random_state=0, stratify=wine_y
+... )
+>>> data = planets[
+...     ['semimajoraxis', 'period', 'mass', 'eccentricity']
+... ].dropna()
+>>> planets_X = data[
+...     ['semimajoraxis', 'mass', 'eccentricity']
+... ]
+>>> planets_y = data.period
+>>> pl_X_train, pl_X_test, \
+... pl_y_train, pl_y_test = train_test_split(
+...     planets_X, planets_y, test_size=0.25, random_state=0
+... )
+```
+
+Important note
+
+Remember that we will be working in dedicated notebooks for each of the
+datasets, so while the setup code is all in the same code block to make
+it easier to follow in the course, make sure to work in the notebook
+corresponding to the data in question.
+
+
+Hyperparameter tuning with grid search
+======================================
+
+
+No doubt you have noticed that we can provide various parameters to the
+model classes when we instantiate them. These
+model parameters are not derived from the data itself and are referred
+to as **hyperparameters**. Some examples of these are regularization
+terms, which we will discuss later in this
+lab, and weights. Through the process of **model tuning**, we seek
+to optimize our model\'s performance by tuning these hyperparameters.
+
+How can we know we are picking the best values to
+optimize our model\'s performance? One way is to
+use a technique called **grid search** to tune
+these hyperparameters. Grid search allows us to define a search space
+and test all combinations of hyperparameters in that space, keeping the
+ones that result in the best model. The scoring criterion we define will
+determine the best model.
+
+Remember the elbow point method we discussed in *Lab 9*, *Getting
+Started with Machine Learning in Python*, for finding a good value for
+*k* in k-means clustering? We can employ a similar visual method to find
+the best value for our hyperparameters. This will involve
+splitting our training data into **training** and
+**validation sets**. We need to save the test set
+for the final evaluation of the model, so we use the validation set to
+test each of our models when searching for the best values of the
+hyperparameters. To reiterate, the validation set and the test set are
+not the same---they must be disjoint datasets. This split can be done
+with `train_test_split()`. Here, we will use the red wine
+quality dataset:
+
+```
+>>> from sklearn.model_selection import train_test_split
+>>> r_X_train_new, r_X_validate,\
+... r_y_train_new, r_y_validate = train_test_split(
+...     r_X_train, r_y_train, test_size=0.3, 
+...     random_state=0, stratify=r_y_train
+... )
+```
+
+Then, we can build the model multiple times for all the values of the
+hyperparameters we want to test, and score them based on the metric that
+matters most to us. Let\'s try to find a good
+value for `C`, the inverse of the regularization strength,
+which determines the weight of the penalty term for logistic regression
+and is discussed more in-depth in the *Regularization* section toward
+the end of this lab; we tune this hyperparameter to reduce
+overfitting:
+
+```
+>>> from sklearn.linear_model import LogisticRegression
+>>> from sklearn.metrics import f1_score
+>>> from sklearn.pipeline import Pipeline
+>>> from sklearn.preprocessing import MinMaxScaler
+# we will try 10 values from 10^-1 to 10^1 for C
+>>> inv_regularization_strengths = \
+...     np.logspace(-1, 1, num=10)
+>>> scores = []
+>>> for inv_reg_strength in inv_regularization_strengths:
+...     pipeline = Pipeline([
+...         ('scale', MinMaxScaler()),
+...         ('lr', LogisticRegression(
+...             class_weight='balanced', random_state=0,
+...             C=inv_reg_strength
+...         ))
+...     ]).fit(r_X_train_new, r_y_train_new)
+...     scores.append(f1_score(
+...         pipeline.predict(r_X_validate), r_y_validate
+...     ))
+```
+
+Tip
+
+Here, we are using `np.logspace()` to get our range of values
+to try for `C`. To use this function, we supply starting and
+stopping exponents to use with a base number (10, by default). So
+`np.logspace(-1, 1, num=10)` gives us 10 evenly spaced numbers
+between 10[-1]{.superscript} and 10[1]{.superscript}.
+
+This is then plotted as follows:
+
+```
+>>> plt.plot(inv_regularization_strengths, scores, 'o-')
+>>> plt.xscale('log')
+>>> plt.xlabel('inverse of regularization strength (C)')
+>>> plt.ylabel(r'$F_1$ score')
+>>> plt.title(
+...     r'$F_1$ score vs. '
+...     'Inverse of Regularization Strength'
+... )
+```
+
+Using the resulting plot, we can pick the value that maximizes our
+performance:
+
+
+![](./images/Figure_10.1_B16834.jpg)
+
+
+Figure 10.1 -- Searching for the best hyperparameters
+
+Scikit-learn provides the `GridSearchCV` class in the
+`model_selection` module for carrying out
+this exhaustive search much more easily. Classes
+that end with *CV* utilize **cross-validation**, meaning they divide up
+the training data into subsets, some of which
+will be the validation set for scoring the model (without needing the
+testing data until after the model is fit).
+
+One common method of cross-validation is **k-fold
+cross-validation**, which splits the training data into *k* subsets and
+will train the model *k* times, each time leaving one subset out to use
+as the validation set. The score for the model will be the average
+across the *k* validation sets. Our initial attempt was 1-fold
+cross-validation. When *k*=3, this process looks like the following
+diagram:
+
+
+![](./images/Figure_10.2_B16834.jpg)
+
+
+Figure 10.2 -- Understanding k-fold cross-validation
+
+Tip
+
+When working with classification problems, `scikit-learn` will
+implement stratified k-fold cross-validation. This ensures that the
+percentage of samples belonging to each class will be preserved across
+folds. Without stratification, it\'s possible some validation sets will
+see a disproportionately low (or high) amount of a given class, which
+can distort the results.
+
+`GridSearchCV` uses cross-validation to find the best
+hyperparameters in the search space, without the need to use the testing
+data. Remember, test data should not influence the training process in
+any way---neither when training the model nor when tuning
+hyperparameters---otherwise, the model will have issues generalizing.
+This happens because we would be picking the
+hyperparameters that give the best performance on the test set, thus
+leaving no way to test on unseen data, and overestimating our
+performance.
+
+In order to use `GridSearchCV`, we need to provide a model (or
+pipeline) and a search space, which will be a dictionary mapping the
+hyperparameter to tune (by name) to a list of values to try. Optionally,
+we can provide a scoring metric to use, as well as the number of folds
+to use with cross-validation. We can tune any step in the pipeline by
+prefixing the hyperparameter name with the name of that step, followed
+by two underscores. For instance, if we have a logistic regression step
+called `lr` and want to tune `C`, we use
+`lr__C` as the key in the search space dictionary. Note that
+if our model has any preprocessing steps, it\'s imperative that we use a
+pipeline.
+
+Let\'s use `GridSearchCV` for the red wine quality logistic
+regression, searching for whether or not to fit our model with an
+intercept and the best value for the inverse of the regularization
+strength (`C`). We will use the F[1]{.subscript} score macro
+average as the scoring metric. Note that, due to the consistency of the
+API, `GridSearchCV` can be used to score, fit, and predict
+with the same methods as the underlying models. By default, the grid
+search will run in series, but `GridSearchCV` is capable of
+performing multiple searches in parallel, greatly speeding up this
+process:
+
+```
+>>> from sklearn.linear_model import LogisticRegression
+>>> from sklearn.model_selection import GridSearchCV
+>>> from sklearn.pipeline import Pipeline
+>>> from sklearn.preprocessing import MinMaxScaler
+>>> pipeline = Pipeline([
+...     ('scale', MinMaxScaler()),
+...     ('lr', LogisticRegression(class_weight='balanced',
+...                               random_state=0))
+... ])
+>>> search_space = {
+...     'lr__C': np.logspace(-1, 1, num=10),
+...     'lr__fit_intercept': [True, False]
+... }
+>>> lr_grid = GridSearchCV(
+...     pipeline, search_space, scoring='f1_macro', cv=5
+... ).fit(r_X_train, r_y_train)
+```
+
+Once the grid search completes, we can isolate
+the best hyperparameters from the search space with the
+`best_params_` attribute. Notice that this result is different
+from our 1-fold cross-validation attempt because each of the folds has
+been averaged together to find the best hyperparameters overall, not
+just for a single fold:
+
+```
+# best values of `C` and `fit_intercept` in search space
+>>> lr_grid.best_params_
+{'lr__C': 3.593813663804626, 'lr__fit_intercept': True}
+```
+
+Tip
+
+We can also retrieve the best version of the pipeline from the grid
+search with the `best_estimator_` attribute. If we want to see
+the score the best estimator (model) had, we can grab it from the
+`best_score_` attribute; note that this will be the score we
+specified with the `scoring` argument.
+
+Our F[1]{.subscript} score macro average is now
+higher than what we achieved in *Lab 9*, *Getting Started with
+Machine Learning in Python*:
+
+```
+>>> from sklearn.metrics import classification_report
+>>> print(classification_report(
+...     r_y_test, lr_grid.predict(r_X_test)
+... ))
+              precision    recall  f1-score   support
+           0       0.94      0.80      0.87       138
+           1       0.36      0.68      0.47        22
+    accuracy                           0.79       160
+   macro avg       0.65      0.74      0.67       160
+weighted avg       0.86      0.79      0.81       160
+```
+
+Note that the `cv` argument doesn\'t have to be an
+integer---we can provide one of the splitter
+classes mentioned at
+<https://scikit-learn.org/stable/modules/classes.html#splitter-classes>
+if we want to use a method other than the default of k-fold for
+regression or stratified k-fold for classification. For example, when
+working with time series, we can use `TimeSeriesSplit` as the
+cross-validation object to work with successive samples and avoid
+shuffling. Scikit-learn shows how the cross-validation classes compare
+at
+<https://scikit-learn.org/stable/auto_examples/model_selection/plot_cv_indices.html>.
+
+Let\'s test out
+`RepeatedStratifiedKFold` on the red wine quality model
+instead of the default `StratifiedKFold`, which will repeat
+the stratified k-fold cross-validation 10 times by default. All we have
+to do is change what we passed in as `cv` in the first
+`GridSearchCV` example to be a
+`RepeatedStratifiedKFold` object. Note that---despite
+using the same pipeline, search space, and
+scoring metric---we have different values for `best_params_`
+because our cross-validation process has changed:
+
+```
+>>> from sklearn.model_selection import RepeatedStratifiedKFold
+>>> lr_grid = GridSearchCV(
+...     pipeline, search_space, scoring='f1_macro', 
+...     cv=RepeatedStratifiedKFold(random_state=0)
+... ).fit(r_X_train, r_y_train)
+>>> print('Best parameters (CV score=%.2f):\n    %s' % (
+...     lr_grid.best_score_, lr_grid.best_params_
+... )) # f1 macro score
+Best parameters (CV score=0.69): 
+    {'lr__C': 5.994842503189409, 'lr__fit_intercept': True}
+```
+
+In addition to cross-validation, `GridSearchCV` allows us to
+specify the metric we want to optimize with the `scoring`
+parameter. This can be a string for the name of the score (as in the
+previous code blocks), provided that it is in the list at
+<https://scikit-learn.org/stable/modules/model_evaluation.html#common-cases-predefined-values>;
+otherwise, we can either pass the function itself or make our own using
+the `make_scorer()` function from `sklearn.metrics`.
+We can even provide a dictionary of scorers (in the form of
+`{name: function}`) for grid search, provided that we specify
+which one we want to use for optimization by passing its name to the
+`refit` parameter. Therefore, we can use grid search to find
+the hyperparameters that help us maximize our performance on the metrics
+we discussed in the previous lab.
+
+Important note
+
+The time it takes to train our model should also be something we
+evaluate and look to optimize. If it takes us double the training time
+to get one more correct classification, it\'s probably not worth it. If
+we have a `GridSearchCV` object called `grid`, we
+can see the average fit time by running
+`grid.cv_results_['mean_fit_time']`.
+
+We can use `GridSearchCV` to search for the best parameters
+for any step in our pipeline. For example, let\'s use grid search with a
+pipeline of preprocessing and linear regression
+on the planets data (similar to when we
+modeled planet year length in *Lab 9*,
+*Getting Started with Machine Learning in Python*) while minimizing
+**mean absolute error** (**MAE**) instead of the default
+R[2]{.superscript}:
+
+```
+>>> from sklearn.linear_model import LinearRegression
+>>> from sklearn.metrics import \
+...     make_scorer, mean_squared_error
+>>> from sklearn.model_selection import GridSearchCV
+>>> from sklearn.pipeline import Pipeline
+>>> from sklearn.preprocessing import StandardScaler
+>>> model_pipeline = Pipeline([
+...     ('scale', StandardScaler()),
+...     ('lr', LinearRegression())
+... ])
+>>> search_space = {
+...     'scale__with_mean': [True, False],
+...     'scale__with_std': [True, False],
+...     'lr__fit_intercept': [True, False], 
+...     'lr__normalize': [True, False]
+... }
+>>> grid = GridSearchCV(
+...     model_pipeline, search_space, cv=5,
+...     scoring={
+...         'r_squared': 'r2',
+...         'mse': 'neg_mean_squared_error',
+...         'mae': 'neg_mean_absolute_error',
+...         'rmse': make_scorer(
+...             lambda x, y: \
+...                 -np.sqrt(mean_squared_error(x, y))
+...         )
+...     }, refit='mae'
+... ).fit(pl_X_train, pl_y_train)
+```
+
+Note that we are using the negative of all the
+metrics except R[2]{.superscript}. This is because
+`GridSearchCV` will attempt to maximize the score, and we want
+to minimize our errors. Let\'s check the best parameters for the scaling
+and linear regression in this grid:
+
+```
+>>> print('Best parameters (CV score=%.2f):\n%s' % (
+...     grid.best_score_, grid.best_params_
+... )) # MAE score * -1
+Best parameters (CV score=-1215.99):
+{'lr__fit_intercept': False, 'lr__normalize': True, 
+ 'scale__with_mean': False, 'scale__with_std': True}
+```
+
+The tuned model\'s MAE is more than 120 Earth days smaller than the MAE
+we got in *Lab 9*, *Getting Started with Machine Learning in
+Python*:
+
+```
+>>> from sklearn.metrics import mean_absolute_error
+>>> mean_absolute_error(pl_y_test, grid.predict(pl_X_test))
+1248.3690943844194
+```
+
+It\'s important to note that while a model may be fast to train, we
+shouldn\'t create a large, granular search space; in practice, it\'s
+better to start with a few different spread-out values, and then examine
+the results to see which areas warrant a more in-depth search. For
+instance, say we are looking to tune the `C` hyperparameter.
+On our first pass, we may look at the result of
+`np.logspace(-1, 1)`. If we see that the best value for
+`C` is at either end of the spectrum,
+we can then look at values above/below the value. If the best value is
+in the range, we may look at a few values around it. This process can be
+performed iteratively until we don\'t see additional improvement.
+Alternatively, we could use `RandomizedSearchCV`, which will
+try 10 random combinations in the search space (by default) and find the
+best estimator (model). We can change this number with the
+`n_iter` argument.
+
+Important note
+
+Since the process of tuning hyperparameters requires us to train our
+model multiple times, we must consider the time complexity of our
+models. Models that take a long time to train will be very costly to use
+with cross-validation. This will likely cause us to shrink our search
+space.
+
+
+
+
+
+Interaction terms and polynomial features
+-----------------------------------------
+
+We discussed the use of dummy variables back in the *Preprocessing data*
+section of *Lab 9*, *Getting Started with Machine Learning in
+Python*; however, we merely considered the effect of that variable on
+its own. In our model that tries to predict red wine
+quality using chemical properties, we are
+considering each property separately. However, it is important
+to consider whether the interaction between these
+properties has an effect. Perhaps when the levels of citric acid and
+fixed acidity are both high or both low, the wine quality is different
+than if one is high and one is low. In order to capture the effect of
+this, we need to add an **interaction term**, which will be the product
+of the features.
+
+We may also be interested in increasing the
+effect of a feature in the model through feature construction; we can
+achieve this by adding **polynomial features** made from this feature.
+This involves adding higher degrees of the original feature, so we could
+have *citric acid*, *citric acid*[2]{.superscript}, *citric
+acid*[3]{.superscript}, and so on in the model.
+
+Tip
+
+We can generalize linear models by using interaction terms and
+polynomial features because they allow us to model the linear
+relationship of non-linear terms. Since linear models tend to
+underperform in the presence of multiple or non-linear decision
+boundaries (the surface or hypersurface that separates the classes),
+this can improve performance.
+
+Scikit-learn provides the `PolynomialFeatures` class in the
+`preprocessing` module for easily creating interaction terms
+and polynomial features. This comes in handy when building models with
+categorical and continuous features. By specifying just the degree, we
+can get every combination of the features less than or equal to the
+degree. High degrees will increase model complexity greatly and may lead
+to overfitting.
+
+If we use `degree=2`, we can turn *citric acid* and *fixed
+acidity* into the following, where *1* is the bias term that can be used
+in a model as an intercept term:
+
+
+![](./images/Formula_10_001.jpg)
+
+
+By calling the `fit_transform()` method on the
+`PolynomialFeatures` object, we can
+generate these features:
+
+```
+>>> from sklearn.preprocessing import PolynomialFeatures
+>>> PolynomialFeatures(degree=2).fit_transform(
+...     r_X_train[['citric acid', 'fixed acidity']]
+... )
+array([[1.000e+00, 5.500e-01, 9.900e+00, 3.025e-01, 
+        5.445e+00, 9.801e+01],
+       [1.000e+00, 4.600e-01, 7.400e+00, 2.116e-01, 
+        3.404e+00, 5.476e+01],
+       [1.000e+00, 4.100e-01, 8.900e+00, 1.681e-01, 
+        3.649e+00, 7.921e+01],
+       ...,
+       [1.000e+00, 1.200e-01, 7.000e+00, 1.440e-02, 
+        8.400e-01, 4.900e+01],
+       [1.000e+00, 3.100e-01, 7.600e+00, 9.610e-02, 
+        2.356e+00, 5.776e+01],
+       [1.000e+00, 2.600e-01, 7.700e+00, 6.760e-02, 
+        2.002e+00, 5.929e+01]])
+```
+
+Let\'s dissect the first row of our array in the
+previous code block (highlighted in bold) to understand how we got each
+of these values:
+
+
+![](./images/Figure_10.3_B16834.jpg)
+
+
+Figure 10.3 -- Examining the interaction terms and polynomial features
+created
+
+If we are only interested in the interaction variables (*citric acid ×
+fixed acidity*, here), we can specify `interaction_only=True`.
+In this case, we also don\'t want the bias term, so we specify
+`include_bias=False` as well. This will give us the original
+variables along with their interaction term(s):
+
+```
+>>> PolynomialFeatures(
+...     degree=2, include_bias=False, interaction_only=True
+... ).fit_transform(
+...     r_X_train[['citric acid', 'fixed acidity']]
+... )
+array([[0.55 , 9.9  , 5.445],
+       [0.46 , 7.4  , 3.404],
+       [0.41 , 8.9  , 3.649],
+       ...,
+       [0.12 , 7.   , 0.84 ],
+       [0.31 , 7.6  , 2.356],
+       [0.26 , 7.7  , 2.002]])
+```
+
+We can add these polynomial features to our
+pipeline:
+
+```
+>>> from sklearn.linear_model import LogisticRegression
+>>> from sklearn.model_selection import GridSearchCV
+>>> from sklearn.pipeline import Pipeline
+>>> from sklearn.preprocessing import (
+...     MinMaxScaler, PolynomialFeatures
+... )
+>>> pipeline = Pipeline([
+...     ('poly', PolynomialFeatures(degree=2)),
+...     ('scale', MinMaxScaler()),
+...     ('lr', LogisticRegression(
+...         class_weight='balanced', random_state=0
+...     ))
+... ]).fit(r_X_train, r_y_train)
+```
+
+Note that this model is slightly better than before we added these
+additional terms, which was the model used in *Lab 9*, *Getting
+Started with Machine Learning in Python*:
+
+```
+>>> from sklearn.metrics import classification_report
+>>> preds = pipeline.predict(r_X_test)
+>>> print(classification_report(r_y_test, preds))
+              precision    recall  f1-score   support
+           0       0.95      0.79      0.86       138
+           1       0.36      0.73      0.48        22
+    accuracy                           0.78       160
+   macro avg       0.65      0.76      0.67       160
+weighted avg       0.87      0.78      0.81       160
+```
+
+Adding polynomial features and interaction terms increases the
+dimensionality of our data, which may not be
+desirable. Sometimes, rather than looking to create more features, we
+look for ways to consolidate them and reduce the dimensionality of our
+data.
+
+
+
+Dimensionality reduction
+------------------------
+
+**Dimensionality reduction** shrinks the number of features we train our
+model on. This is done to reduce the
+computational complexity of training the model
+without sacrificing much performance. We could just choose to train on a
+subset of the features (feature selection); however, if we think there
+is value in those features, albeit small, we may look for ways to
+extract the information we need from them.
+
+One common strategy for feature selection is to discard features with
+low variance. These features aren\'t very informative since they are
+mostly the same value throughout the data. Scikit-learn provides the
+`VarianceThreshold` class for carrying out feature selection
+according to a minimum variance threshold. By default, it will discard
+any features that have zero variance; however, we can provide our own
+threshold. Let\'s perform feature selection on our model that predicts
+whether a wine is red or white based on its chemical composition. Since
+we have no features with zero variance, we will choose to keep features
+whose variance is greater than 0.01:
+
+```
+>>> from sklearn.feature_selection import VarianceThreshold
+>>> from sklearn.linear_model import LogisticRegression
+>>> from sklearn.pipeline import Pipeline
+>>> from sklearn.preprocessing import StandardScaler
+>>> white_or_red_min_var = Pipeline([
+...     ('feature_selection',
+...      VarianceThreshold(threshold=0.01)), 
+...     ('scale', StandardScaler()), 
+...     ('lr', LogisticRegression(random_state=0))
+... ]).fit(w_X_train, w_y_train)
+```
+
+This removed two features with low variance. We
+can get their names with the Boolean mask returned by the
+`VarianceThreshold` object\'s `get_support()`
+method, which indicates the features that were kept:
+
+```
+>>> w_X_train.columns[
+...     ~white_or_red_min_var.named_steps[
+...         'feature_selection'
+...     ].get_support()
+... ]
+Index(['chlorides', 'density'], dtype='object')
+```
+
+Using only 9 of the 11 features, our performance hasn\'t been affected
+much:
+
+```
+>>> from sklearn.metrics import classification_report
+>>> print(classification_report(
+...     w_y_test, white_or_red_min_var.predict(w_X_test)
+... ))
+              precision    recall  f1-score   support
+           0       0.98      0.99      0.99      1225
+           1       0.98      0.95      0.96       400
+    accuracy                           0.98      1625
+   macro avg       0.98      0.97      0.97      1625
+weighted avg       0.98      0.98      0.98      1625
+```
+
+Tip
+
+Check out the other feature selection options in
+the `feature_selection` module at
+<https://scikit-learn.org/stable/modules/classes.html#module-sklearn.feature_selection>.
+
+If we believe there is value in all the features,
+we may decide to use feature extraction rather than discarding them
+entirely. **Principal component analysis** (**PCA**) performs feature
+extraction by projecting high-dimensional data
+into lower dimensions, thereby reducing the dimensionality. In return,
+we get the *n* components that maximize explained variance. This will be
+sensitive to the scale of the data, so we need to do some preprocessing
+beforehand.
+
+Let\'s take a look at the `pca_scatter()` function in the
+`ml_utils.pca` module, which will help us visualize our data
+when reduced to two dimensions:
 
 ```
 import matplotlib.pyplot as plt
+from sklearn.decomposition import PCA
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import MinMaxScaler
+def pca_scatter(X, labels, cbar_label, cmap='brg'):
+    """
+    Create a 2D scatter plot from 2 PCA components of X
+    Parameters:
+        - X: The X data for PCA
+        - labels: The y values
+        - cbar_label: The label for the colorbar
+        - cmap: Name of the colormap to use.
+    Returns:
+        Matplotlib `Axes` object
+    """
+    pca = Pipeline([
+        ('scale', MinMaxScaler()),
+        ('pca', PCA(2, random_state=0))
+    ]).fit(X)
+    data, classes = pca.transform(X), np.unique(labels)
+    ax = plt.scatter(
+        data[:, 0], data[:, 1],
+        c=labels, edgecolor='none', alpha=0.5,
+        cmap=plt.cm.get_cmap(cmap, classes.shape[0])
+    )
+    plt.xlabel('component 1')
+    plt.ylabel('component 2')
+    cbar = plt.colorbar()
+    cbar.set_label(cbar_label)
+    cbar.set_ticks(classes)
+    plt.legend([
+        'explained variance\n'
+        'comp. 1: {:.3}\ncomp. 2: {:.3}'.format(
+           *pca.named_steps['pca'].explained_variance_ratio_
+        ) 
+    ])
+    return ax
 ```
 
-
-In Jupyter Notebooks, we can simply
-use the `%matplotlib inline` **magic command** (a special
-IPython command preceded by a `%` sign) once, and our
-visualizations will be automatically displayed when the cell with our
-visualization code is executed. Magic commands (or *magics* for short)
-are run as regular code within a Jupyter Notebook cell.
-
-
-Let\'s create our first plot in the
-`1-introducing_matplotlib.ipynb` notebook, using the Facebook
-stock prices data from the `fb_stock_prices_2018.csv` file in
-the repository for this lab. First, we need to import
-`pyplot` and `pandas` (in this example, we will use
-`plt.show()`, so we don\'t need to run the magic here):
+Let\'s visualize the wine data with two PCA
+components to see if there is a way to separate red from white:
 
 ```
->>> import matplotlib.pyplot as plt
->>> import pandas as pd
+>>> from ml_utils.pca import pca_scatter
+>>> pca_scatter(wine_X, wine_y, 'wine is red?')
+>>> plt.title('Wine Kind PCA (2 components)')
 ```
 
+Most of the red wines are in the bright green mass of points at the top,
+and the white wines are in the blue point mass at the bottom. Visually,
+we can see how to separate them, but there is still some overlap:
 
-Next, we read in the CSV file and specify the index as the
-`date` column, since we know what the data looks like from
-previous labs:
+
+![](./images/Figure_10.4_B16834.jpg)
+
+
+Figure 10.4 -- Using two PCA components to separate wines by type
+
+Tip
+
+PCA components will be linearly uncorrelated, since they were obtained
+through an orthogonal transformation (perpendicularity extended to
+higher dimensions). Linear regression assumes the regressors (input
+data) are not correlated, so this can help address multicollinearity.
+
+Note the explained variances of each component
+from the previous plot\'s legend---the components explain over 50% of
+the variance in the wine data. Let\'s see if using three dimensions
+improves the separation. The `pca_scatter_3d()` function in
+the `ml_utils.pca` module uses `mpl_toolkits`, which
+comes with `matplotlib` for 3D visualizations:
 
 ```
->>> fb = pd.read_csv(
-...     'data/fb_stock_prices_2018.csv', 
-...     index_col='date',
-...     parse_dates=True
+import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
+from sklearn.decomposition import PCA
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import MinMaxScaler
+def pca_scatter_3d(X, labels, cbar_label, cmap='brg', 
+                   elev=10, azim=15):
+    """
+    Create a 3D scatter plot from 3 PCA components of X
+    Parameters:
+        - X: The X data for PCA
+        - labels: The y values
+        - cbar_label: The label for the colorbar
+        - cmap: Name of the colormap to use.
+        - elev: The degrees of elevation to view the plot from. 
+        - azim: The azimuth angle on the xy plane (rotation 
+                around the z-axis).
+    Returns:
+        Matplotlib `Axes` object
+    """
+    pca = Pipeline([
+        ('scale', MinMaxScaler()),
+        ('pca', PCA(3, random_state=0))
+    ]).fit(X)
+    data, classes = pca.transform(X), np.unique(labels)
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection='3d')
+    p = ax.scatter3D(
+        data[:, 0], data[:, 1], data[:, 2],
+        alpha=0.5, c=labels,
+        cmap=plt.cm.get_cmap(cmap, classes.shape[0])
+    )
+    ax.view_init(elev=elev, azim=azim)
+    ax.set_xlabel('component 1')
+    ax.set_ylabel('component 2')
+    ax.set_zlabel('component 3')
+    cbar = fig.colorbar(p, pad=0.1)
+    cbar.set_ticks(classes)
+    cbar.set_label(cbar_label)
+    plt.legend([
+        'explained variance\ncomp. 1: {:.3}\n'
+        'comp. 2: {:.3}\ncomp. 3: {:.3}'.format(
+            *pca.named_steps['pca'].explained_variance_ratio_
+        ) 
+    ])
+    return ax
+```
+
+Let\'s use our 3D visualization function on the
+wine data again to see if white and red are easier to separate with
+three PCA components:
+
+```
+>>> from ml_utils.pca import pca_scatter_3d
+>>> pca_scatter_3d(
+...     wine_X, wine_y, 'wine is red?', elev=20, azim=-10
 ... )
+>>> plt.suptitle('Wine Type PCA (3 components)')
 ```
 
-
-To understand how Facebook\'s stock has evolved over time, we can create
-a line plot of the daily opening price. For this task, we will use the
-`plt.plot()` function, providing the data to be
-used on the *x*-axis and *y*-axis, respectively.
-We will then follow up with a call to `plt.show()` to display
-it:
-
-```
->>> plt.plot(fb.index, fb.open)
->>> plt.show()
-```
+It seems like we could slice off the green (right) point mass from this
+angle, although we still have a few points in the wrong section:
 
 
-The result is the following plot:
+![](./images/Figure_10.5_B16834.jpg)
 
 
-![](./images/Figure_5.1_B16834.jpg)
+Figure 10.5 -- Using three PCA components to separate wines by type
 
+Important note
 
+PCA performs linear dimensionality reduction. Check out t-SNE and Isomap
+to perform manifold learning for non-linear dimensionality reduction.
 
-If we want to present this visualization, we would have to go back and
-add our axis labels, plot title, legend (if applicable), and possibly
-fix the *y*-axis range; this will be covered in the next lab when we
-discuss formatting and customizing the appearance of our plots. Pandas
-and `seaborn` will take care of some of this for us, at least.
-
-For the remainder of this course, we will be using the
-`%matplotlib inline` magic command (remember, this needs to be
-used in a Jupyter Notebook to work), so we won\'t be calling
-`plt.show()` after our plotting code. The following code gives
-the same output as the preceding block:
+We can use the
+`pca_explained_variance_plot()` function from the
+`ml_utils.pca` module to visualize the cumulative explained
+variance as a function of the number of PCA components:
 
 ```
->>> %matplotlib inline
->>> import matplotlib.pyplot as plt
->>> import pandas as pd
->>> fb = pd.read_csv(
-...     'data/fb_stock_prices_2018.csv', 
-...     index_col='date',
-...     parse_dates=True
+import matplotlib.pyplot as plt
+import numpy as np
+def pca_explained_variance_plot(pca_model, ax=None):
+    """
+    Plot the cumulative explained variance of PCA components.
+    Parameters:
+        - pca_model: The PCA model that has been fit already
+        - ax: Matplotlib `Axes` object to plot on.
+    Returns:
+        A matplotlib `Axes` object
+    """
+    if not ax:
+        fig, ax = plt.subplots()
+    ax.plot(
+        np.append(
+            0, pca_model.explained_variance_ratio_.cumsum()
+        ), 'o-'
+    )
+    ax.set_title(
+        'Total Explained Variance Ratio for PCA Components'
+    )
+    ax.set_xlabel('PCA components used')
+    ax.set_ylabel('cumulative explained variance ratio')
+    return ax
+```
+
+We can pass the PCA part of our pipeline to this
+function in order to see the cumulative explained variance:
+
+```
+>>> from sklearn.decomposition import PCA
+>>> from sklearn.pipeline import Pipeline
+>>> from sklearn.preprocessing import MinMaxScaler
+>>> from ml_utils.pca import pca_explained_variance_plot
+>>> pipeline = Pipeline([
+...     ('normalize', MinMaxScaler()),
+...     ('pca', PCA(8, random_state=0))
+... ]).fit(w_X_train, w_y_train) 
+>>> pca_explained_variance_plot(pipeline.named_steps['pca'])
+```
+
+The first four PCA components explain about 80% of the variance:
+
+
+![](./images/Figure_10.6_B16834.jpg)
+
+
+Figure 10.6 -- Explained variance for PCA components used
+
+We can also use the elbow point method to find a good value for the
+number of PCA components to use, just as we did
+with k-means in *Lab 9*, *Getting Started with Machine Learning in
+Python*. For this, we need to make a **scree plot**, which shows the
+explained variance for each component. The `ml_utils.pca`
+module has the `pca_scree_plot()` function for creating this
+visualization:
+
+```
+import matplotlib.pyplot as plt
+import numpy as np
+def pca_scree_plot(pca_model, ax=None):
+    """
+    Plot explained variance of each consecutive PCA component.
+    Parameters:
+        - pca_model: The PCA model that has been fit already
+        - ax: Matplotlib `Axes` object to plot on.
+    Returns: A matplotlib `Axes` object
+    """
+    if not ax:
+        fig, ax = plt.subplots()
+    values = pca_model.explained_variance_
+    ax.plot(np.arange(1, values.size + 1), values, 'o-')
+    ax.set_title('Scree Plot for PCA Components')
+    ax.set_xlabel('component')
+    ax.set_ylabel('explained variance')
+    return ax
+```
+
+We can pass the PCA part of our pipeline to this
+function in order to see the variance explained by each PCA component:
+
+```
+>>> from sklearn.decomposition import PCA
+>>> from sklearn.pipeline import Pipeline
+>>> from sklearn.preprocessing import MinMaxScaler
+>>> from ml_utils.pca import pca_scree_plot
+>>> pipeline = Pipeline([
+...     ('normalize', MinMaxScaler()),
+...     ('pca', PCA(8, random_state=0))
+... ]).fit(w_X_train, w_y_train)
+>>> pca_scree_plot(pipeline.named_steps['pca'])
+```
+
+The scree plot tells us we should try four PCA
+components because there are diminishing returns after that component:
+
+
+![](./images/Figure_10.7_B16834.jpg)
+
+
+Figure 10.7 -- Diminishing returns for each additional PCA component
+after the fourth
+
+We can build a model on top of these four PCA
+features in a process called **meta-learning**, where the last model in
+the pipeline is trained on the output from a different model, not the
+original data itself:
+
+```
+>>> from sklearn.decomposition import PCA
+>>> from sklearn.pipeline import Pipeline
+>>> from sklearn.preprocessing import MinMaxScaler
+>>> from sklearn.linear_model import LogisticRegression
+>>> pipeline = Pipeline([
+...     ('normalize', MinMaxScaler()),
+...     ('pca', PCA(4, random_state=0)),
+...     ('lr', LogisticRegression(
+...         class_weight='balanced', random_state=0
+...     ))
+... ]).fit(w_X_train, w_y_train)
+```
+
+Our new model performs nearly as well as the
+original logistic regression that used 11 features, with just 4 features
+made with PCA:
+
+```
+>>> from sklearn.metrics import classification_report
+>>> preds = pipeline.predict(w_X_test)
+>>> print(classification_report(w_y_test, preds))
+              precision    recall  f1-score   support
+           0       0.99      0.99      0.99      1225
+           1       0.96      0.96      0.96       400
+    accuracy                           0.98      1625
+   macro avg       0.98      0.98      0.98      1625
+weighted avg       0.98      0.98      0.98      1625
+```
+
+After performing dimensionality reduction, we no longer have all of the
+features we started with---reducing the number of features was the point
+after all. However, it is possible that we will
+want to perform different feature engineering techniques on subsets of
+our features; in order to do so, we need to understand feature unions.
+
+
+
+Feature unions
+--------------
+
+We may want to build a model on features from a variety of sources, such
+as PCA, in addition to selecting a subset of the
+features. For these purposes, `scikit-learn` provides the
+`FeatureUnion` class in the `pipeline` module. This
+also allows us to perform multiple feature engineering techniques at
+once, such as feature extraction followed by feature transformation,
+when we combine this with a pipeline.
+
+Creating a `FeatureUnion` object is just like creating a
+pipeline, but rather than passing the steps in order, we pass the
+transformations we want to make. These will be stacked side by side in
+the result. Let\'s use a feature union of interaction terms and select
+the features with a variance above 0.01 to predict red wine quality:
+
+```
+>>> from sklearn.feature_selection import VarianceThreshold
+>>> from sklearn.pipeline import FeatureUnion, Pipeline
+>>> from sklearn.preprocessing import (
+...     MinMaxScaler, PolynomialFeatures
 ... )
->>> plt.plot(fb.index, fb.open)
+>>> from sklearn.linear_model import LogisticRegression
+>>> combined_features = FeatureUnion([
+...     ('variance', VarianceThreshold(threshold=0.01)),
+...     ('poly', PolynomialFeatures(
+...         degree=2, include_bias=False, interaction_only=True
+...     ))
+... ])
+>>> pipeline = Pipeline([
+...     ('normalize', MinMaxScaler()),
+...     ('feature_union', combined_features),
+...     ('lr', LogisticRegression(
+...         class_weight='balanced', random_state=0
+...     ))
+... ]).fit(r_X_train, r_y_train)
 ```
 
-
-**Important note:**
-
-Be sure to run the `%matplotlib inline` magic command now if
-you are using a Jupyter Notebook. This ensures that the plotting code in
-the rest of this lab displays the output automatically.
-
-We can also use the `plt.plot()`
-function to generate scatter plots, provided that we specify a format
-string for the plot as the third argument. A format string is of the
-form `'[marker][linestyle][color]'`; for example,
-`'--k'` for a black dashed line. Since we don\'t want a line
-for the scatter plot, we omit the `linestyle` component. We
-can make a scatter plot of red circles with the `'or'` format
-string; here, `o` is for circles and `r` is for the
-color red. The following code generates a scatter plot of high price
-versus low price. Notice that we can pass our dataframe in the
-`data` argument and then use the string names for the columns,
-instead of passing the series as `x` and `y`:
+To illustrate the transformation that took place, let\'s examine the
+first row from the training set for the red wine quality data after the
+`FeatureUnion` object transforms it. Since we
+saw that our variance threshold results in nine
+features, we know they are the first nine entries in the resulting NumPy
+array, and the rest are the interaction terms:
 
 ```
->>> plt.plot('high', 'low', 'or', data=fb.head(20))
+>>> pipeline.named_steps['feature_union']\
+...     .transform(r_X_train)[0]
+array([9.900000e+00, 3.500000e-01, 5.500000e-01, 5.000000e+00,
+       1.400000e+01, 9.971000e-01, 3.260000e+00, 1.060000e+01,
+       9.900000e+00, 3.500000e-01, 5.500000e-01, 2.100000e+00,
+       6.200000e-02, 5.000000e+00, 1.400000e+01, 9.971000e-01,
+       ..., 3.455600e+01, 8.374000e+00])
 ```
 
-
-Barring days of large fluctuations, we would expect the points to be in
-the form of a line, since the high and low prices won\'t be far from
-each other. This is true for the most part, but be careful of the scale
-that was generated automatically---the *x*-axis and the *y*-axis don\'t
-line up perfectly:
-
-
-![](./images/Figure_5.2_B16834.jpg)
-
-
-
-To create histograms with `matplotlib`, we use the
-`hist()` function instead. Let\'s make a histogram of the
-earthquake magnitudes in the `earthquakes.csv` file, using
-those measured with the `ml` magnitude type:
+We can also look at the classification report to see that we got a
+marginal improvement in F[1]{.subscript} score:
 
 ```
->>> quakes = pd.read_csv('data/earthquakes.csv')
->>> plt.hist(quakes.query('magType == "ml"').mag)
+>>> from sklearn.metrics import classification_report
+>>> preds = pipeline.predict(r_X_test)
+>>> print(classification_report(r_y_test, preds))
+              precision    recall  f1-score   support
+           0       0.94      0.80      0.87       138
+           1       0.36      0.68      0.47        22
+    accuracy                           0.79       160
+   macro avg       0.65      0.74      0.67       160
+weighted avg       0.86      0.79      0.81       160
 ```
 
+In this example, we selected our features such that they had variance
+greater than 0.01, making the assumption that if
+the feature doesn\'t take on many different values then it may not be
+that helpful. Rather than making this assumption, we can use a machine
+learning model to help determine which features are important.
 
-The resulting histogram gives us an idea of the range of earthquake
-magnitudes we can expect using the `ml` measurement technique:
 
 
-![](./images/Figure_5.4_B16834.jpg)
-
-
-
-As we could have guessed, the magnitudes tend to be small, and the
-distribution appears to be somewhat normal. However, a word of caution
-regarding histograms---bin size matters. There are cases where we can
-change the number of bins the data is divided into and
-change what the histogram indicates the
-distribution to be. For example, if we make two histograms for this data
-using different numbers of bins, the distributions look different:
-
-```
->>> x = quakes.query('magType == "ml"').mag
->>> fig, axes = plt.subplots(1, 2, figsize=(10, 3))
->>> for ax, bins in zip(axes, [7, 35]):
-...     ax.hist(x, bins=bins)
-...     ax.set_title(f'bins param: {bins}')
-```
-
-
-Notice how the distribution appears unimodal in the left subplot, but
-seems bimodal in the right subplot:
-
-
-![](./images/Figure_5.5_B16834.jpg)
-
-
-
-There are a couple of additional things to note from this example, which
-we will address in the next section on plot components:
-
--   We can make subplots.
--   Plotting functions in `pyplot` can also be used as methods
-    of `matplotlib` objects, such as `Figure` and
-    `Axes` objects.
-
-One last thing regarding basic usage that we will
-find handy is saving plots as images---we shouldn\'t be limited to
-showing the figures in Python only. We can save the last figure with the
-`plt.savefig()` function by passing in the path to save the
-image at; for example, `plt.savefig('my_plot.png')`. Note
-that, if `plt.show()` was called prior to saving, the file
-will be empty, since the reference to the last plot will be gone after
-the call to `plt.show()` (`matplotlib` closes the
-`Figure` object to free up resources in memory). With the
-`%matplotlib inline` magic command, we can both see and save
-our image in the same cell.
-
-
-
-Plot components
----------------
-
-We use the `plt.figure()` function to create
-`Figure` objects; these will have zero `Axes`
-objects until a plot is added:
-
-```
->>> fig = plt.figure()
-<Figure size 432x288 with 0 Axes>
-```
-
-
-The `plt.subplots()` function creates a `Figure`
-object with `Axes` objects for subplots in the arrangement
-specified. If we ask `plt.subplots()` for one row and one
-column, a `Figure` object with one `Axes` object
-will be returned. This can be useful when writing functions that
-generate subplot layouts based on the input, since we don\'t need to
-worry about needing a special case to handle a single subplot. Here, we
-will specify an arrangement of one row and two columns; this returns a
-`(Figure, Axes)` tuple, which we can unpack:
-
-```
->>> fig, axes = plt.subplots(1, 2)
-```
-
-
-When using the `%matplotlib inline` magic command, we will see
-the figure that was created:
-
-
-![](./images/Figure_5.6_B16834.jpg)
-
-
-
-The alternative to using
-`plt.subplots()` would be to use the `add_axes()`
-method on the `Figure` object that we get after running
-`plt.figure()`. The `add_axes()` method takes a list
-in the form of `[left, bottom, width, height]` as proportions
-of the figure dimensions, representing the area in the figure this
-subplot should occupy:
-
-```
->>> fig = plt.figure(figsize=(3, 3))
->>> outside = fig.add_axes([0.1, 0.1, 0.9, 0.9])
->>> inside = fig.add_axes([0.7, 0.7, 0.25, 0.25])
-```
-
-
-This enables the creation of plots inside of plots:
-
-
-![](./images/Figure_5.7_B16834.jpg)
-
-
-
-If our goal is to keep all the plots separate but
-not all equally sized, we can use the `add_gridspec()` method
-on a `Figure` object to create a grid for the subplots. Then,
-we can run `add_subplot()`, passing in the area(s) from the
-grid that the given subplot should occupy:
-
-```
->>> fig = plt.figure(figsize=(8, 8))
->>> gs = fig.add_gridspec(3, 3)
->>> top_left = fig.add_subplot(gs[0, 0])
->>> mid_left = fig.add_subplot(gs[1, 0])
->>> top_right = fig.add_subplot(gs[:2, 1:])
->>> bottom = fig.add_subplot(gs[2,:])
-```
-
-
-This results in the following layout:
-
-
-![](./images/Figure_5.8_B16834.jpg)
-
-
-
-In the previous section, we discussed how to save visualizations using
-`plt.savefig()` but we also can use the `savefig()`
-method on `Figure` objects:
-
-```
->>> fig.savefig('empty.png')
-```
-
-
-This is very useful to remember since with
-`plt.<func>()`, we only have access to the last
-`Figure` object; however, if we save the references to our
-`Figure` objects, we can work with any of them, regardless of
-when they were created. Additionally, this foreshadows an important
-concept that you will notice throughout this lab: `Figure`
-and `Axes` objects have methods with similar or identical
-names to their `pyplot` function counterparts.
-
-While it\'s convenient to have references to all of the
-`Figure` objects we create, it is good practice to close them
-when we are done with them so that we don\'t waste any resources. This
-can be accomplished with the `plt.close()` function. If we
-don\'t pass in anything, it will close the last `Figure`
-object; however, we can pass in a specific `Figure` object to
-close only that one or `'all'` to close all of the
-`Figure` objects we have open:
-
-```
->>> plt.close('all')
-```
-
-
-It\'s important to get comfortable working with `Figure` and
-`Axes` objects directly as it enables more
-fine-grained control of the resulting
-visualizations. This will become evident in the next lab.
-
-
-
-Additional options
-------------------
-
-A few of our visualizations looked a little squished. To remedy this, we
-can pass in a value for `figsize` in our
-call to `plt.figure()` or `plt.subplots()`. We
-specify the dimensions with a `(width, height)` tuple in
-inches. The `plot()` method we will see with
-`pandas` also accepts the `figsize` parameter, so
-bear this in mind:
-
-```
->>> fig = plt.figure(figsize=(10, 4))
-<Figure size 720x288 with 0 Axes>
->>> fig, axes = plt.subplots(1, 2, figsize=(10, 4))
-```
-
-
-Notice that these subplots are more square-shaped than the subplots in
-*Figure 5.6* when we didn\'t specify `figsize`:
-
-
-![](./images/Figure_5.9_B16834.jpg)
-
-
-
-It\'s not too bad specifying the `figsize` parameter for our
-plots one by one. However, if we find that we are resizing everything to
-the same size, there\'s a better alternative. Matplotlib houses its
-defaults in `rcParams`, which acts like a dictionary, meaning
-we can easily overwrite what we wish for our session and get the
-defaults back when we restart our Python session. Since there are many
-options in this dictionary (over 300 at the time of writing), let\'s
-randomly select a few of them to get an idea of
-what is available:
-
-```
->>> import random
->>> import matplotlib as mpl
->>> rcparams_list = list(mpl.rcParams.keys())
->>> random.seed(20) # make this repeatable
->>> random.shuffle(rcparams_list)
->>> sorted(rcparams_list[:20])
-['axes.axisbelow',
- 'axes.formatter.limits',
- 'boxplot.vertical',
- 'contour.corner_mask',
- 'date.autoformatter.month',
- 'legend.labelspacing',
- 'lines.dashed_pattern',
- 'lines.dotted_pattern',
- 'lines.scale_dashes',
- 'lines.solid_capstyle',
- 'lines.solid_joinstyle',
- 'mathtext.tt',
- 'patch.linewidth',
- 'pdf.fonttype',
- 'savefig.jpeg_quality',
- 'svg.fonttype',
- 'text.latex.preview',
- 'toolbar',
- 'ytick.labelright',
- 'ytick.minor.size'] 
-```
-
-
-As you can see, there are many options we can
-tinker with here. Let\'s check what the current default value for
-`figsize` is:
-
-```
->>> mpl.rcParams['figure.figsize']
-[6.0, 4.0]
-```
-
-
-To change this for our current session, simply set it equal to a new
-value:
-
-```
->>> mpl.rcParams['figure.figsize'] = (300, 10)
->>> mpl.rcParams['figure.figsize']
-[300.0, 10.0]
-```
-
-
-Before we move on, let\'s restore the default settings by using the
-`mpl.rcdefaults()` function. The default value for
-`figsize` is actually different than what we had previously;
-this is because `%matplotlib inline` sets different values for
-a few of the plot-related parameters when it is first run
-(<https://github.com/ipython/ipykernel/blob/master/ipykernel/pylab/config.py#L42-L56>):
-
-```
->>> mpl.rcdefaults()
->>> mpl.rcParams['figure.figsize']
-[6.8, 4.8]
-```
-
-
-Note that we can also use the `plt.rc()` function to update a
-particular setting if we know its group (`figure`, in this
-case) and parameter name (`figsize`). As we did previously, we
-can use `plt.rcdefaults()` to reset the defaults:
-
-```
-# change `figsize` default to (20, 20)
->>> plt.rc('figure', figsize=(20, 20)) 
->>> plt.rcdefaults() # reset the default
-```
-
-
-**Tip:** 
-
-If we find ourselves making the same changes every time we start Python,
-we should look into reading our configuration in rather than updating
-the default values each time. Consult the `mpl.rc_file()`
-function for more information.
-
-
-Plotting with pandas
-====================
-
-
-Both `Series` and `DataFrame` objects have a
-`plot()` method that allows us to create several different
-plots and control some aspects of their
-formatting, such as subplot layout, figure size, titles, and whether to
-share an axis across subplots. This makes plotting our data much more
-convenient, as the bulk of the work to create presentable plots is
-achieved with a single method call. Under the hood, `pandas`
-is making several calls to `matplotlib` to produce our plot.
-Some of the most frequently used arguments to the `plot()`
-method include the following:
-
-
-![](./images/Figure_5.10_B16834.jpg)
-
-
-
-Rather than having separate functions for each plot type, as we saw
-during our discussion of `matplotlib`, the `plot()`
-method from `pandas` allows us to specify the type of plot we
-want using the `kind` argument. The choice of plot will
-determine which other arguments are required. We can use the
-`Axes` object that\'s returned by the `plot()`
-method to further modify our plot.
-
-Let\'s explore this functionality in the
-`2-plotting_with_pandas.ipynb` notebook. Before we begin, we
-need to handle our imports for this section and read in the data we will
-be using (Facebook stock prices, earthquakes, and COVID-19 cases):
-
-```
->>> %matplotlib inline
->>> import matplotlib.pyplot as plt
->>> import numpy as np
->>> import pandas as pd
->>> fb = pd.read_csv(
-...     'data/fb_stock_prices_2018.csv', 
-...     index_col='date',
-...     parse_dates=True
-... )
->>> quakes = pd.read_csv('data/earthquakes.csv')
->>> covid = pd.read_csv('data/covid19_cases.csv').assign(
-...     date=lambda x: \
-...         pd.to_datetime(x.dateRep, format='%d/%m/%Y')
-... ).set_index('date').replace(
-...     'United_States_of_America', 'USA'
-... ).sort_index()['2020-01-18':'2020-09-18']
-```
-
-
-In the next few sections, we will discuss how to generate an appropriate
-visualization for a specific analysis goal, such as showing the
-evolution over time or the relationship between the
-variables in the data. Note that, wherever
-possible, the plots have been styled so that they can be interpreted in
-black and white for this course.
-
-
-
-Evolution over time
+Feature importances
 -------------------
 
-When working with time series data (such as the Facebook stock data
-stored in the `fb` variable), we often
-want to show how the data has changed over time.
-To do this, we use line plots and, in some cases, bar plots (covered in
-the *Counts and frequencies* section). In the case of a line plot, we
-simply provide `kind='line'` to `plot()`, indicating
-which columns will be `x` and `y`. Note that we
-actually don\'t need to provide a column for `x` because
-`pandas`, by default, will use the index (this also makes it
-possible to generate the line plot of a `Series` object).
-Additionally, notice that we can provide a format string to the
-`style` argument, just like we did with the
-`matplotlib` plots:
+**Decision trees** recursively split the data,
+making decisions on which features to use for
+each split. They are **greedy learners**, meaning
+they look for the largest split they can make
+each time; this isn\'t necessarily the optimal split when looking at the
+output of the tree. We can use a decision tree to
+gauge **feature importances**, which determine how the tree splits the
+data at the decision nodes. These feature importances can help inform
+feature selection. Note that feature importances will sum to one, and
+higher values are better. Let\'s use a decision tree to see how red and
+white wine can be separated on a chemical level:
 
 ```
->>> fb.plot(
-...     kind='line', y='open', figsize=(10, 5), style='-b',
-...     legend=False, title='Evolution of Facebook Open Price'
+>>> from sklearn.tree import DecisionTreeClassifier
+>>> dt = DecisionTreeClassifier(random_state=0).fit(
+...     w_X_train, w_y_train
 ... )
+>>> pd.DataFrame([(col, coef) for col, coef in zip(
+...     w_X_train.columns, dt.feature_importances_
+... )], columns=['feature', 'importance']
+... ).set_index('feature').sort_values(
+...     'importance', ascending=False
+... ).T
 ```
 
-
-This gives us a plot similar to what we achieved with
-`matplotlib`; however, in this single method call, we
-specified the figure size for this plot only, turned off the legend, and
-gave it a title:
+This shows us that the most important chemical
+properties in distinguishing between red and
+white wine are total sulfur dioxide and chlorides:
 
 
-![](./images/Figure_5.11_B16834.jpg)
+![](./images/Figure_10.8_B16834.jpg)
 
 
+Figure 10.8 -- Importance of each chemical property in predicting wine
+type
 
-As with `matplotlib`, we don\'t have to use the style format
-strings---instead, we can pass each component
-separately with its associated keyword. For
-example, the following code gives us the same result as the previous
-one:
+Tip
 
-```
-fb.plot(
-    kind='line', y='open', figsize=(10, 5),
-    color='blue', linestyle='solid',
-    legend=False, title='Evolution of Facebook Open Price'
-)
-```
+Using the top features, as indicated by the feature importances, we can
+try to build a simpler model (by using fewer features). If possible, we
+want to simplify our models without sacrificing much performance. See
+the `wine.ipynb` notebook for an example.
 
-
-We aren\'t limited to plotting one line at a time with the
-`plot()` method; we can also pass in a list of columns to plot
-and style them individually. Note that we actually don\'t need to
-specify `kind='line'` because that is the default:
+If we train another decision tree with a max depth of two, we can
+visualize the top of the tree (it is too large to visualize if we don\'t
+limit the depth):
 
 ```
->>> fb.first('1W').plot(
-...     y=['open', 'high', 'low', 'close'], 
-...     style=['o-b', '--r', ':k', '.-g'],
-...     title='Facebook OHLC Prices during '
-...           '1st Week of Trading 2018'
-... ).autoscale() # add space between data and axes
+>>> from sklearn.tree import export_graphviz
+>>> import graphviz
+>>> graphviz.Source(export_graphviz(
+...     DecisionTreeClassifier(
+...         max_depth=2, random_state=0
+...     ).fit(w_X_train, w_y_train),
+...     feature_names=w_X_train.columns
+... ))
 ```
 
+Important note
 
-This results in the following plot, where each
-line is styled differently:
+Graphviz software will need to be installed (if it isn\'t already) in
+order to visualize the tree. It can be downloaded
+at <https://graphviz.gitlab.io/download/>, with the installation guide
+at <https://graphviz.readthedocs.io/en/stable/manual.html#installation>.
+Note that the kernel will need to be restarted
+after installing. Otherwise, pass `out_file='tree.dot'` to the
+`export_graphviz()` `function` and then generate a
+PNG file by running `dot -T png tree.dot -o tree.png` from the
+command line. As an alternative, `scikit-learn` provides the
+`plot_tree()` function, which uses `matplotlib`;
+consult the notebook for an example.
+
+This results in the following tree, which first splits on total sulfur
+dioxide (which has the highest feature importance), followed by
+chlorides on the second level. The information at each node tells us the
+criterion for the split (the top line), the value of the cost function
+(**gini**), the number of samples at that node (**samples**), and the
+number of samples in each class at that node (**values**):
 
 
-![](./images/Figure_5.12_B16834.jpg)
+![](./images/Figure_10.9_B16834.jpg)
 
 
+Figure 10.9 -- Decision tree for predicting wine type based on chemical
+properties
 
-Additionally, we can easily have `pandas` plot all our columns
-in that same call. The `x` and `y` arguments can
-take a single column name or a list of them; if we provide nothing,
-`pandas` will use all of them. Note that the columns must be
-passed as the `y` argument when `kind='line'`;
-however, other plot types support passing lists of columns to
-`x` as well. In this case, it may be helpful to ask for
-subplots instead of having all the lines on the same plot. Let\'s
-visualize all the columns in the Facebook data as line plots:
+We can also apply decision trees to regression
+problems. Let\'s find the feature importances for the planets data using
+the `DecisionTreeRegressor` class:
 
 ```
->>> fb.plot(
-...     kind='line', subplots=True, layout=(3, 2),
-...     figsize=(15, 10), title='Facebook Stock 2018'
+>>> from sklearn.tree import DecisionTreeRegressor
+>>> dt = DecisionTreeRegressor(random_state=0).fit(
+...     pl_X_train, pl_y_train
 ... )
+>>> [(col, coef) for col, coef in zip(
+...     pl_X_train.columns, dt.feature_importances_
+... )]
+[('semimajoraxis', 0.9969449557611615),
+ ('mass', 0.0015380986260574154),
+ ('eccentricity', 0.0015169456127809738)]
 ```
 
+Basically, the semi-major axis is the main determinant in the period
+length, which we already knew, but if we visualize a tree, we can see
+why. The first four splits are all based on the semi-major axis:
 
-Using the `layout` argument, we told
-`pandas` how to arrange our subplots (three rows and two
-columns):
-
-
-![](./images/Figure_5.13_B16834.jpg)
-
-
-
-Notice that the subplots automatically share the *x*-axis, since they
-share an index. The *y*-axis is not shared because the
-`volume` time series is on a different scale. We can alter
-this behavior in some plot types by passing the `sharex` or
-`sharey` argument with a Boolean to `plot()`. The
-legend will be rendered by default, so, for each subplot, we have a
-single item in the legend indicating which data it contains. We didn\'t
-provide a list of subplot titles with the `title` argument in
-this case, since the legend served that purpose; however, we passed a
-single string for the title of the plot as a whole. To summarize, when
-working with subplots, we have two options when it comes to the title:
-
--   Passing a single string for the title of the figure as a whole.
--   Passing a list of strings to use as the title for each subplot.
-
-Sometimes, we want to make subplots where each has
-a few variables in them for comparison. This can be achieved by first
-creating the subplots with `plt.subplots()` and then providing
-the `Axes` objects to the `ax` parameter. To
-illustrate this, let\'s take a look at daily new cases of COVID-19 in
-China, Spain, Italy, the USA, Brazil, and India. This is long format
-data, so we must first pivot it so that the dates (which we set as the
-index when we read in the CSV file) are in the index of the pivot table
-and the countries (`countriesAndTerritories`) are in the
-columns. Since there is a lot of fluctuation in these values, we will
-plot the 7-day moving average of new cases using the
-`rolling()` method introduced in *Lab 9*:
-
-```
->>> new_cases_rolling_average = covid.pivot_table(
-...     index=covid.index,
-...     columns='countriesAndTerritories',
-...     values='cases'
-... ).rolling(7).mean()
-```
-
-
-Rather than create a separate plot for each country (which makes it
-harder to compare) or plot them all together (which will make it
-difficult to see the smaller values), we will plot countries that have
-had a similar number of cases in the same subplot. We will also use
-different line styles in order to distinguish between them in black and
-white:
-
-```
->>> fig, axes = plt.subplots(1, 3, figsize=(15, 5))
->>> new_cases_rolling_average[['China']]\
-...     .plot(ax=axes[0], style='-.c')
->>> new_cases_rolling_average[['Italy', 'Spain']].plot(
-...     ax=axes[1], style=['-', '--'],
-...     title='7-day rolling average of new '
-...           'COVID-19 cases\n(source: ECDC)'
-... )
->>> new_cases_rolling_average[['Brazil', 'India', 'USA']]\ 
-...     .plot(ax=axes[2], style=['--', ':', '-'])
-```
-
-
-By directly using `matplotlib` to
-generate the `Axes` objects for each subplot, we gained a lot
-more flexibility in the resulting layout:
-
-
-![](./images/Figure_5.14_B16834.jpg)
-
-
-
-
-In the previous plot, we were able to compare countries with similar
-levels of daily new COVID-19 cases, but we couldn\'t compare all of them
-in the same subplot due to scale. One way to get around this is to use
-an **area plot**, which makes it possible for us to visualize the
-overall 7-day rolling average of new COVID-19 cases and, at the same
-time, how much each country is contributing to the total. In the
-interest of readability, we will group Italy and Spain together and
-create another category for countries other than the USA, Brazil, and
-India:
-
-```
->>> cols = [
-...     col for col in new_cases_rolling_average.columns 
-...     if col not in [
-...         'USA', 'Brazil', 'India', 'Italy & Spain'
-...     ]
-... ]
->>> new_cases_rolling_average.assign(
-...     **{'Italy & Spain': lambda x: x.Italy + x.Spain}
-... ).sort_index(axis=1).assign(
-...     Other=lambda x: x[cols].sum(axis=1)
-... ).drop(columns=cols).plot(
-...     kind='area', figsize=(15, 5), 
-...     title='7-day rolling average of new '
-...           'COVID-19 cases\n(source: ECDC)'
-... )
-```
 
+![](./images/Figure_10.10_B16834.jpg)
 
-For those viewing the resulting plot in black and
-white, Brazil is the bottom layer, with India on top of it and so on.
-The combined height of the plot areas is the overall value, and the
-height of a given shaded region is the value for that country. This
-shows us that more than half of the daily new cases are in Brazil,
-India, Italy, Spain, and the USA combined:
 
+Figure 10.10 -- Decision tree for predicting planet period
 
-![](./images/Figure_5.15_B16834.jpg)
+Decision trees can be **pruned** after being grown to maximum depth, or
+provided with a max depth before training, to
+limit growth and thus avoid overfitting. The `scikit-learn`
+documentation provides tips to address overfitting and other potential
+issues when using decision trees at
+<https://scikit-learn.org/stable/modules/tree.html#tips-on-practical-use>.
+Keep this in mind as we discuss ensemble methods.
 
 
+Ensemble methods
+================
 
-Another way to visualize evolution over time is to look at the
-cumulative sum over time. Let\'s plot the cumulative number of COVID-19
-cases in China, Spain, Italy, the USA, Brazil, and India, using the
-`ax` parameter to once again to create subplots. To calculate
-the cumulative sum over time, we group by the
-location (`countriesAndTerritories`) and the date, which is
-our index, so we use `pd.Grouper()`; this time, we will use
-`groupby()` and `unstack()` to pivot our data into
-wide format for the plot:
 
-```
->>> fig, axes = plt.subplots(1, 3, figsize=(15, 3))
->>> cumulative_covid_cases = covid.groupby(
-...     ['countriesAndTerritories', pd.Grouper(freq='1D')]
-... ).cases.sum().unstack(0).apply('cumsum')
->>> cumulative_covid_cases[['China']]\
-...     .plot(ax=axes[0], style='-.c')
->>> cumulative_covid_cases[['Italy', 'Spain']].plot(
-...     ax=axes[1], style=['-', '--'], 
-...     title='Cumulative COVID-19 Cases\n(source: ECDC)'
-... )
->>> cumulative_covid_cases[['Brazil', 'India', 'USA']]\ 
-...     .plot(ax=axes[2], style=['--', ':', '-'])
-```
+**Ensemble methods** combine many models (often
+weak ones) to create a stronger one that will either minimize the
+average error between observed and predicted values (the **bias**) or
+improve how well it generalizes to unseen data (minimize the
+**variance**). We have to strike a balance between complex models that
+may increase variance, as they tend to overfit, and simple models that
+may have high bias, as these tend to underfit.
+This is called the **bias-variance trade-off**, which is illustrated in
+the following subplots:
 
 
-Viewing the cumulative COVID-19 cases shows that
-while China and Italy appear to have COVID-19 cases under control,
-Spain, the USA, Brazil, and India are struggling:
+![](./images/Figure_10.11_B16834.jpg)
 
 
-![](./images/Figure_5.16_B16834.jpg)
+Figure 10.11 -- The bias-variance trade-off
 
+Ensemble methods can be broken down into three
+categories: **boosting**, **bagging**, and **stacking**. **Boosting**
+trains many weak learners, which learn from each
+other\'s mistakes to reduce bias, making a stronger learner.
+**Bagging**, on the other hand, uses **bootstrap
+aggregation** to train many models on bootstrap
+samples of the data and aggregate the results together (using voting for
+classification, and the average for regression) to reduce variance. We
+can also combine many different model types together with voting.
+**Stacking** is an ensemble technique where we
+combine many different model types using the outputs of some as the
+inputs to others; this is done to improve predictions. We saw an example
+of stacking when we combined PCA and logistic regression in the
+*Dimensionality reduction* section earlier in this lab.
 
 
-**Important note:**
 
-We used dotted and dashed lines multiple times in this section to ensure
-that the resulting plots could be interpreted in black and white; note,
-however, that accepting the default colors and line styles will suffice
-when presenting these plots in color. Often, different line styles
-signify a difference in the data types---for example, we could use a
-solid line for the evolution over time and a dashed line to represent
-the rolling average.
-
-
-
-Relationships between variables
--------------------------------
-
-When we want to visualize the relationship between
-variables, we often begin with scatter plots, which show us the value of
-the `y` variable at different values of the `x`
-variable. This makes it very easy for us to spot correlations and
-possible non-linear relationships. In the previous lab, when we
-looked at the Facebook stock data, we saw that the days of high volume
-traded appeared to be correlated with large drops in stock price. We can
-use a scatter plot to visualize this relationship:
-
-```
->>> fb.assign(
-...     max_abs_change=fb.high - fb.low
-... ).plot(
-...     kind='scatter', x='volume', y='max_abs_change',
-...     title='Facebook Daily High - Low vs. Volume Traded'
-... )
-```
-
-
-There appears to be a relationship, but it does
-not seem linear:
-
-
-![](./images/Figure_5.17_B16834.jpg)
-
-
-
-Let\'s try taking the logarithm (log) of the volume. To do so, we have a
-couple of options:
-
--   Create a new column that is the log of the volume using
-    `np.log()`.
--   Use a logarithmic scale for the *x*-axis by passing in
-    `logx=True` to the `plot()` method or calling
-    `plt.xscale('log')`.
-
-In this case, it makes the most sense to simply change how we display
-our data, since we aren\'t going to use the new column:
-
-```
->>> fb.assign(
-...     max_abs_change=fb.high - fb.low
-... ).plot(
-...     kind='scatter', x='volume', y='max_abs_change',
-...     title='Facebook Daily High - '
-...           'Low vs. log(Volume Traded)',
-...     logx=True
-... )
-```
-
-
-After modifying the *x*-axis scale, we get the
-following scatter plot:
-
-
-![](./images/Figure_5.18_B16834.jpg)
-
-
-
-**Tip:** 
-
-The `plot()` method from `pandas` has three
-arguments for logarithmic scales: `logx`/`logy` for
-single axis adjustments and `loglog` for setting both to the
-logarithmic scale.
-
-One problem with scatter plots is that it can be very difficult to
-discern the concentration of points in a given area, since they are
-simply plotted one of top of the other. We can use the `alpha`
-argument to control the transparency of the points; this argument takes
-values from `0` to `1`, where `0` is
-entirely transparent and `1` is completely opaque. By default,
-they are opaque (value of `1`); however, if we make them more
-transparent, we should be able to see some of the overlap:
-
-```
->>> fb.assign(
-...     max_abs_change=fb.high - fb.low
-... ).plot(
-...     kind='scatter', x='volume', y='max_abs_change',
-...     title='Facebook Daily High - '
-...           'Low vs. log(Volume Traded)', 
-...     logx=True, alpha=0.25
-... )
-```
-
-
-We can now begin to make out the density of points
-in the lower-left region of the plot, but it\'s still relatively
-difficult:
-
-
-![](./images/Figure_5.19_B16834.jpg)
-
-
-
-Thankfully, we have another plot type at our disposal:
-`hexbin`. **Hexbins** form a two-dimensional histogram by
-dividing the plot into a grid of hexagons and shading them based on the
-concentration of points in each bin. Let\'s view this data as hexbins:
-
-```
->>> fb.assign(
-...     log_volume=np.log(fb.volume),
-...     max_abs_change=fb.high - fb.low
-... ).plot(
-...     kind='hexbin', 
-...     x='log_volume', 
-...     y='max_abs_change', 
-...     title='Facebook Daily High - '
-...           'Low vs. log(Volume Traded)', 
-...     colormap='gray_r', 
-...     gridsize=20,
-...     sharex=False # bug fix to keep the x-axis label
-... )
-```
-
-
-The colorbar on the side indicates the
-relationship between color and the number of points in that bin. The
-colormap we chose (`gray_r`) shades the bins darker (toward
-black) for high density, and lighter (toward white) for low density. By
-passing in `gridsize=20`, we are specifying that 20 hexagons
-should be used across the *x*-axis, and then having `pandas`
-determine how many to use along the *y*-axis so that they are
-approximately regular in shape; we can, however, pass a tuple to choose
-the number in both directions. A larger value for `gridsize`
-will make the bins harder to see, while a smaller one will result in
-fuller bins that take up more space on the plot---we must strike a
-balance:
-
-
-![](./images/Figure_5.20_B16834.jpg)
-
-
-
-Finally, if we simply want to visualize the correlation between
-variables, we can plot a correlation matrix. A **correlation matrix**
-depicts the magnitude and direction (positive or negative) of the
-correlation. Let\'s take a look at the correlation matrix for the
-Facebook data we have been working with. To do so,
-we can use a combination of `pandas` and either the
-`plt.matshow()` or `plt.imshow()` function from
-`matplotlib`. Since there is a lot of code that needs to be
-run in the same cell, we will discuss the purpose of each section
-immediately after this code block:
-
-```
->>> fig, ax = plt.subplots(figsize=(20, 10))
-# calculate the correlation matrix
->>> fb_corr = fb.assign(
-...     log_volume=np.log(fb.volume),
-...     max_abs_change=fb.high - fb.low
-... ).corr()
-# create the heatmap and colorbar
->>> im = ax.matshow(fb_corr, cmap='seismic')
->>> im.set_clim(-1, 1)
->>> fig.colorbar(im)
-# label the ticks with the column names
->>> labels = [col.lower() for col in fb_corr.columns]
->>> ax.set_xticks(ax.get_xticks()[1:-1])
->>> ax.set_xtickabels(labels, rotation=45)
->>> ax.set_yticks(ax.get_yticks()[1:-1])
->>> ax.set_yticklabels(labels)
-# include the value of the correlation coefficient in the boxes
->>> for (i, j), coef in np.ndenumerate(fb_corr):
-...     ax.text(
-...         i, j, fr'$\rho$ = {coef:.2f}', 
-...         ha='center', va='center', 
-...         color='white', fontsize=14
-...     )
-```
-
-
-A **heatmap** lets us easily visualize the correlation coefficients,
-provided we choose a diverging colormap. Essentially, for
-this plot, we want red for correlation coefficients greater than zero
-and blue for those below; correlation coefficients
-near zero will be devoid of color, and stronger correlations will be
-darker shades of their respective colors. This can be achieved by
-selecting the `seismic` colormap and then setting the limits
-of the color scale to \[-1, 1\], since the correlation coefficient has
-those bounds:
-
-```
-im = ax.matshow(fb_corr, cmap='seismic')
-im.set_clim(-1, 1) # set the bounds of the color scale
-fig.colorbar(im) # add the colorbar to the figure
-```
-
-
-To be able to read the resulting heatmap, we need to label the rows and
-columns with the names of the variables in our data:
-
-```
-labels = [col.lower() for col in fb_corr.columns]
-ax.set_xticks(ax.get_xticks()[1:-1]) # to handle matplotlib bug
-ax.set_xticklabels(labels, rotation=45)
-ax.set_yticks(ax.get_yticks()[1:-1]) # to handle matplotlib bug
-ax.set_yticklabels(labels)
-```
-
-
-While the color scale will make it easy for us to differentiate between
-weak and strong correlations, it is often helpful to annotate the
-heatmap with the actual correlation coefficients. This can
-be accomplished by using the `text()`
-method on the `Axes` object containing the plot. For this
-plot, we placed white, center-aligned text indicating the value of the
-Pearson correlation coefficient for each variable combination:
-
-```
-# iterate over the matrix 
-for (i, j), coef in np.ndenumerate(fb_corr): 
-    ax.text(
-        i, j, 
-        fr'$\rho$ = {coef:.2f}', # raw (r), format (f) string
-        ha='center', va='center', 
-        color='white', fontsize=14
-    )
-```
-
-
-This results in an annotated heatmap showing the correlations between
-the variables in the Facebook dataset:
-
-
-![](./images/Figure_5.21_B16834.jpg)
-
-
-
-In *Figure 5.21*, we can easily see strong positive correlations among
-the OHLC time series, as well as among the volume traded and maximum
-absolute value of change. However, there are weak
-negative correlations between these groups. Furthermore, we can see that
-taking the logarithm of the volume does indeed increase the coefficient
-of correlation with `max_abs_change` from 0.64 to 0.73. When
-we discuss `seaborn` in the next lab, we will learn an
-easier way to generate a heatmap, and also cover annotations in more
-detail.
-
-
-
-Distributions
+Random forest
 -------------
 
-Often, we want to visualize the distribution of our data to see what
-values it takes on. Depending on the type of data
-we have, we may choose to use histograms, **kernel
-density estimates** (**KDEs**), box plots, or **empirical cumulative
-distribution functions** (**ECDFs**). When working with discrete data,
-histograms are a good place to start. Let\'s take
-a look at the histogram of daily volume traded in Facebook stock:
+Decision trees have a tendency to overfit,
+especially if we don\'t set limits on how far
+they can grow (with the `max_depth` and
+`min_samples_leaf` parameters). We can address this
+overfitting issue with a **random forest**, which is a bagging algorithm
+where we train many decision trees in parallel using bootstrap samples
+of our data and aggregate the output. In addition, we have the option of
+scoring each tree on the data in the training set that it didn\'t
+receive in its bootstrap sample, called
+**out-of-bag samples**, with the `oob_score` parameter.
+
+Important note
+
+The `min_samples_leaf` parameter requires a minimum number of
+samples to be on the final nodes in the tree (or leaves); this prevents
+the trees from being fit until they only have a single observation at
+each leaf.
+
+Each of the trees also gets a subset of the features (random feature
+selection), which defaults to the square root of the number of features
+(the `max_features` parameter). This can help address the
+curse of dimensionality. As a consequence, however, the random
+forest can\'t be as easily interpreted as
+the decision trees that make it up. We can,
+however, extract feature importances from the random forest, just as we
+did with the decision tree.
+
+Let\'s use the `RandomForestClassifier` class from the
+`ensemble` module to build a random forest (with
+`n_estimators` trees in it) for the classification of
+high-quality red wines:
 
 ```
->>> fb.volume.plot(
-...     kind='hist', 
-...     title='Histogram of Daily Volume Traded '
-...           'in Facebook Stock'
+>>> from sklearn.ensemble import RandomForestClassifier
+>>> from sklearn.model_selection import GridSearchCV
+>>> rf = RandomForestClassifier(
+...     n_estimators=100, random_state=0
 ... )
->>> plt.xlabel('Volume traded') # label x-axis (see ch 6)
+>>> search_space = {
+...     'max_depth': [4, 8], # keep trees small
+...     'min_samples_leaf': [4, 6]
+... }
+>>> rf_grid = GridSearchCV(
+...     rf, search_space, cv=5, scoring='precision'
+... ).fit(r_X_train, r_y_train)
+>>> rf_grid.score(r_X_test, r_y_test)
+0.6
 ```
 
-
-This is a great example of real-world data that is, most definitely, not
-normally distributed. The volume traded is right skewed, with a long
-tail to the right. Recall that in *Lab 9*,
-*Aggregating Pandas DataFrames*, when we discussed binning and looked at
-low, medium, and high volume traded, almost all of the data fell in the
-low bucket, which aligns with what we see in this histogram:
-
-
-![](./images/Figure_5.22_B16834.jpg)
+Note that our precision with the random forest is
+already much better than the 0.35 we got in
+*Lab 9*, *Getting Started with Machine Learning in Python*. The
+random forest is robust to outliers and able to model non-linear
+decision boundaries to separate the classes, which may explain part of
+this dramatic improvement.
 
 
 
-**Tip:** 
+Gradient boosting
+-----------------
 
-As with the `plt.hist()` function from `matplotlib`,
-we can provide a custom value for the number of bins with the
-`bins` argument. However, we must be careful that we don\'t
-misrepresent the distribution.
+Boosting looks to improve upon the mistakes of previous models. One way
+of doing this is to move in the direction of the
+steepest reduction in the loss function for the model. Since the
+**gradient** (the multi-variable generalization of the derivative) is
+the direction of steepest ascent, this can be
+done by calculating the negative gradient, which yields the direction of
+steepest descent, meaning the best improvement in
+the loss function from the current result. This
+technique is called **gradient descent**.
 
-We can also create multiple histograms on the same
-plot to compare distributions by using the `ax` parameter to
-specify the same `Axes` object for each plot. In this case, we
-must use the `alpha` parameter to see any overlaps. Given that
-we have many different measurement techniques for earthquakes (the
-`magType` column), we may be interested in comparing the
-different ranges of magnitudes they yield:
+Important note
 
-```
->>> fig, axes = plt.subplots(figsize=(8, 5))
->>> for magtype in quakes.magType.unique():
-...     data = quakes.query(f'magType == "{magtype}"').mag
-...     if not data.empty:
-...         data.plot(
-...             kind='hist', 
-...             ax=axes, 
-...             alpha=0.4, 
-...             label=magtype, 
-...             legend=True, 
-...             title='Comparing histograms '
-...                   'of earthquake magnitude by magType'
-...         )
->>> plt.xlabel('magnitude') # label x-axis (discussed in ch 6)
-```
+Although gradient descent sounds great, there are some potential issues
+with it. It\'s possible to end up in a local minimum (a minimum in a
+certain region of the cost function); the algorithm will stop, thinking
+that we have the optimal solution, when in fact we don\'t, because we
+would like the global minimum (the minimum over the whole region).
 
+Scikit-learn\'s `ensemble` module provides the
+`GradientBoostingClassifier` and
+`GradientBoostingRegressor` classes for gradient boosting
+using decision trees. These trees will boost their performance through
+gradient descent. Note that gradient boosted trees are more sensitive to
+noisy training data than the random forest. In addition, we must
+consider the additional time required to build all the trees in series,
+unlike the parallel training we can benefit from with the random forest.
 
-This shows us that `ml` is the most common
-`magType`, followed by `md`, and that they yield
-similar ranges of magnitudes; however,
-`mb`, which is the third-most common, yields higher
-magnitudes:
-
-
-![](./images/Figure_5.23_B16834.jpg)
-
-
-
-When working with continuous data (such as stock prices), we can use
-KDEs. Let\'s take a look at the KDE of the daily high price for Facebook
-stock. Note that we can pass either `kind='kde'` or
-`kind='density'`:
+Let\'s use grid search and gradient boosting to
+train another model for classifying the red wine quality data. In
+addition to searching for the best values for the
+`max_depth` and `min_samples_leaf` parameters, we
+will search for a good value for the `learning_rate`
+parameter, which determines the contribution each tree will make in the
+final estimator:
 
 ```
->>> fb.high.plot(
-...     kind='kde', 
-...     title='KDE of Daily High Price for Facebook Stock'
+>>> from sklearn.ensemble import GradientBoostingClassifier
+>>> from sklearn.model_selection import GridSearchCV
+>>> gb = GradientBoostingClassifier(
+...     n_estimators=100, random_state=0
 ... )
->>> plt.xlabel('Price ($)') # label x-axis (discussed in ch 6)
+>>> search_space = {
+...     'max_depth': [4, 8], # keep trees small
+...     'min_samples_leaf': [4, 6],
+...     'learning_rate': [0.1, 0.5, 1]
+... }
+>>> gb_grid = GridSearchCV(
+...     gb, search_space, cv=5, scoring='f1_macro'
+... ).fit(r_X_train, r_y_train)
 ```
 
-
-The resulting density curve has some left skew:
-
-
-![](./images/Figure_5.24_B16834.jpg)
-
-
-
-We may also want to visualize the KDE superimposed on top of the
-histogram. Pandas allows us to pass the `Axes` object we want
-to plot on, and also returns one after creating the visualization, which
-makes this a cinch:
+The F[1]{.subscript} macro score we achieve with gradient boosting is
+better than the 0.66 we got with logistic regression in *Lab 9*,
+*Getting Started with Machine Learning in Python*:
 
 ```
->>> ax = fb.high.plot(kind='hist', density=True, alpha=0.5)
->>> fb.high.plot(
-...     ax=ax, kind='kde', color='blue', 
-...     title='Distribution of Facebook Stock\'s '
-...           'Daily High Price in 2018'
+>>> gb_grid.score(r_X_test, r_y_test)
+0.7226024272287617
+```
+
+Both bagging and boosting have given us better performance than the
+logistic regression model; however, we may find
+that the models don\'t always agree and that we could
+improve performance even more by having the
+models vote before making the final prediction.
+
+
+
+Voting
+------
+
+When trying out different models for classification, it may be
+interesting to measure their agreement using
+Cohen\'s kappa score. We can use the
+`cohen_kappa_score()` function in the
+`sklearn.metrics` module to do so. The score ranges from
+complete disagreement (-1) to complete agreement (1). Our boosting and
+bagging predictions have a high level of agreement:
+
+```
+>>> from sklearn.metrics import cohen_kappa_score
+>>> cohen_kappa_score(
+...     rf_grid.predict(r_X_test), gb_grid.predict(r_X_test)
 ... )
->>> plt.xlabel('Price ($)') # label x-axis (discussed in ch 6)
+0.7185929648241206
 ```
 
+Sometimes, we can\'t find a single model that works well for all of our
+data, so we may want to find a way to combine the opinions of various
+models to make the final decision. Scikit-learn provides the
+`VotingClassifier` class for aggregating model opinions on
+classification tasks. We have the option of specifying the voting type,
+where `hard` results in majority rules and `soft`
+will predict the class with the highest sum of probabilities across the
+models.
 
-Notice that we had to pass `density=True` when we generated
-the histogram to make sure that the *y*-axis for the histogram and KDE
-were on the same scale. Otherwise, the KDE would have been too small to
-see. The histogram then gets plotted with density on the *y*-axis so
-that we can better understand how the KDE got its shape. We also
-increased the transparency of the histogram so that we could see the KDE
-line on top. Note that if we remove the
-`color='blue'` part of the KDE call, we don\'t need to change
-the value of `alpha` in the histogram call because the KDE and
-histogram will be different colors; we are plotting them both in blue
-since they represent the same data:
-
-
-![](./images/Figure_5.25_B16834.jpg)
-
-
-
-The KDE shows us an estimated **probability density function**
-(**PDF**), which tells us how probability is
-distributed over the values of the data. However, in some cases, we are
-more interested in the probability of getting less
-than or equal to (or greater than or equal to) some value, which we can
-see with the **cumulative distribution function** (**CDF**).
-
-**Important note:**
-
-With a CDF, the values for the *x* variable go along the *x*-axis, while
-the cumulative probability of getting, at most, a given *x* goes along
-the *y*-axis. This cumulative probability is between 0 and 1 and is
-written as *P(X ≤ x)*, where the lowercase (*x*) is the value for
-comparison and the uppercase (*X*) is the random variable, *X*. More
-information can be found at
-<https://www.itl.nist.gov/div898/handbook/eda/section3/eda362.htm>.
-
-Using the `statsmodels` package, we can estimate the CDF
-giving us the **empirical cumulative distribution function** (**ECDF**).
-Let\'s use this to understand the distribution of magnitudes for
-earthquakes measured with the `ml` magnitude type:
+As an example, let\'s create a classifier for each voting type using the
+three estimators (models) from this lab---logistic regression,
+random forest, and gradient boosting. Since we will run
+`fit()`, we pass in the best estimator from each of our grid
+searches (`best_estimator_`). This avoids running each grid
+search again unnecessarily, which will also train our model faster:
 
 ```
->>> from statsmodels.distributions.empirical_distribution \
-...     import ECDF
->>> ecdf = ECDF(quakes.query('magType == "ml"').mag)
->>> plt.plot(ecdf.x, ecdf.y)
-# axis labels (we will cover this in lab 6)
->>> plt.xlabel('mag') # add x-axis label 
->>> plt.ylabel('cumulative probability') # add y-axis label
-# add title (we will cover this in lab 6)
->>> plt.title('ECDF of earthquake magnitude with magType ml')
+>>> from sklearn.ensemble import VotingClassifier
+>>> majority_rules = VotingClassifier(
+...     [('lr', lr_grid.best_estimator_), 
+...      ('rf', rf_grid.best_estimator_), 
+...      ('gb', gb_grid.best_estimator_)],
+...     voting='hard'
+... ).fit(r_X_train, r_y_train)
+>>> max_probabilities = VotingClassifier(
+...     [('lr', lr_grid.best_estimator_), 
+...      ('rf', rf_grid.best_estimator_), 
+...      ('gb', gb_grid.best_estimator_)],
+...     voting='soft'
+... ).fit(r_X_train, r_y_train)
 ```
 
-
-This yields the following ECDF:
-
-
-![](./images/Figure_5.26_B16834.jpg)
-
-
-
-This can be very useful in gaining a better understanding of our data
-when we conduct our EDA. However, we must be careful how we interpret
-this and how we explain it to others, if we choose to do so. Here, we
-can see that if this distribution is indeed representative of the
-population, the probability of the `ml` magnitude of the
-earthquake being less than or equal to **3** is **98%** for earthquakes
-measured with that measurement technique:
-
-
-![](./images/Figure_5.27_B16834.jpg)
-
-
-
-Finally, we can use box plots to visualize
-potential outliers and the distribution using quartiles. As an example,
-let\'s visualize the OHLC prices for Facebook stock across the whole
-dataset:
+Our `majority_rules` classifier requires two of the three
+models to agree (at a minimum), while the `max_probabilities`
+classifier has each model vote with its predicted probabilities. We can
+measure how well they perform on the test data
+with 
+function, which tells us that `majority_rules` is a little
+better than `max_probabilities` in terms of precision. Both
+are better than the other models we have tried:
 
 ```
->>> fb.iloc[:,:4].plot(
-...     kind='box', 
-...     title='Facebook OHLC Prices Box Plot'
-... )
->>> plt.ylabel('price ($)') # label x-axis (discussed in ch 6)
+>>> from sklearn.metrics import classification_report
+>>> print(classification_report(
+...     r_y_test, majority_rules.predict(r_X_test)
+... ))
+              precision    recall  f1-score   support
+           0       0.92      0.95      0.93       138
+           1       0.59      0.45      0.51        22
+    accuracy                           0.88       160
+   macro avg       0.75      0.70      0.72       160
+weighted avg       0.87      0.88      0.87       160
+>>> print(classification_report(
+...     r_y_test, max_probabilities.predict(r_X_test)
+... ))
+              precision    recall  f1-score   support
+           0       0.92      0.93      0.92       138
+           1       0.52      0.50      0.51        22
+    accuracy                           0.87       160
+   macro avg       0.72      0.71      0.72       160
+weighted avg       0.87      0.87      0.87       160
 ```
 
-
-Notice that we do lose some information we had in the other plots. We no
-longer have an idea of the density of points throughout the
-distribution; with the box plot, we focus on the 5-number summary
-instead:
-
-
-![](./images/Figure_5.28_B16834.jpg)
-
-
-
-**Tip:** 
-
-We can create a notched box plot by passing in `notch=True`.
-The notch marks a 95% confidence interval around the median, which can
-be helpful when comparing differences between groups. There is an
-example in the notebook.
-
-We can also call the `boxplot()` method
-after calling `groupby()`. Let\'s examine how the box plots
-change when we calculate them based on the volume traded:
-
-```
->>> fb.assign(
-...     volume_bin=\
-...         pd.cut(fb.volume, 3, labels=['low', 'med', 'high']) 
-... ).groupby('volume_bin').boxplot(
-...     column=['open', 'high', 'low', 'close'], 
-...     layout=(1, 3), figsize=(12, 3)
-... )
->>> plt.suptitle(
-...     'Facebook OHLC Box Plots by Volume Traded', y=1.1
-... )
-```
+Another important option with the `VotingClassifier` class is
+the `weights` parameter, which lets us
+place more or less emphasis on certain estimators
+when voting. For example, if we pass
+`weights=[1, 2, 2]` to `majority_rules`, we are
+giving extra weight to the predictions made by the random forest and
+gradient boosting estimators. In order to determine which models (if
+any) should be given extra weight, we can look at individual performance
+and prediction confidence.
 
 
-Remember from *lab 9*,
-*Aggregating Pandas DataFrames,* that most of the days fell in the low
-volume traded bucket, so we would expect to see more variation there
-because of what the stock data looked like over time:
+Inspecting classification prediction confidence
+===============================================
 
 
-![](./images/Figure_5.29_B16834.jpg)
+As we saw with ensemble methods, when we know the strengths and
+weaknesses of our model, we can employ strategies to attempt to improve
+performance. We may have two models to classify
+something, but they most likely won\'t agree on everything. However, say
+that we know that one does better on edge cases, while the other is
+better on the more common ones. In that case, we would likely want to
+investigate a voting classifier to improve our performance. How can we
+know how the models perform in different situations, though?
 
-
-
-We can also use this technique to see the
-distribution of earthquake magnitudes based on which `magType`
-was used and compare it with the expected ranges on the USGS website
-(<https://www.usgs.gov/natural-hazards/earthquake-hazards/science/magnitude-types>):
+By looking at the probabilities the model predicts of an observation
+belonging to a given class, we can gain insight into how confident our
+model is when it is correct and when it errs. We can use our
+`pandas` data wrangling skills to make quick work of this.
+Let\'s see how confident our original `white_or_red` model
+from *Lab 9*, *Getting Started with Machine Learning in Python*, was
+in its predictions:
 
 ```
->>> quakes[['mag', 'magType']]\
-...     .groupby('magType')\
-...     .boxplot(figsize=(15, 8), subplots=False)
-# formatting (covered in lab 6)
->>> plt.title('Earthquake Magnitude Box Plots by magType')
->>> plt.ylabel('magnitude')
-```
-
-
-The USGS website mentions situations in which certain measurement
-techniques can\'t be used and the range of magnitudes each measurement
-technique is authoritative for (when outside that range, other
-techniques are used). Here, we can see that, together, the techniques
-cover a wide spectrum of magnitudes, while none of them cover
-everything:
-
-
-![](./images/Figure_5.30_B16834.jpg)
-
-
-
-**Important note:**
-
-While histograms, KDEs, ECDFs, and box plots are all ways of looking at
-the distribution of the data, we saw that each
-visualization showed us a different aspect of it. It\'s important to
-visualize the data from many angles before drawing any conclusions.
-
-
-
-Counts and frequencies
-----------------------
-
-We can use a horizontal bar plot to see which places in the
-`quakes` dataframe have had the most earthquakes. First, we
-call the `value_counts()` method on the
-`parsed_place` series and take the top 15 places for
-earthquakes. Next, we reverse the order so that the smallest
-ones in this list are on top, which will sort the
-highest to the top of the bar plot that we will make. Note that we could
-reverse the sort order as an argument to `value_counts()`, but
-since we would still have to grab the top 15, we are doing both in a
-single `iloc` call:
-
-```
->>> quakes.parsed_place.value_counts().iloc[14::-1,].plot(
-...     kind='barh', figsize=(10, 5), 
-...     title='Top 15 Places for Earthquakes '
-...           '(September 18, 2018 - October 13, 2018)'
-... )
->>> plt.xlabel('earthquakes') # label x-axis (see ch 6)
-```
-
-
-Remember, slicing notation is `[start:stop:step]`, and in this
-case, since the step is negative, the order is reversed; we start at
-index `14` (the 15[th]{.superscript} entry) and get closer to
-index `0` each time. By passing `kind='barh'`, we
-get a horizontal bar plot that shows that most of the earthquakes in
-this dataset occur in Alaska. Perhaps it is surprising to see the number
-of earthquakes over such a short time period, but many of these
-earthquakes are so small in magnitude that people don\'t even feel them:
-
-
-![](./images/Figure_5.31_B16834.jpg)
-
-
-
-Our data also contains information about whether
-the earthquake was accompanied by a tsunami. Let\'s use
-`groupby()` to make a bar plot of the top 10 places that were
-hit by tsunamis during the time period we have in our data:
-
-```
->>> quakes.groupby(
-...     'parsed_place'
-... ).tsunami.sum().sort_values().iloc[-10:,].plot(
-...     kind='barh', figsize=(10, 5), 
-...     title='Top 10 Places for Tsunamis '
-...           '(September 18, 2018 - October 13, 2018)'
-... )
->>> plt.xlabel('tsunamis') # label x-axis (discussed in ch 6)
-```
-
-
-Notice that this time, we used `iloc[-10:,]`, which starts at
-the 10[th]{.superscript} largest value (since `sort_values()`
-sorts in ascending order by default) and goes to the largest value,
-giving us the top 10. Here, we can see that Indonesia had many more
-tsunamis than the other places during this time period:
-
-
-![](./images/Figure_5.32_B16834.jpg)
-
-
-
-After seeing something like this, we may be prompted to look further
-into the number of tsunamis in Indonesia each day.
-We can visualize this evolution over time as a line plot or with a
-vertical bar plot by using `kind='bar'`. Here, we will use
-bars to avoid interpolating the points:
-
-```
->>> indonesia_quakes = quakes.query(
-...     'parsed_place == "Indonesia"'
+>>> prediction_probabilities = pd.DataFrame(
+...     white_or_red.predict_proba(w_X_test), 
+...     columns=['prob_white', 'prob_red']
 ... ).assign(
-...     time=lambda x: pd.to_datetime(x.time, unit='ms'),
-...     earthquake=1
-... ).set_index('time').resample('1D').sum()
-# format the datetimes in the index for the x-axis
->>> indonesia_quakes.index = \
-...     indonesia_quakes.index.strftime('%b\n%d')
->>> indonesia_quakes.plot(
-...     y=['earthquake', 'tsunami'], kind='bar', rot=0, 
-...     figsize=(15, 3), label=['earthquakes', 'tsunamis'], 
-...     title='Earthquakes and Tsunamis in Indonesia '
-...           '(September 18, 2018 - October 13, 2018)'
-... )
-# label the axes (discussed in lab 6)
->>> plt.xlabel('date')
->>> plt.ylabel('count')
-```
-
-
-On September 28, 2018, we can see a spike in both earthquakes and
-tsunamis in Indonesia; on this date a 7.5 magnitude earthquake occurred,
-causing a devastating tsunami:
-
-
-![](./images/Figure_5.33_B16834.jpg)
-
-
-
-We can also create grouped bars from a single
-column\'s values by using `groupby()` and
-`unstack()`. This makes it possible for us to generate bars
-for each distinct value in the column. Let\'s use this strategy to take
-a look at the frequency of a tsunami accompanying an earthquake, as a
-percentage. We can handle this using the `apply()` method along `axis=1` (to apply row
-by row). For illustration purposes, we will look at the seven places
-with the highest percentage of earthquakes accompanied by a tsunami:
-
-```
->>> quakes.groupby(['parsed_place', 'tsunami']).mag.count()\
-...     .unstack().apply(lambda x: x / x.sum(), axis=1)\
-...     .rename(columns={0: 'no', 1: 'yes'})\
-...     .sort_values('yes', ascending=False)[7::-1]\
-...     .plot.barh(
-...         title='Frequency of a tsunami accompanying '
-...               'an earthquake'
-...     )
-# move legend to the right of the plot; label axes
->>> plt.legend(title='tsunami?', bbox_to_anchor=(1, 0.65))
->>> plt.xlabel('percentage of earthquakes')
->>> plt.ylabel('')
-```
-
-
-Christmas Island had one earthquake during this
-time period, but it was accompanied by a tsunami. Papua New Guinea, on
-the other hand, had tsunamis alongside roughly 40% of its earthquakes:
-
-
-![](./images/Figure_5.34_B16834.jpg)
-
-
-
-**Tip:** 
-
-When saving the preceding plots, long category names may get cut off; if
-that\'s the case, try running `plt.tight_layout()` before
-saving.
-
-Now, let\'s use vertical bars to see which methods
-of measuring earthquake magnitude are most prevalent by using
-`kind='bar'`:
-
-```
->>> quakes.magType.value_counts().plot(
-...     kind='bar', rot=0,
-...     title='Earthquakes Recorded per magType'
-... )
-# label the axes (discussed in ch 6)
->>> plt.xlabel('magType')
->>> plt.ylabel('earthquakes')
-```
-
-
-It appears that `ml` is, by far, the most common method for
-measuring earthquake magnitudes. This makes sense since it is the
-*original magnitude relationship defined by Richter and Gutenberg in
-1935 for local earthquakes*, according to the USGS page explaining the
-`magType` field in the dataset we are using
-(<https://www.usgs.gov/natural-hazards/earthquake-hazards/science/magnitude-types>):
-
-
-![](./images/Figure_5.35_B16834.jpg)
-
-
-
-Say we want to see how many earthquakes of a given
-magnitude there were and to distinguish them by `magType`.
-This shows us a few things in a single plot:
-
--   Which magnitudes occur most often across `magType`.
--   The relative ranges of magnitude that each `magType`
-    yields.
--   The most common values for `magType`.
-
-To do so, we can make a stacked bar plot. First, we will round all
-magnitudes down to the nearest integer. This means that all earthquakes
-will be marked as the part of the magnitude before the decimal point
-(for example, 5.5 gets marked as 5, just like 5.7, 5.2, and 5.0). Next,
-we will need to create a pivot table with the magnitude in the index and
-the magnitude type along the columns; we will count the number of
-earthquakes for the values:
-
-```
->>> pivot = quakes.assign(
-...     mag_bin=lambda x: np.floor(x.mag)
-... ).pivot_table(
-...     index='mag_bin', 
-...     columns='magType', 
-...     values='mag', 
-...     aggfunc='count'
+...     is_red=w_y_test == 1,
+...     pred_white=lambda x: x.prob_white >= 0.5,
+...     pred_red=lambda x: np.invert(x.pred_white),
+...     correct=lambda x: (np.invert(x.is_red) & x.pred_white)
+...                        | (x.is_red & x.pred_red)
 ... )
 ```
 
+Tip
 
-Once we have the pivot table, we can create a stacked bar plot by
-passing in `stacked=True` when plotting:
+We can tweak the probability threshold for our model\'s predictions by
+using the `predict_proba()` method, instead of
+`predict()`. This will give us the probabilities that the
+observation belongs to each class. We can then compare that to our
+custom threshold. For example, we could use 75%:
+`white_or_red.predict_proba(w_X_test)[:,1] >= .75`.
+
+One way to identify this threshold is to determine the false positive
+rate we are comfortable with, and then use the data from the
+`roc_curve()` function in the `sklearn.metrics`
+module to find the threshold that results in that false positive rate.
+Another way is to find a satisfactory spot along the precision-recall
+curve, and then get the threshold from the
+`precision_recall_curve()` function. We will work through an
+example in [*Lab
+11*],
+*Machine Learning Anomaly Detection*.
+
+Let\'s use `seaborn` to make a plot showing the distribution
+of the prediction probabilities when the model
+was correct versus when it was incorrect. The `displot()`
+function makes it easy to plot the **kernel
+density estimate** (**KDE**) superimposed on a
+histogram. Here, we will also add a **rug plot**, which shows where each
+of our predictions ended up:
 
 ```
->>> pivot.plot.bar(
-...     stacked=True,
-...     rot=0, 
-...     title='Earthquakes by integer magnitude and magType'
+>>> g = sns.displot(
+...     data=prediction_probabilities, x='prob_red', 
+...     rug=True, kde=True, bins=20, col='correct',
+...     facet_kws={'sharey': True} 
 ... )
->>> plt.ylabel('earthquakes') # label axes (discussed in ch 6)
+>>> g.set_axis_labels('probability wine is red', None) 
+>>> plt.suptitle('Prediction Confidence', y=1.05)
 ```
 
+The KDE for correct predictions is bimodal, with modes near 0 and near
+1, meaning the model is very confident when it is correct, which, since
+it is correct most of the time, means it is very confident in general.
+The peak of the correct predictions KDE at 0 is much higher than the one
+at 1 because we have many more white wines than red wines in the data.
+Note that the KDE shows probabilities of less than zero and greater than
+one as possible. For this reason, we add the histogram to confirm that
+the shape we are seeing is meaningful. The histogram for correct
+predictions doesn\'t have much in the middle of the distribution, so we
+include the rug plot to better see which probabilities were predicted.
+The incorrect predictions don\'t have many data points, but it appears
+to be all over the place, because when the model got it wrong, it got
+fooled pretty badly:
 
-This results in the following plot, which shows
-that most of the earthquakes are measured with the `ml`
-magnitude type and have magnitudes below four:
+
+![](./images/Figure_10.12_B16834.jpg)
 
 
-![](./images/Figure_5.36_B16834.jpg)
+Figure 10.12 -- Prediction confidence when the model was correct versus
+incorrect
 
+This outcome tells us we may want to look into the chemical properties
+of the wines that were incorrectly classified.
+It\'s possible they were outliers and that is why they fooled the model.
+We can modify the box plots by wine type from the *Exploratory data
+analysis* section in *Lab 9*, *Getting Started with Machine Learning
+in Python*, to see if anything stands out (*Figure 9.6*).
 
-
-The other bars are dwarfed in comparison to `ml`, which makes
-it difficult for us to see which magnitude types assign higher
-magnitudes to earthquakes. To address this, we can make a normalized
-stacked bar plot. Rather than showing the count of earthquakes for each
-combination of magnitude and `magType`, we will show what
-percentage of earthquakes of a given magnitude used each
-`magType`:
+First, we isolate the chemical properties for the incorrectly classified
+wines:
 
 ```
->>> normalized_pivot = \
-...     pivot.fillna(0).apply(lambda x: x / x.sum(), axis=1)
-... 
->>> ax = normalized_pivot.plot.bar(
-...     stacked=True, rot=0, figsize=(10, 5),
-...     title='Percentage of earthquakes by integer magnitude '
-...           'for each magType'
+>>> incorrect = w_X_test.assign(is_red=w_y_test).iloc[
+...     prediction_probabilities.query('not correct').index
+... ]
+```
+
+Then, we add some calls to `scatter()` on the `Axes`
+object to mark these wines on the box plots from before:
+
+```
+>>> import math
+>>> chemical_properties = [col for col in wine.columns
+...                        if col not in ['quality', 'kind']]
+>>> melted = \
+...     wine.drop(columns='quality').melt(id_vars=['kind'])
+>>> fig, axes = plt.subplots(
+...     math.ceil(len(chemical_properties) / 4), 4,
+...     figsize=(15, 10)
 ... )
->>> ax.legend(bbox_to_anchor=(1, 0.8)) # move legend
->>> plt.ylabel('percentage') # label axes (discussed in ch 6)
+>>> axes = axes.flatten()
+>>> for prop, ax in zip(chemical_properties, axes):
+...     sns.boxplot(
+...         data=melted[melted.variable.isin([prop])], 
+...         x='variable', y='value', hue='kind', ax=ax,
+...         palette={'white': 'lightyellow', 'red': 'orchid'},
+...         saturation=0.5, fliersize=2
+...     ).set_xlabel('')
+...     for _, wrong in incorrect.iterrows(): 
+...         # _ is convention for collecting info we won't use
+...         x_coord = -0.2 if not wrong['is_red'] else 0.2
+...         ax.scatter(
+...             x_coord, wrong[prop], marker='x',
+...             color='red', s=50
+...         )
+>>> for ax in axes[len(chemical_properties):]:
+...     ax.remove()
+>>> plt.suptitle(
+...     'Comparing Chemical Properties of Red and White Wines'
+...     '\n(classification errors are red x\'s)'
+... )
+>>> plt.tight_layout() # clean up layout
 ```
 
-
-Now, we can easily see that `mww` yields
-higher magnitudes and that `ml` appears to be spread across
-the lower end of the spectrum:
-
-
-![](./images/Figure_5.37_B16834.jpg)
-
+This results in each of the incorrectly
+classified wines being marked with a red **X**. In each subplot, the
+points on the left box plot are white wines and those on the right box
+plot are red wines. It appears that some of them may have been outliers
+for a few characteristics---such as red wines with high residual sugar
+or sulfur dioxide, and white wines with high volatile acidity:
 
 
-Note that we can also use this strategy with a call to the
-`groupby()` and then `unstack()` methods. Let\'s
-revisit the frequency of a tsunami accompanying an earthquake plot, but
-rather than use grouped bars, we will stack them:
-
-```
->>> quakes.groupby(['parsed_place', 'tsunami']).mag.count()\
-...     .unstack().apply(lambda x: x / x.sum(), axis=1)\
-...     .rename(columns={0: 'no', 1: 'yes'})\
-...     .sort_values('yes', ascending=False)[7::-1]\
-...     .plot.barh(
-...         title='Frequency of a tsunami accompanying '
-...               'an earthquake',
-...         stacked=True
-...     )
-# move legend to the right of the plot
->>> plt.legend(title='tsunami?', bbox_to_anchor=(1, 0.65))
-# label the axes (discussed in lab 6)
->>> plt.xlabel('percentage of earthquakes')
->>> plt.ylabel('')
-```
+![](./images/Figure_10.13_B16834.jpg)
 
 
-This stacked bar plot makes it very easy for us to compare the
-frequencies of tsunamis across different places:
+Figure 10.13 -- Checking whether incorrect predictions were outliers
+
+Despite having many more white wines than red
+wines in the data, our model is able to distinguish between them pretty
+well. This isn\'t always the case. Sometimes, in order to improve our
+performance, we need to address the class imbalance.
 
 
-![](./images/Figure_5.38_B16834.jpg)
-
-
-
-Categorical data limits us in terms of the types
-of plots we can use, but there are some alternatives to the bar plot. We
-will take a look at them in the *Utilizing seaborn for advanced
-plotting* section in the next lab; for now, let\'s take a look at
-the `pandas.plotting` module.
-
-The pandas.plotting module
+Addressing class imbalance
 ==========================
 
 
-In the *Plotting with pandas* section, we covered standard plots that
-`pandas` has provided easier
-implementations for. However, `pandas` also has a module
-(which is appropriately named `plotting`) with special plots
-that we can use on our data. Note that the customization options of
-these may be more limited because of how they are composed and returned
-to us.
+When faced with a class imbalance in our data, we may want to try to
+balance the training data before we build a model
+around it. In order to do this, we can use one of the following
+imbalanced sampling techniques:
 
-We will be working in the `3-pandas_plotting_module.ipynb`
-notebook for this section. As usual, we will begin with our imports and
-reading in the data; we will only be using the Facebook data here:
+-   Over-sample the minority class.
+-   Under-sample the majority class.
+
+In the case of **over-sampling**, we pick a larger proportion from the
+minority class in order to get closer to the
+amount of the majority class; this may involve a technique such as
+bootstrapping or generating new data similar to the values in the
+existing data (using machine learning algorithms such as nearest
+neighbors). **Under-sampling**, on the other hand, will take less data
+overall by reducing the amount taken from the
+majority class. The decision to use over-sampling or under-sampling will
+depend on the amount of data we started with, and in some cases,
+computational costs. In practice, we wouldn\'t try either of these
+without first trying to build the model with the class imbalance. It\'s
+important not to try to optimize things
+prematurely; not to mention that by building the
+model first, we have a baseline to compare our imbalanced sampling
+attempts against.
+
+Important note
+
+Huge performance issues can arise if the minority class that we have in
+the data isn\'t truly representative of the full spectrum present in the
+population. For this reason, our method of collecting the data in the
+first place should be both known to us and carefully evaluated before
+proceeding to modeling. If we aren\'t careful, we could easily build a
+model that can\'t generalize to new data, regardless of how we handle
+the class imbalance.
+
+Before we explore any imbalanced sampling techniques, let\'s create a
+baseline model using **k-nearest neighbors** (**k-NN**) classification,
+which will classify observations according to the
+class of the k-nearest observations in the n-dimensional space of the
+data (our red wine quality data is 11-dimensional). For comparison
+purposes, we will use the same number of neighbors for all the models in
+this section; however, it is certainly possible that the sampling
+techniques will result in a different value performing better. We will
+use five neighbors:
 
 ```
->>> %matplotlib inline
->>> import matplotlib.pyplot as plt
->>> import numpy as np
->>> import pandas as pd
->>> fb = pd.read_csv(
-...     'data/fb_stock_prices_2018.csv', 
-...     index_col='date', 
-...     parse_dates=True
+>>> from sklearn.neighbors import KNeighborsClassifier
+>>> knn = KNeighborsClassifier(n_neighbors=5).fit(
+...     r_X_train, r_y_train
 ... )
+>>> knn_preds = knn.predict(r_X_test)
 ```
 
-
-Now, let\'s take a tour of some of the plots
-available in the `pandas.plotting` module and learn how we can
-utilize the resulting visualizations in our EDA.
-
-
-
-Scatter matrices
-----------------
-
-Earlier in this lab, we discussed using scatter plots to show
-relationships among variables. Often, we want to see these for each
-combination of variables in the data, which can be
-tedious to execute. The `pandas.plotting` module contains the
-`scatter_matrix()` function, which makes this much easier.
-Let\'s use it to view the scatter plots for each
-combination of columns in our Facebook stock prices data:
+Our k-NN model is fast to train because it is a **lazy
+learner**---calculations are made at classification time. It is
+important to keep in mind the time our models take to train and make
+predictions, as this can dictate which models we can use in practice. A
+model that performs marginally better but takes twice as long to train
+or predict may not be worth it. As the dimensionality of our data
+increases, the k-NN model will become less and less feasible. We can use
+the `%%timeit` magic to get an estimate of how long it takes
+on average to train. Note that this will train the model multiple times,
+so it might not be the best strategy to time a
+computationally intense model:
 
 ```
->>> from pandas.plotting import scatter_matrix
->>> scatter_matrix(fb, figsize=(10, 10))
-```
-
-
-This results in the following plot matrix, which is often used in
-machine learning to see which variables could be useful in building a
-model. We can easily see that we have strong positive correlations
-between the opening, high, low, and closing prices:
-
-
-![](./images/Figure_5.39_B16834.jpg)
-
-
-
-By default, on the diagonal, where the column is
-paired with itself, we get its histogram.
-Alternatively, we can ask for the KDE by passing in
-`diagonal='kde'`:
-
-```
->>> scatter_matrix(fb, figsize=(10, 10), diagonal='kde')
-```
-
-
-This results in a scatter matrix with KDEs along
-the diagonal instead of histograms:
-
-
-![](./images/Figure_5.40_B16834.jpg)
-
-
-
-While a scatter matrix makes it easy to examine the relationships
-between our variables, sometimes, we are interested in
-**autocorrelation**, which means that the time
-series is correlated with a lagged version
-of itself. One way to visualize this is with a lag
-plot.
-
-
-
-Lag plots
----------
-
-If our data is random, this plot will have no pattern. Let\'s test this
-with some random data generated with NumPy:
-
-```
->>> from pandas.plotting import lag_plot
->>> np.random.seed(0) # make this repeatable
->>> lag_plot(pd.Series(np.random.random(size=200)))
-```
-
-
-The random data points don\'t indicate any pattern, just random noise:
-
-
-![](./images/Figure_5.41_B16834.jpg)
-
-
-
-With our stock data, we know that the prices on a given day are
-determined by what happened the day before; therefore, we would expect
-to see a pattern in the lag plot. Let\'s use the closing price of
-Facebook\'s stock to test whether our intuition is correct:
-
-```
->>> lag_plot(fb.close)
-```
-
-
-As expected, this results in a linear pattern:
-
-
-![](./images/Figure_5.42_B16834.jpg)
-
-
-
-We can also specify the number of periods to use for the lag. The
-default lag is one, but we can change this with
-the `lag` parameter. For example, we can compare each
-value to the value of the week prior with
-`lag=5` (remember that the stock data only contains data for
-weekdays since the market is closed on the weekends):
-
-```
->>> lag_plot(fb.close, lag=5)
-```
-
-
-This still yields a strong correlation, but, compared to above image, it definitely looks weaker:
-
-
-![](./images/Figure_5.43_B16834.jpg)
-
-
-
-Autocorrelation plots
----------------------
-
-As we did when discussing lag plots, let\'s first examine what this
-looks like for random data generated with NumPy:
-
-```
->>> from pandas.plotting import autocorrelation_plot
->>> np.random.seed(0) # make this repeatable
->>> autocorrelation_plot(pd.Series(np.random.random(size=200)))
-```
-
-
-Indeed, the autocorrelation is near zero, and the line is within the
-confidence bands (99% is dashed; 95% is solid):
-
-
-![](./images/Figure_5.44_B16834.jpg)
-
-
-
-Let\'s explore what the autocorrelation plot looks
-like for the closing price of Facebook\'s stock,
-since the lag plots indicated several periods of autocorrelation:
-
-```
->>> autocorrelation_plot(fb.close)
-```
-
-
-Here, we can see that there is autocorrelation for many lag periods before it becomes noise:
-
-![](./images/Figure_5.45_B16834.jpg)
-
-
-Bootstrap plots
----------------
-
-Let\'s see what the uncertainty for the summary statistics of the volume
-traded data looks like:
-
-```
->>> from pandas.plotting import bootstrap_plot
->>> fig = bootstrap_plot(
-...     fb.volume, fig=plt.figure(figsize=(10, 6))
+>>> %%timeit
+>>> from sklearn.neighbors import KNeighborsClassifier
+>>> knn = KNeighborsClassifier(n_neighbors=5).fit(
+...     r_X_train, r_y_train
 ... )
+3.24 ms ± 599 µs per loop 
+(mean ± std. dev. of 7 runs, 100 loops each)
 ```
 
+Let\'s compare this result with training a
+**support vector machine** (**SVM**), which projects the data into a
+higher dimension to find the **hyperplane** that separates the classes.
+A hyperplane is the n-dimensional equivalent of a plane, just like
+a plane is the two-dimensional equivalent of a
+line. SVMs are typically robust to outliers and can model non-linear
+decision boundaries; however, SVMs get slow very quickly, so it will be
+a good comparison:
 
-This results in the following subplots, which we can use to assess the
-uncertainty in the mean, median, and midrange (the midpoint of the
-range):
+```
+>>> %%timeit
+>>> from sklearn.svm import SVC
+>>> svc = SVC(gamma='auto').fit(r_X_train, r_y_train)
+153 ms ± 6.7 ms per loop 
+(mean ± std. dev. of 7 runs, 1 loop each)
+```
+
+Now that we have our baseline model and an idea of how it works, let\'s
+see how the baseline k-NN model performs:
+
+```
+>>> from sklearn.metrics import classification_report
+>>> print(classification_report(r_y_test, knn_preds))
+              precision    recall  f1-score   support
+           0       0.91      0.93      0.92       138
+           1       0.50      0.41      0.45        22
+    accuracy                           0.86       160
+   macro avg       0.70      0.67      0.69       160
+weighted avg       0.85      0.86      0.86       160
+```
+
+With this performance benchmark, we are ready to
+try out imbalanced sampling. We will be using the `imblearn`
+package, which is provided by the `scikit-learn` community. It
+provides implementations for over- and under-sampling using various
+strategies, and it is just as easy to use as `scikit-learn`,
+since they both follow the same API conventions. For reference, the
+documentation can be found at
+<https://imbalanced-learn.readthedocs.io/en/stable/api.html>.
 
 
-![](./images/Figure_5.46_B16834.jpg)
+
+Under-sampling
+--------------
+
+As we hinted at earlier, under-sampling will reduce the amount of data
+available to train our model on. This means we should only attempt this
+if we have enough data that we can accept
+eliminating some of it. Let\'s
+see what happens with the red wine quality data,
+since we don\'t have much data to begin with.
+
+We will use the `RandomUnderSampler` class from
+`imblearn` to randomly under-sample the low-quality red wines
+in the training set:
+
+```
+>>> from imblearn.under_sampling import RandomUnderSampler
+>>> X_train_undersampled, y_train_undersampled = \
+...     RandomUnderSampler(random_state=0)\
+...         .fit_resample(r_X_train, r_y_train)
+```
+
+We went from almost 14% of the
+training data being high-quality red wine to 50%
+of it; however, notice that this came at the price of 1,049 training
+samples (more than half of our training data):
+
+```
+# before
+>>> r_y_train.value_counts() 
+0    1244
+1     195
+Name: high_quality, dtype: int64
+# after
+>>> pd.Series(y_train_undersampled).value_counts().sort_index()
+0    195
+1    195
+dtype: int64
+```
+
+Fitting our model with the under-sampled data is no different from
+before:
+
+```
+>>> from sklearn.neighbors import KNeighborsClassifier
+>>> knn_undersampled = KNeighborsClassifier(n_neighbors=5)\
+...     .fit(X_train_undersampled, y_train_undersampled)
+>>> knn_undersampled_preds = knn_undersampled.predict(r_X_test)
+```
+
+Using the classification report, we see that under-sampling is
+definitely not an improvement---we hardly had any data for this model:
+
+```
+>>> from sklearn.metrics import classification_report
+>>> print(
+...     classification_report(r_y_test, knn_undersampled_preds)
+... )
+              precision    recall  f1-score   support
+           0       0.93      0.65      0.77       138
+           1       0.24      0.68      0.35        22
+    accuracy                           0.66       160
+   macro avg       0.58      0.67      0.56       160
+weighted avg       0.83      0.66      0.71       160
+```
+
+In situations where we have limited
+data to start with, under-sampling is simply not
+feasible. Here, we lost over half of the already small amount of data we
+had. Models need a good amount of data to learn from, so let\'s try
+over-sampling the minority class now.
 
 
 
-This was a sample of a few of the functions
-in the `pandas.plotting` module. For the
-full list, check out
-<https://pandas.pydata.org/pandas-docs/stable/reference/plotting.html>.
+Over-sampling
+-------------
+
+It\'s clear that with smaller datasets, it won\'t be beneficial to
+under-sample. Instead, we can try over-sampling
+the minority class (the high-quality red wines,
+in this case). Rather than doing random
+over-sampling with the `RandomOverSampler` class, we are going
+to use the **Synthetic Minority Over-sampling Technique** (**SMOTE**) to
+create *new* (synthetic) red wines similar to the high-quality ones
+using the k-NN algorithm. By doing this, we are making a big assumption
+that the data we have collected about the chemical properties of the red
+wine does influence the quality rating of the wine.
+
+Important note
+
+The SMOTE implementation in `imblearn` comes from this paper:
+
+*N. V. Chawla, K. W. Bowyer, L. O.Hall, W. P. Kegelmeyer, SMOTE:
+synthetic minority over-sampling technique, Journal of Artificial
+Intelligence Research, 321-357, 2002*, available at
+<https://arxiv.org/pdf/1106.1813.pdf>.
+
+Let\'s use SMOTE with the five nearest
+neighbors to over-sample the high-quality red
+wines in our training data:
+
+```
+>>> from imblearn.over_sampling import SMOTE
+>>> X_train_oversampled, y_train_oversampled = SMOTE(
+...     k_neighbors=5, random_state=0
+... ).fit_resample(r_X_train, r_y_train)
+```
+
+Since we over-sampled, we will have more data than we did before,
+gaining an extra 1,049 high-quality red wine samples:
+
+```
+# before
+>>> r_y_train.value_counts()
+0    1244
+1     195
+Name: high_quality, dtype: int64
+# after
+>>> pd.Series(y_train_oversampled).value_counts().sort_index()
+0    1244
+1    1244
+dtype: int64
+```
+
+Once again, we will fit a k-NN model, using the over-sampled data this
+time:
+
+```
+>>> from sklearn.neighbors import KNeighborsClassifier
+>>> knn_oversampled = KNeighborsClassifier(n_neighbors=5)\ 
+...     .fit(X_train_oversampled, y_train_oversampled)
+>>> knn_oversampled_preds = knn_oversampled.predict(r_X_test)
+```
+
+Over-sampling performed much better
+than under-sampling, but unless we were looking
+to maximize recall, we are better off sticking with our original
+strategy for k-NN:
+
+```
+>>> from sklearn.metrics import classification_report
+>>> print(
+...     classification_report(r_y_test, knn_oversampled_preds)
+... )
+              precision    recall  f1-score   support
+           0       0.96      0.78      0.86       138
+           1       0.37      0.82      0.51        22
+    accuracy                           0.78       160
+   macro avg       0.67      0.80      0.68       160
+weighted avg       0.88      0.78      0.81       160
+```
+
+Note that since SMOTE is creating synthetic data, we must carefully
+consider the side effects this may have on our
+model. If we can\'t make the assumption that all
+the values of a given class are representative of the full spectrum of
+the population and that this won\'t change over time, we cannot expect
+SMOTE to work well.
+
+
+Regularization
+==============
+
+
+When working with regressions, we may look to add a penalty term to our
+regression equation to reduce overfitting by punishing certain decisions
+for coefficients made by the model; this is called **regularization**.
+We are looking for the coefficients that will minimize
+this penalty term. The idea is to shrink the
+coefficients toward zero for features that don\'t contribute much to
+reducing the error of the model. Some common techniques are ridge
+regression, LASSO (short for *Least Absolute Shrinkage and Selection
+Operator*) regression, and elastic net regression, which combines the
+LASSO and ridge penalty terms. Note that since these techniques rely on
+the magnitude of the coefficients, the data
+should be scaled beforehand.
+
+**Ridge regression**, also called **L2 regularization**, punishes high
+coefficients (![](./images/Formula_10_002.png)) by adding the
+sum of the squares of the coefficients to the
+cost function (which regression looks to minimize when fitting), as per
+the following penalty term:
+
+
+![](./images/Formula_10_003.jpg)
+
+
+This penalty term is also weighted by λ (lambda), which indicates how
+large the penalty will be. When this is zero, we have ordinary least
+squares regression, as before.
+
+Important note
+
+Remember the `C` parameter from the
+`LogisticRegression` class? By default, the
+`LogisticRegression` class will use the L2 penalty term, where
+`C` is 1/λ. However, it also supports L1, but only with
+certain solvers.
+
+**LASSO regression**, also called **L1 regularization**, drives
+coefficients to zero by adding the sum of the
+absolute values of the coefficients to the cost function. This is
+more robust than L2 regularization because it is
+less sensitive to extreme values:
+
+
+![](./images/Formula_10_004.jpg)
+
+
+Since LASSO drives coefficients of certain
+features in the regression to zero (where they won\'t contribute to the
+model), it is said to perform feature selection.
+
+Important note
+
+Both the L1 and L2 penalties are also referred to as **L1 and L2 norms**
+(a mathematical transformation on a vector to be in the range \[0, ∞))
+and written as ![](./images/Formula_10_005.png) and
+![](./images/Formula_10_006.png), respectively.
+
+**Elastic net regression** combines both LASSO and ridge penalty terms
+into the following penalty term, where we can
+tune both the strength of the penalty (λ) and the percentage of the
+penalty that is L1 (and consequently, the percentage that is L2) with α
+(alpha):
+
+
+![](./images/Formula_10_007.jpg)
+
+
+Scikit-learn implements ridge, LASSO, and elastic net regressions with
+the `Ridge`, `Lasso`, and `ElasticNet`
+classes, respectively, which can be used in the same way as the
+`LinearRegression` class. There is also a `CV`
+version of each of these (`RidgeCV`, `LassoCV`, and
+`ElasticNetCV`), which features built-in cross-validation.
+Using all the defaults for these models, we find
+that LASSO performs the best at predicting the length of the year in
+Earth days with the planet data:
+
+```
+>>> from sklearn.linear_model import Ridge, Lasso, ElasticNet
+>>> ridge, lasso, elastic = Ridge(), Lasso(), ElasticNet()
+>>> for model in [ridge, lasso, elastic]:
+...     model.fit(pl_X_train, pl_y_train)
+...     print(
+...         f'{model.__class__.__name__}: ' # get model name
+...         f'{model.score(pl_X_test, pl_y_test):.4}'
+...     )
+Ridge: 0.9206
+Lasso: 0.9208
+ElasticNet: 0.9047
+```
+
+Note that these `scikit-learn` classes have an
+`alpha` parameter, which lines up with λ in the previous
+equations (not α). For `ElasticNet`, α in the equations lines
+up with the `l1_ratio` parameter, which defaults to 50% LASSO.
+In practice, both of these hyperparameters are determined with
+cross-validation.
 
 
 Summary
 =======
 
 
-Now that we\'ve completed this lab, we are well-equipped to quickly
-create a variety of visualizations in Python using `pandas`
-and `matplotlib`. We now understand the basics of how
-`matplotlib` works and the main components of a plot.
-Additionally, we discussed various plot types and the situations in
-which to use them --- a crucial component of data visualization is
-choosing the appropriate plot. Be sure to check out the *Choosing the
-appropriate visualization* section in the *Appendix* for future
-reference.
+In this lab, we reviewed various techniques we can employ to improve
+model performance. We learned how to use grid search to find the best
+hyperparameters in a search space, and how to tune our model using the
+scoring metric of our choosing with `GridSearchCV`. This means
+we don\'t have to accept the default in the `score()` method
+of our model and can customize it to our needs.
+
+We also took a look at the random forest, gradient boosting, and
+voting classifiers to discuss ensemble methods and how they seek to
+address the bias-variance trade-off through bagging, boosting, and
+voting strategies. We also saw how to measure agreement between
+classifiers with Cohen\'s kappa score. This led us to examine our
+`white_or_red` wine classifier\'s confidence in its correct
+and incorrect predictions. Once we know the ins and outs of our model\'s
+performance, we can try to improve upon it through the appropriate
+ensemble method to capitalize on its strengths and mitigate its
+weaknesses.
+
+After that, we learned how to use the `imblearn` package to
+implement over- and under-sampling strategies when faced with a class
+imbalance.
+
+In the next lab, we will revisit the simulated login attempt data
+and use machine learning to detect anomalies. We will also see how we
+can apply both unsupervised and supervised learning in practice.
+
 
 Exercises
 =========
 
 
-Create the following visualizations using what you have learned up to
-this point in this course. Use the data from this lab\'s
-`data/` directory:
+Complete the following exercises to practice the skills covered in this
+lab. Be sure to consult the *Machine learning workflow* section in
+the *Appendix* as a refresher on the process of building models:
 
-1.  Plot the rolling 20-day minimum of the Facebook closing price using
-    `pandas`.
+1.  Predict star temperature with elastic net linear regression as
+    follows:
 
-2.  Create a histogram and KDE of the change from open to close in the
-    price of Facebook stock.
+    a\) Using the `data/stars.csv` file, build a pipeline to
+    normalize the data with a `MinMaxScaler` object and then
+    run elastic net linear regression using all the numeric columns to
+    predict the temperature of the star.
 
-3.  Using the earthquake data, create box plots for the magnitudes of
-    each `magType` used in Indonesia.
+    b\) Run grid search on the pipeline to find the best values for
+    `alpha`, `l1_ratio`, and
+    `fit_intercept` for the elastic net in the search space of
+    your choice.
 
-4.  Make a line plot of the difference between the weekly maximum high
-    price and the weekly minimum low price for Facebook. This should be
-    a single line.
+    c\) Train the model on 75% of the initial data.
 
-5.  Plot the 14-day moving average of the daily change in new COVID-19
-    cases in Brazil, China, India, Italy, Spain, and the USA:
+    d\) Calculate the R[2]{.superscript} of your model.
 
-    a\) First, use the `diff()` method that was introduced in
-    *Aggregating Pandas DataFrames*, to calculate the day-over-day
-    change in new cases. Then, use `rolling()` to calculate
-    the 14-day moving average.
+    e\) Find the coefficients for each regressor and the intercept.
 
-    b\) Make three subplots: one for China; one for Spain and Italy; and
-    one for Brazil, India, and the USA.
+    f\) Visualize the residuals using the `plot_residuals()`
+    function from the `ml_utils.regression` module.
 
-6.  Using `matplotlib` and `pandas`, create two
-    subplots side-by-side showing the effect that after-hours trading
-    has had on Facebook\'s stock prices:
+2.  Perform multiclass classification of white wine quality using a
+    support vector machine and feature union as follows:
 
-    a\) The first subplot will contain a line plot of the daily
-    difference between that day\'s opening price and the prior day\'s
-    closing price.
+    a\) Using the `data/winequality-white.csv` file, build a
+    pipeline to standardize data, then create a feature union between
+    interaction terms and a feature selection method of your choice from
+    the `sklearn.feature_selection` module, followed by an SVM
+    (use the `SVC` class).
 
-    b\) The second subplot will be a bar plot showing the net effect
-    this had monthly, using `resample()`.
+    b\) Run grid search on your pipeline with 85% of the data to find
+    the best values for the `include_bias` parameter
+    (`PolynomialFeatures`) and the `C` parameter
+    (`SVC`) in the search space of your choosing with
+    `scoring='f1_macro'`.
 
-    c\) Bonus \#1: Color the bars according to whether there are gains
-    in the stock price (green) or drops in the stock price (red).
+    c\) Look at the classification report for your model.
 
-    d\) Bonus \#2: Modify the *x*-axis of the bar plot to show the
-    three-letter abbreviation for the month.
+    d\) Create a confusion matrix using the
+    `confusion_matrix_visual()` function from the
+    `ml_utils.classification` module.
+
+    e\) Plot a precision-recall curve for multiclass data using the
+    `plot_multiclass_pr_curve()` function from the
+    `ml_utils.classification` module.
+
+3.  Perform multiclass classification of white wine quality using k-NN
+    and over-sampling as follows:
+
+    a\) Using the `data/winequality-white.csv` file, create a
+    test and training set with 85% of the data in the training set.
+    Stratify on `quality`.
+
+    b\) With `imblearn`, use the `RandomOverSampler`
+    class to over-sample the minority quality scores.
+
+    c\) Build a pipeline to standardize data and run k-NN.
+
+    d\) Run grid search on your pipeline with the over-sampled data on
+    the search space of your choosing to find the best value for k-NN\'s
+    `n_neighbors` parameter with
+    `scoring='f1_macro'`.
+
+    e\) Look at the classification report for your model.
+
+    f\) Create a confusion matrix using the
+    `confusion_matrix_visual()` function from the
+    `ml_utils.classification` module.
+
+    g\) Plot a precision-recall curve for multiclass data using the
+    `plot_multiclass_pr_curve()` function from the
+    `ml_utils.classification` module.
+
+4.  Can wine type (red or white) help determine the quality score?
+
+    a\) Using the `data/winequality-white.csv` and
+    `data/winequality-red.csv` files, create a dataframe with
+    the concatenated data and a column indicating which wine type the
+    data belongs to (red or white).
+
+    b\) Create a test and training set with 75% of the data in the
+    training set. Stratify on `quality`.
+
+    c\) Build a pipeline using a `ColumnTransformer` object to
+    standardize the numeric data while one-hot encoding the wine type
+    column (something like `is_red` and `is_white`,
+    each with binary values), and then train a random forest.
+
+    d\) Run grid search on your pipeline with the search space of your
+    choosing to find the best value for the random forest\'s
+    `max_depth` parameter with `scoring='f1_macro'`.
+
+    e\) Take a look at the feature importances from the random forest.
+
+    f\) Look at the classification report for your model.
+
+    g\) Plot a ROC curve for multiclass data using the
+    `plot_multiclass_roc()` function from the
+    `ml_utils.classification` module.
+
+    h\) Create a confusion matrix using the
+    `confusion_matrix_visual()` function from the
+    `ml_utils.classification` module.
+
+5.  Make a multiclass classifier to predict wine quality with majority
+    rules voting by performing the following steps:
+
+    a\) Using the `data/winequality-white.csv` and
+    `data/winequality-red.csv` files, create a dataframe with
+    concatenated data and a column indicating which wine type the data
+    belongs to (red or white).
+
+    b\) Create a test and training set with 75% of the data in the
+    training set. Stratify on `quality`.
+
+    c\) Build a pipeline for each of the following models: random
+    forest, gradient boosting, k-NN, logistic regression, and Naive
+    Bayes (`GaussianNB`). The pipeline should use a
+    `ColumnTransformer` object to standardize the numeric data
+    while one-hot encoding the wine type column (something like
+    `is_red` and `is_white`, each with binary
+    values), and then build the model. Note that we will discuss Naive
+    Bayes in [*Lab
+    11*],
+    *Machine Learning Anomaly Detection*.
+
+    d\) Run grid search on each pipeline except Naive Bayes (just run
+    `fit()` on it) with `scoring='f1_macro'` on the
+    search space of your choosing to find the best values for the
+    following:
+
+    i\) **Random forest**: `max_depth`
+
+    ii\) **Gradient boosting**: `max_depth`
+
+    iii\) **k-NN**: `n_neighbors`
+
+    iv\) **Logistic regression**: `C`
+
+    e\) Find the level of agreement between each pair of two models
+    using the `cohen_kappa_score()` function from the
+    `metrics` module in `scikit-learn`. Note that
+    you can get all the combinations of the two easily using the
+    `combinations()` function from the `itertools`
+    module in the Python standard library.
+
+    f\) Build a voting classifier with the five models built using
+    majority rules (`voting='hard'`) and weighting the Naive
+    Bayes model half as much as the others.
+
+    g\) Look at the classification report for your model.
+
+    h\) Create a confusion matrix using the
+    `confusion_matrix_visual()` function from the
+    `ml_utils.classification` module.

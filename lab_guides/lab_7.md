@@ -1,23 +1,33 @@
 
+
 <img align="right" src="./logo.png">
 
 
-Lab 7: Working with Pandas DataFrames
-========================================
+Lab 12: Financial Analysis -- Bitcoin and the Stock Market
+=============================================================
 
+Up until this point, we have been working with Python as more of a
+functional programming language. However, Python also supports
+**object-oriented programming** (**OOP**). This means we can build
+classes that will carry out the major tasks we need to perform, which in
+this lab are the following: collecting data from the Internet (with
+the `StockReader` class), visualizing financial assets (with
+the `Visualizer` classes), calculating financial metrics (with
+the `StockAnalyzer` class), and modeling financial data (with
+the `StockModeler` class). Since we will need a lot of code to
+make the analysis process clean and easy to reproduce, we will build a
+Python package to house these classes. The code will be reproduced in
+the text and explained as usual; however, we don\'t need to type/run it
+on our own---be sure to read the *Lab materials* section for this
+lab to get set up properly.
 
-The time has come for us to begin our journey into the
-`pandas` universe. This lab will get us comfortable
-working with some of the basic, yet powerful, operations we will be
-performing when conducting our data analyses with `pandas`. The following topics will be covered in this lab:
+The following topics will be covered in this lab:
 
--   Pandas data structures
--   Creating DataFrame objects from files, API requests, SQL queries,
-    and other Python objects
--   Inspecting DataFrame objects and calculating summary statistics
--   Grabbing subsets of the data via selection, slicing, indexing, and
-    filtering
--   Adding and removing data
+-   Building a Python package
+-   Collecting financial data
+-   Conducting exploratory data analysis
+-   Performing technical analysis of financial instruments
+-   Modeling performance using historical data
 
 
 #### Pre-reqs:
@@ -26,2688 +36,3318 @@ performing when conducting our data analyses with `pandas`. The following topics
 #### Lab Environment
 Notebooks are ready to run. All packages have been installed. There is no requirement for any setup.
 
-All examples are present in `~/work/machine-learning-essentials-module1/lab_07` folder. 
+All examples are present in `~/work/machine-learning-essentials-module1/lab_12` folder. 
 
 
 Lab materials
 =================
 
-We will be working with earthquake data from the **US Geological Survey** (**USGS**) by using the USGS API and CSV files, which can be
-found in the `data/` directory.
+**Note:** This package is already installed in the lab environment and ready to use
 
-There are four CSV files and a SQLite database file, all of which will
-be used at different points throughout this lab. The
-`earthquakes.csv` file contains data that\'s been pulled from
-the USGS API for September 18, 2018 through October 13, 2018. For our
-discussion of data structures, we will work with the
-`example_data.csv` file, which contains five rows and a subset
-of the columns from the `earthquakes.csv` file. The
-`tsunamis.csv` file is a subset of the data in the
-`earthquakes.csv` file for all earthquakes that were
-accompanied by tsunamis during the aforementioned date range. The
-`quakes.db` file contains a SQLite database with a single
-table for the tsunamis data. We will use this to learn how to read from
-and write to a database with `pandas`. Lastly, the
-`parsed.csv` file will be used for the end-of-lab
-exercises, and we will also walk through the creation of it during this
-lab.
-
-#### Lab Notebooks
-
-In the `1-pandas_data_structures.ipynb` notebook, we will
-start learning about the main `pandas` data structures.
-Afterward, we will discuss the various ways to create
-`DataFrame` objects in the
-`2-creating_dataframes.ipynb` notebook. Our discussion on this
-topic will continue in the
-`3-making_dataframes_from_api_requests.ipynb` notebook, where
-we will explore the USGS API to gather data for use with
-`pandas`. After learning about how we
-can collect our data, we will begin to learn how to conduct
-**exploratory data analysis** (**EDA**) in the
-`4-inspecting_dataframes.ipynb` notebook. Then, in the
-`5-subsetting_data.ipynb `notebook, we will discuss various
-ways to select and filter data. Finally, we will learn how to add and
-remove data in the `6-adding_and_removing_data.ipynb`
-notebook. Let\'s get started.
-
+For this lab, we will be creating our own package for stock
+analysis. This makes it extremely easy for us to distribute our code and
+for others to use our code. The final product of this package is on
+GitHub at
+<https://github.com/fenago/stock-analysis/tree/2nd_edition>.
 
 
 **Important note:**
 
-For the remainder of this course, we will refer to `DataFrame`
-objects as dataframes, `Series` objects as series, and
-`Index` objects as index/indices, unless we are referring to
-the class itself.
-
-For this section, we will work in the
-`1-pandas_data_structures.ipynb` notebook. To begin, we will
-import `numpy` and use it to read the contents of the
-`example_data.csv` file into a `numpy.array` object.
-The data comes from the USGS API for earthquakes (source:
-<https://earthquake.usgs.gov/fdsnws/event/1/>). Note that this is the
-only time we will use NumPy to read in a file and
-that this is being done for illustrative purposes only; the important
-part is to look at the way the data is represented with NumPy:
-
-```
->>> import numpy as np
->>> data = np.genfromtxt(
-...     'data/example_data.csv', delimiter=';', 
-...     names=True, dtype=None, encoding='UTF'
-... )
->>> data
-array([('2018-10-13 11:10:23.560',
-        '262km NW of Ozernovskiy, Russia', 
-        'mww', 6.7, 'green', 1),
-       ('2018-10-13 04:34:15.580', 
-        '25km E of Bitung, Indonesia', 'mww', 5.2, 'green', 0),
-       ('2018-10-13 00:13:46.220', '42km WNW of Sola, Vanuatu', 
-        'mww', 5.7, 'green', 0),
-       ('2018-10-12 21:09:49.240', 
-        '13km E of Nueva Concepcion, Guatemala',
-        'mww', 5.7, 'green', 0),
-       ('2018-10-12 02:52:03.620', 
-        '128km SE of Kimbe, Papua New Guinea',
-        'mww', 5.6, 'green', 1)],
-      dtype=[('time', '<U23'), ('place', '<U37'),
-             ('magType', '<U3'), ('mag', '<f8'),
-             ('alert', '<U5'), ('tsunami', '<i8')])
-```
+We will be using this package throughout this lab. The directory for
+this lab in this course\'s repository has the
+`financial_analysis.ipynb` notebook we will use for our actual
+analysis.
+The `data/` folder contains backup files in case the data
+sources have changed since publication or there are any errors when
+collecting the data with the `StockReader` class; simply read
+in the CSV files and follow along with the rest of this lab should
+this happen. Similarly, the `exercises/` folder contains
+backup files for the exercises.
 
 
-We now have our data in a NumPy array. Using the `shape` and
-`dtype` attributes, we can gather information
-about the dimensions of the array and the data
-types it contains, respectively:
 
-```
->>> data.shape
-(5,)
->>> data.dtype
-dtype([('time', '<U23'), ('place', '<U37'), ('magType', '<U3'), 
-       ('mag', '<f8'), ('alert', '<U5'), ('tsunami', '<i8')])
-```
+Building a Python package
+=========================
+
+Building packages is considered good coding
+practice since it allows for writing modular code and reuse. **Modular code** is code that is written in many smaller pieces for more pervasive
+use, without needing to know the underlying implementation details of
+everything involved in a task. For example, when we use
+`matplotlib` to plot something, we don\'t need to know what
+the code inside the functions we call is doing exactly---it suffices to
+simply know what the input and output will be to build on top of it.
 
 
-Each of the entries in the array is a row from the CSV file. NumPy
-arrays contain a single data type (unlike lists, which allow mixed
-types); this allows for fast, vectorized operations. When we read in the
-data, we got an array of `numpy.void` objects, which are used
-to store flexible types. This is because NumPy had to store several
-different data types per row: four strings, a float, and an integer.
-Unfortunately, this means that we can\'t take advantage of the
-performance improvements NumPy provides for single data type objects.
 
-Say we want to find the maximum magnitude --- we can use a **list comprehension** to select
-the third index of each row, which is represented as a
-`numpy.void` object. This makes a list, meaning that we can
-take the maximum using the `max()` function. We can use the
-`%%timeit` **magic command** from IPython (a special command
-preceded by `%`) to see how long this implementation takes
-(times will vary):
+Package structure
+-----------------
+
+A **module** is a single
+file of Python code that can
+be imported; `window_calc.py` from *Lab 9*,
+*Aggregating Pandas DataFrames*, and `viz.py` from *Lab 11*,
+*Plotting with Seaborn and Customization Techniques*, were both modules.
+A **package** is a collection of modules organized into directories.
+Packages can also be imported, but when we import a package we have
+access to certain modules inside, so we don\'t have to import each one
+individually. This also allows us to build modules that import from each
+other without the need to maintain a single very large module.
+
+To turn modules into a package, we follow these steps:
+
+1.  Create a directory with the name of the package
+    (`stock_analysis` for this lab).
+2.  Place the modules in the aforementioned directory.
+3.  Add an `__init__.py` file containing any Python code to
+    run upon importing the package (this can be---and often is---empty).
+4.  Make a `setup.py` file at the same level as the package\'s
+    top-level directory (`stock_analysis` here), which will
+    give `pip` instructions on how to install the package. See
+    the *Further reading* section for information on creating this.
+
+Once the aforementioned steps are complete, the
+package can be installed with `pip`. Note that, while our
+package only contains a single directory, we can build a package with as
+many subpackages as we desire. These subpackages are created just as if
+we were creating a package, with the exception that they don\'t need a
+`setup.py` file:
+
+1.  Create a directory for the subpackage inside the main package
+    directory (or inside some other subpackage).
+2.  Place the subpackage\'s modules in this directory.
+3.  Add the `__init__.py` file, with code that should be run
+    when the subpackage is imported (this can be empty).
+
+The directory hierarchy for a package with a single subpackage would
+look something like this:
 
 ```
->>> %%timeit
->>> max([row[3] for row in data])
-9.74 µs ± 177 ns per loop 
-(mean ± std. dev. of 7 runs, 100000 loops each)
-```
-
-
-Note that we should use a list comprehension whenever we would write a
-`for` loop with just a single line under it or want to run an
-operation against the members of some initial list. This is a rather
-simple list comprehension, but we can make them more complex with the
-addition of `if...else` statements. List comprehensions are an
-extremely powerful tool to have in our arsenal.
-
-
-If we create a NumPy array for each column
-instead, this operation is much easier (and more efficient) to perform.
-To do so, we will use a **dictionary comprehension**
-(https://www.python.org/dev/peps/pep-0274/) to make a dictionary where
-the keys are the column names and the values are NumPy arrays of the
-data. Again, the important part here is how the data is now represented
-using NumPy:
-
-```
->>> array_dict = {
-...     col: np.array([row[i] for row in data])
-...     for i, col in enumerate(data.dtype.names)
-... }
->>> array_dict
-{'time': array(['2018-10-13 11:10:23.560',
-        '2018-10-13 04:34:15.580', '2018-10-13 00:13:46.220',
-        '2018-10-12 21:09:49.240', '2018-10-12 02:52:03.620'],
-        dtype='<U23'),
- 'place': array(['262km NW of Ozernovskiy, Russia', 
-        '25km E of Bitung, Indonesia',
-        '42km WNW of Sola, Vanuatu',
-        '13km E of Nueva Concepcion, Guatemala',
-        '128km SE of Kimbe, Papua New Guinea'], dtype='<U37'),
- 'magType': array(['mww', 'mww', 'mww', 'mww', 'mww'], 
-        dtype='<U3'),
- 'mag': array([6.7, 5.2, 5.7, 5.7, 5.6]),
- 'alert': array(['green', 'green', 'green', 'green', 'green'], 
-        dtype='<U5'),
- 'tsunami': array([1, 0, 0, 0, 1])}
+repo_folder
+|-- <package_name>
+|   |-- __init__.py
+|   |-- some_module.py
+|   `-- <subpackage_name>
+|       |-- __init__.py
+|       |-- another_module.py
+|       `-- last_module.py
+`-- setup.py
 ```
 
 
-Grabbing the maximum magnitude is now simply a matter of selecting the
-`mag` key and calling the `max()` method on the
-NumPy array. This is nearly twice as fast as the list comprehension
-implementation, when dealing with just five entries---imagine how much
-worse the first attempt will perform on large
-datasets:
-
-```
->>> %%timeit
->>> array_dict['mag'].max()
-5.22 µs ± 100 ns per loop 
-(mean ± std. dev. of 7 runs, 100000 loops each)
-```
-
-
-However, this representation has other issues. Say we wanted to grab all
-the information for the earthquake with the maximum magnitude; how would
-we go about that? We need to find the index of the maximum, and then for
-each of the keys in the dictionary, grab that index. The result is now a
-NumPy array of strings (our numeric values were converted), and we are
-now in the format that we saw earlier:
-
-```
->>> np.array([
-...     value[array_dict['mag'].argmax()]
-...     for key, value in array_dict.items()
-... ])
-array(['2018-10-13 11:10:23.560',
-       '262km NW of Ozernovskiy, Russia',
-       'mww', '6.7', 'green', '1'], dtype='<U31')
-```
-
-
-Consider how we would go about sorting the data by magnitude from
-smallest to largest. In the first representation, we would have to sort
-the rows by examining the third index. With the second representation,
-we would have to determine the order of the indices
-from the `mag` column, and then sort all
-the other arrays with those same indices. Clearly, working with several
-NumPy arrays containing different data types at once is a bit
-cumbersome; however, `pandas` builds on top of NumPy arrays to
-make this easier. Let\'s start our exploration of `pandas`
-with an overview of the `Series` data structure.
-
-
-
-Series
-------
-
-The `Series` class provides a data
-structure for arrays of a single type, just like the NumPy array.
-However, it comes with some additional functionality. This
-one-dimensional representation can be thought of as a column in a
-spreadsheet. We have a name for our column, and the data we hold in it
-is of the same type (since we are measuring the same variable):
-
-```
->>> import pandas as pd
->>> place = pd.Series(array_dict['place'], name='place')
->>> place
-0          262km NW of Ozernovskiy, Russia
-1              25km E of Bitung, Indonesia
-2                42km WNW of Sola, Vanuatu
-3    13km E of Nueva Concepcion, Guatemala
-4      128km SE of Kimbe, Papua New Guinea
-Name: place, dtype: object
-```
-
-
-Note the numbers on the left of the result; these correspond to the row
-number in the original dataset (offset by 1 since, in Python, we start
-counting at 0). These row numbers form the index, which we will discuss
-in the following section. Next to the row numbers, we have the actual
-value of the row, which, in this example, is a string indicating where
-the earthquake occurred. Notice that we have `dtype: object`
-next to the name of the `Series` object; this is telling us
-that the data type of `place` is `object`. A string
-will be classified as `object` in `pandas`.
-
-To access attributes of the `Series`
-object, we use attribute notation of the form
-`<object>.<attribute_name>`. The following are some common
-attributes we will access. Notice that `dtype` and
-`shape` are available, just as we saw with the NumPy array:
-
-
-![](./images/Figure_2.1_B16834.jpg)
-
-
-
-**Important note:**
-
-For the most part, `pandas` objects use NumPy arrays for their
-internal data representations. However, for some data types,
-`pandas` builds upon NumPy to create its own arrays
-(https://pandas.pydata.org/pandas-docs/stable/reference/arrays.html).
-For this reason, depending on the data type, `values` can
-return either a `pandas.array` or a `numpy.array`
-object. Therefore, if we need to ensure we get a specific type back, it
-is recommended to use the `array` attribute or
-`to_numpy()` method, respectively, instead of
-`values`.
-
-Be sure to bookmark the `pandas.Series` documentation
-(<https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.Series.html>)
-for reference later. It contains more information on how to create a
-`Series` object, the full list of attributes and methods that
-are available, as well as a link to the source code. With this
-high-level introduction to the `Series` class, we are ready to
-move on to the `Index` class.
-
-
-
-Index
------
-
-The addition of the `Index` class makes the `Series`
-class significantly more powerful than a NumPy array. The
-`Index` class gives us row labels, which enable selection by
-row. Depending on the type, we can provide a row
-number, a date, or even a string to select our row. It plays a key role
-in identifying entries in the data and is used for a multitude of
-operations in `pandas`, as we will see throughout this course.
-We can access the index through the `index` attribute:
-
-```
->>> place_index = place.index
->>> place_index
-RangeIndex(start=0, stop=5, step=1)
-```
-
-
-Note that this is a `RangeIndex` object. Its values start at
-`0` and end at `4`. The step of `1`
-indicates that the indices are all `1` apart, meaning that we
-have all the integers in that range. The default index class is
-`RangeIndex`; however, we can change the index. Often, we will either work with an
-`Index` object of row numbers or date(time)s.
-
-As with `Series` objects, we can access the underlying data
-via the `values` attribute. Note that this `Index`
-object is built on top of a NumPy array:
-
-```
->>> place_index.values
-array([0, 1, 2, 3, 4], dtype=int64)
-```
-
-
-Some of the useful attributes of `Index` objects include the
+Some other things to be aware of when building a package include the
 following:
 
-
-![](./images/Figure_2.2_B16834.jpg)
-
-
-
-Both NumPy and `pandas` support arithmetic operations, which
-will be performed element-wise. NumPy will use the position in the array
-for this:
-
-```
->>> np.array([1, 1, 1]) + np.array([-1, 0, 1])
-array([0, 1, 2])
-```
-
-
-With `pandas`, this element-wise arithmetic is performed on
-matching index values. If we add a `Series` object with an
-index from `0` to `4` (stored in `x`) and
-another, `y`, from `1` to `5`, we will
-only get results were the indices align (`1` through
-`4`). In upcoming lab, we will discuss some ways to change and align
-the index so that we can perform these types of
-operations without losing data:
-
-```
->>> numbers = np.linspace(0, 10, num=5) # [0, 2.5, 5, 7.5, 10]
->>> x = pd.Series(numbers) # index is [0, 1, 2, 3, 4]
->>> y = pd.Series(numbers, index=pd.Index([1, 2, 3, 4, 5]))
->>> x + y
-0     NaN
-1     2.5
-2     7.5
-3    12.5
-4    17.5
-5     NaN
-dtype: float64
-```
-
-
-Now that we have had a primer on both the `Series` and
-`Index` classes, we are ready to learn about the
-`DataFrame` class. Note that more information on the
-`Index` class can be found in the respective documentation at
-<https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.Index.html>.
+-   Writing a **README** file for the repository
+    so that others know what it contains (see
+    <https://www.makeareadme.com/>).
+-   **Linting** the code in order to conform to
+    coding standards and analyze the code for possible errors (check out
+    the `pylint` package at <https://www.pylint.org/>).
+-   Adding tests that will make sure changes to the code don\'t break
+    anything and that the code does what it is meant to do (take a look
+    at the `pytest` package at
+    <https://docs.pytest.org/en/latest/>).
 
 
 
-DataFrame
----------
+Overview of the stock\_analysis package
+---------------------------------------
 
-With the `Series` class, we essentially
-had columns of a spreadsheet, with the data all being of the same type.
-The `DataFrame` class builds upon the `Series` class
-and can have many columns, each with its own data type; we can think of
-it as representing the spreadsheet as a whole. We can turn either of the
-NumPy representations we built from the example data into a
-`DataFrame` object:
-
-```
->>> df = pd.DataFrame(array_dict) 
->>> df
-```
+In this lab, we will be creating a Python
+package called `stock_analysis` using
+the various Python packages we have discussed so far, along with the
+Python standard library. This package is located in the
+`stock-analysis` repository
+(<https://github.com/fenago/stock-analysis>), which is arranged like
+this:
 
 
-This gives us a dataframe of six series. Note the
-column before the `time` column; this is the `Index`
-object for the rows. When creating a `DataFrame` object,
-`pandas` aligns all the series to the same index. In this
-case, it is just the row number, but we could easily use the
-`time` column for this, which would enable some additional
-`pandas` features:
+![](./images/Figure_7.1_B16834.jpg)
 
 
-![](./images/Figure_2.3_B16834.jpg)
+The modules in our package will contain custom classes for conducting
+the technical analysis of an asset. **Classes** should be designed for a
+single purpose; this makes it easier to build, use, and debug if issues
+arise. Therefore, we will be building several classes in order to cover
+the various facets of our financial analysis. We will need a class for
+each of following
+purposes:
+
+
+![](./images/Figure_7.2_B16834.jpg)
 
 
 
-Our columns each have a single data type, but they don\'t all share the
-same data type:
+UML diagrams
+------------
 
-```
->>> df.dtypes
-time        object
-place       object
-magType     object
-mag        float64
-alert       object
-tsunami      int64
-dtype: object
-```
+**UML diagrams** show information about which
+attributes and methods classes have and how
+classes are related to others. We can see in the following diagram that
+all the modules rely on `utils.py` for utility functions:
 
 
-The values of the dataframe look very similar to the initial NumPy
-representation we had:
-
-```
->>> df.values
-array([['2018-10-13 11:10:23.560',
-        '262km NW of Ozernovskiy, Russia',
-        'mww', 6.7, 'green', 1],
-       ['2018-10-13 04:34:15.580', 
-        '25km E of Bitung, Indonesia', 'mww', 5.2, 'green', 0],
-       ['2018-10-13 00:13:46.220', '42km WNW of Sola, Vanuatu', 
-        'mww', 5.7, 'green', 0],
-       ['2018-10-12 21:09:49.240',
-        '13km E of Nueva Concepcion, Guatemala',
-        'mww', 5.7, 'green', 0],
-       ['2018-10-12 02:52:03.620','128 km SE of Kimbe, 
-         Papua New Guinea', 'mww', 5.6, 'green', 1]], 
-      dtype=object)
-```
-
-
-We can access the column names via the
-`columns` attribute. Note that they are actually stored in an
-`Index` object as well:
-
-```
->>> df.columns
-Index(['time', 'place', 'magType', 'mag', 'alert', 'tsunami'], 
-      dtype='object')
-```
-
-
-The following are some commonly used dataframe attributes:
-
-
-![](./images/Figure_2.4_B16834.jpg)
+![](./images/Figure_7.3_B16834.jpg)
 
 
 
-Note that we can also perform arithmetic on
-dataframes. For example, we can add `df` to itself, which will
-sum the numeric columns and concatenate the string columns:
+Collecting financial data
+=========================
+
+
+Earlier, we worked with APIs to
+gather data; however, there are other ways to collect data from the
+Internet. We can use **web scraping** to extract
+data from the HTML page itself, which `pandas` offers with the
+`pd.read_html()` function --- it returns a dataframe for each of
+the HTML tables it finds on the page. For economic and financial data,
+an alternative is the `pandas_datareader` package, which the
+`StockReader` class in the `stock_analysis` package
+uses to collect financial data.
+
+**Important note:**
+
+In case anything has changed with the data sources that are used in this
+lab or you encounter errors when using the `StockReader`
+class to collect data, the CSV files in the `data/` folder can
+be read in as a replacement in order to follow along with the text; for
+example:
+
+`pd.read_csv('data/bitcoin.csv', index_col='date', parse_dates=True)`
+
+
+
+The StockReader class
+---------------------
+
+Since we will be collecting data for various
+assets across the same date range, it makes sense to create a class that
+hides all of the implementation details and, therefore, avoid lots of
+copying and pasting (and potential mistakes). For this purpose, we will
+build the `StockReader` class, which will make it easier to
+collect data for bitcoin, stocks, and stock market indices. We can
+simply create an instance of the `StockReader` class by
+providing the date range we want for our analysis, and then use the
+methods it provides to get whichever data we please. The following UML
+diagram provides a high-level overview of the implementation:
+
+
+![](./images/Figure_7.5_B16834.jpg)
+
+
+
+The UML diagram tells us that the
+`StockReader` class provides an attribute for the available
+tickers (`available_tickers`) and can perform the following
+actions:
+
+-   Pull bitcoin data in the desired currency with the
+    `get_bitcoin_data()` method.
+-   Pull daily foreign exchange rates data with the
+    `get_forex_rates()` method.
+-   Pull data for an index on the stock market (such as the S&P 500)
+    with the `get_index_data()` method.
+-   Look up the ticker (stock market symbol) for a specific index (for
+    instance, \^GSPC for the S&P 500 ticker on Yahoo! Finance) with the
+    `get_index_ticker()` method.
+-   Collect the risk-free rate of return with the
+    `get_risk_free_rate_of_return()` method.
+-   Pull data for a ticker on the stock market (such as NFLX for
+    Netflix) with the `get_ticker_data()` method.
+
+Now that we understand why we need this class and have a high-level
+overview of its structure, we can proceed to looking at the code. Since
+there is a lot of code in the `stock_analysis/stock_reader.py`
+module to review, we will break down the file piece by piece. Note that
+this may change the indentation level, so please consult the file itself
+for the full version.
+
+The first line of the module is the **docstring** for the module. If we
+run `help()` on the module itself, that will appear near the
+top. This describes the purpose of our module. This is
+immediately followed by any imports we will need:
 
 ```
->>> df + df
+"""Gather select stock data."""
+import datetime as dt
+import re
+import pandas as pd
+import pandas_datareader.data as web
+from .utils import label_sanitizer
 ```
 
 
-Pandas will only perform the operation when both the index and column
-match. Here, `pandas` concatenated the string columns
-(`time`, `place`, `magType`, and
-`alert`) across dataframes. The numeric columns
-(`mag` and `tsunami`) were summed:
+Notice that the `import` statements are
+organized in three groups, following **PEP 8**
+(Python style guidelines available at
+https://www.python.org/dev/peps/pep-0008/), which states that they
+should be in the following order:
 
+1.  Standard library imports (`datetime` and `re`)
+2.  Third-party libraries (`pandas` and
+    `pandas_datareader`)
+3.  Relative import from another module in the
+    `stock_analysis` package (`.utils`)
 
-![](./images/Figure_2.5_B16834.jpg)
-
-
-
-More information on `DataFrame` objects and all the operations
-that can be performed directly on them is available in the official
-documentation at
-<https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html>;
-be sure to bookmark it for future reference. Now, we are ready to begin
-learning how to create `DataFrame` objects from a variety of
-sources.
-
-
-Creating a pandas DataFrame
-===========================
-
-
-Now that we understand the data structures we will be working with, we
-can discuss the different ways we can create them.
-Before we dive into the code however, it\'s important to know how to get
-help right from Python. Should we ever find ourselves unsure of how to
-use something in Python, we can utilize the built-in `help()`
-function. We simply run `help()`, passing in the package,
-module, class, object, method, or function that we want to read the
-documentation on. We can, of course, look up the documentation online;
-however, in most cases, the **docstrings** (the documentation text
-written in the code) that are returned with `help()` will be
-equivalent to this since they are used to generate the documentation.
-
-Assuming we first ran `import pandas as pd`, we can run
-`help(pd)` to display information about the `pandas`
-package; `help(pd.DataFrame)` for all the methods and
-attributes of `DataFrame` objects (note we can also pass in a
-`DataFrame` object instead); and `help(pd.read_csv)`
-to learn more about the `pandas` function for reading CSV
-files into Python and how to use it. We can also try using the
-`dir()` function and the `__dict__` attribute, which
-will give us a list or dictionary of what\'s available, respectively;
-these might not be as useful as the `help()` function, though.
-
-Additionally, we can use `?` and `??` to get help,
-thanks to IPython, which is part of what makes Jupyter Notebooks so
-powerful. Unlike the `help()` function, we can use question
-marks by putting them after whatever we want to know more about, as if
-we were asking Python a question; for example, `pd.read_csv?`
-and `pd.read_csv??`. These three will yield slightly different
-outputs: `help()` will give us the docstring; `?`
-will give the docstring, plus some additional information, depending on
-what we are inquiring about; and `??` will give us even more
-information and, if possible, the source code behind it.
-
-Let\'s now turn to the next notebook,
-`2-creating_dataframes.ipynb`, and import the packages we will
-need for the upcoming examples. We will be using `datetime`
-from the Python standard library, along with the third-party packages
-`numpy` and `pandas`:
+After our imports, we define the `StockReader` class. First,
+we create a dictionary mapping tickers for indices to a descriptive name
+in `_index_tickers`. Notice that our class also has a
+docstring, which defines its purpose. Here, we will only reproduce a few
+of the tickers available:
 
 ```
->>> import datetime as dt
->>> import numpy as np
->>> import pandas as pd
+class StockReader:
+    """Class for reading financial data from websites."""
+    _index_tickers = {'S&P 500': '^GSPC', 'Dow Jones': '^DJI',
+                      'NASDAQ': '^IXIC'}
+```
+
+
+When building a class, there are many **special methods** (colloquially
+referred to as *dunder methods* because their names start and end with
+double underscores) that we can provide to
+customize the behavior of the class when it\'s used with language
+operators:
+
+-   Initialize an object (`__init__()`).
+-   Make an object comparable for sorting (`__eq__()`,
+    `__lt__()`, `__gt__()`, and more).
+-   Perform arithmetic on the object (`__add__()`,
+    `__sub__()`, `__mul__()`, and so on).
+-   Be able to use built-in Python functions such as `len()`
+    on it (`__len__()`).
+-   Get a string representation of the object for use with the
+    `print()` function (`__repr__()` and
+    `__str__()`).
+-   Support iteration and indexing (`__getitem__()`,
+    `__iter__()`, and `__next__()`).
+
+Thankfully, we don\'t have to write all this functionality every time we
+make a class. In most cases, we just need the `__init__()`
+method, which is run when we create an object. (More information on
+special methods can be found at
+<https://dbader.org/blog/python-dunder-methods> and
+<https://docs.python.org/3/reference/datamodel.html#special-method-names.>)
+
+Objects of the `StockReader` class hold on to the start and
+end dates that data will be gathered for, so we put this in the
+`__init__()` method. We parse the dates that are passed in by
+the caller to allow for the use of any date separator; for example, we
+will be able to handle inputs of Python `datetime` objects;
+strings in the form of `'YYYYMMDD'`; or strings representing
+dates using any separator that matches the non-digit regular expression
+(`\D`), such as `'YYYY|MM|DD'` or
+`'YYYY/MM/DD'`. The separator, if there is one, gets replaced
+with an empty string so that we can build our datetimes using the
+`'YYYYMMDD'` format in our method. In addition, we raise a
+`ValueError` if the caller gives us a
+start date equal to or after the end date:
+
+```
+    def __init__(self, start, end=None):
+        """
+        Create a `StockReader` object for reading across 
+        a given date range.
+        Parameters:
+            - start: The first date to include, as a datetime 
+              object or a string in the format 'YYYYMMDD'.
+            - end: The last date to include, as a datetime
+              object or string in the format 'YYYYMMDD'.
+              Defaults to today if not provided.
+        """
+        self.start, self.end = map(
+            lambda x: x.strftime('%Y%m%d')\
+                if isinstance(x, dt.date)\
+                else re.sub(r'\D', '', x),
+            [start, end or dt.date.today()]
+        )
+        if self.start >= self.end:
+            raise ValueError('`start` must be before `end`')
+```
+
+
+Note that we didn\'t define `_index_tickers` in the
+`__init__()` method, which is called upon creation of this
+object, because we only need one copy of this information for all the
+objects that are created from this class. The
+`_index_tickers` class attribute is private (signified, by
+convention, with a preceding underscore) in the sense that unless a user
+of this class knows the name of it, they won\'t find it easily (note
+that methods can also be private). This is done with the intention of
+protecting it (although it isn\'t guaranteed) and also because the user
+doesn\'t need it directly (it\'s for the internal workings of the
+class). Instead, we will provide a **property**, which we can access as
+an attribute, and a class method for getting the value mapped to a given
+key in that dictionary.
+
+**Tip:** 
+
+**Class methods** are methods that can be used on
+the class itself, without having to create an instance of the class
+beforehand. This contrasts with the instance
+methods we have seen so far. **Instance methods**
+are used with instances of a class for actions specific to that
+instance. We often don\'t need class methods, but if we have data that
+is shared across all instances of a class, it makes more sense to create
+a class method rather than an instance method.
+
+Since `_index_tickers` is private, we want to provide an easy
+way for users of our class to see what is available. Therefore, we will
+create a property for the keys of `_index_tickers`. To do so,
+we use the `@property` decorator. **Decorators** are functions
+that wrap around other functions, allowing for the
+execution of extra code before and/or after the inner function executes.
+This class makes heavy use of decorators: we will use some already
+written ones (`@property` and `@classmethod`) and
+write one of our own to clean up and standardize the results across the
+methods that gather the data (`@label_sanitizer`). To use a
+decorator, we place it above the function or method definition:
+
+```
+    @property
+    def available_tickers(self):
+        """Indices whose tickers are supported."""
+        return list(self._index_tickers.keys())
+```
+
+
+Furthermore, we provide a way of getting the ticker using a class method
+because our tickers are stored in a class variable. Class methods, by
+convention, receive `cls` as their first argument
+while instance methods receive `self`:
+
+```
+    @classmethod
+    def get_index_ticker(cls, index):
+        """
+        Get the ticker of the specified index, if known.
+        Parameters:
+            - index: The name of the index; check 
+              `available_tickers` for full list which includes:
+                - 'S&P 500' for S&P 500,
+                - 'Dow Jones' for Dow Jones Industrial Average,
+                - 'NASDAQ' for NASDAQ Composite Index
+        Returns: 
+            The ticker as a string if known, otherwise `None`.
+        """
+        try:
+            index = index.upper()
+        except AttributeError:
+            raise ValueError('`index` must be a string')
+        return cls._index_tickers.get(index, None)
+```
+
+
+**Tip:** 
+
+If we want to prohibit certain actions within our code, we can check for
+them and `raise` errors as we see fit; this allows us to
+provide more informative error messages or simply accompany specific
+errors with some additional actions before reraising them (by using
+`raise` without an expression). If, instead, we wish to run
+certain code when something goes wrong, we use a
+`try...except` block: we surround the possibly troublesome
+code with `try` and put what to do if trouble occurs in the
+`except` clause.
+
+When we get to the *Technical analysis of financial instruments*
+section, we will need the risk-free rate of return to calculate some of
+the metrics. This is the rate of return of an investment that has no
+risk of financial loss; in practice, we use the 10-year US Treasury
+bill. Since this rate will depend on the date range we are analyzing, we
+will add this functionality to the `StockReader` class and
+avoid having to look it up ourselves. We will use
+the `pandas_datareader` package to collect this data from the
+Federal Reserve Bank of St. Louis
+(<https://fred.stlouisfed.org/series/DGS10>), providing the option to
+return the daily rates for the date range we are studying (to analyze
+the data itself) or just the last one (if we need a single value for a
+calculation):
+
+```
+    def get_risk_free_rate_of_return(self, last=True):
+        """
+        Get risk-free rate of return w/ 10-year US T-bill 
+        from FRED (https://fred.stlouisfed.org/series/DGS10)
+        Parameter:
+            - last: If `True`, return the rate on the last
+              date in the date range else, return a `Series` 
+              object for the rate each day in the date range.
+        Returns:
+            A single value or a `pandas.Series` object.
+        """
+        data = web.DataReader(
+            'DGS10', 'fred', start=self.start, end=self.end
+        )
+        data.index.rename('date', inplace=True)
+        data = data.squeeze()
+        return data.asof(self.end) \
+            if last and isinstance(data, pd.Series) else data
+```
+
+
+The remaining method code is replaced with `pass`, which tells
+Python to do nothing (and reminds us to update it
+later) so that the code can function as it was reproduced. We will write
+the following methods in the next section:
+
+```
+    @label_sanitizer
+    def get_ticker_data(self, ticker):
+        pass    
+    def get_index_data(self, index):
+        pass
+    def get_bitcoin_data(self, currency_code):
+        pass
+    @label_sanitizer 
+    def get_forex_rates(self, from_currency, to_currency,
+                        **kwargs):
+        pass
 ```
 
 
 **Important note:**
 
-We have **aliased** each of our imports. This allows us to use the
-`pandas` package by referring to it with the alias we assign
-to be `pd`, which is the most common way of importing it. In
-fact, we can only refer to it as `pd`, since that is what we
-imported into the namespace. Packages need to be imported before we can
-use them; installation puts the files we need on our computer, but, in
-the interest of memory, Python won\'t load every installed package when
-we start it up---just the ones we tell it to.
+Since we aren\'t going to be looking at foreign exchange rates, we
+won\'t cover the `get_forex_rates()` method in this lab;
+however, this method provides an additional example of how to use the
+`pandas_datareader` package, so I encourage you to take a look
+at it. Note that, in order to use this method, you will need to get a
+free API key from AlphaVantage at
+<https://www.alphavantage.co/support/#api-key>.
 
-We are now ready to begin using
-`pandas`. First, we will learn how to create
-`pandas` objects from other Python objects. Then, we will
-learn how to do so with flat files, tables in a database, and responses
-from API requests.
-
-
-
-From a Python object
---------------------
-
-Before we cover all the ways we can create a `DataFrame`
-object from a Python object, we should learn how
-to make a `Series` object. Remember that a `Series`
-object is essentially a column in a `DataFrame` object, so,
-once we know this, it should be easy to understand how to create a
-`DataFrame` object. Say that we wanted to create a series of
-five random numbers between `0` and `1`. We could
-use NumPy to generate the random numbers as an array and create the
-series from that.
-
-
-To ensure that the result is reproducible, we will set the seed here.
-The **seed** gives a starting point for the generation of pseudorandom
-numbers. No algorithms for random number generation are truly
-random---they are deterministic, so by setting this starting point, the
-numbers that are generated will be the same each time the code is run.
-This is good for testing things, but not for simulation (where we want
-randomness). In this fashion, we can make a
-`Series` object with any list-like structure (such as NumPy
-arrays):
+Both the `get_ticker_data()` and `get_forex_rates()`
+methods are decorated with `@label_sanitizer`, which aligns
+the data we receive from various sources to the same
+column names so that we don\'t have to clean them
+later. The `@label_sanitizer` decorator is defined in the
+`stock_analysis/utils.py` module. As we did previously, let\'s
+begin by looking at the docstring and imports of the `utils`
+module:
 
 ```
->>> np.random.seed(0) # set a seed for reproducibility
->>> pd.Series(np.random.rand(5), name='random')
-0    0.548814
-1    0.715189
-2    0.602763
-3    0.544883
-4    0.423655
-Name: random, dtype: float64
+"""Utility functions for stock analysis."""
+from functools import wraps
+import re
+import pandas as pd
 ```
 
 
-Making a `DataFrame` object is an extension of making a
-`Series` object; it will be composed of one or more series,
-and each will be distinctly named. This should remind us of
-dictionary-like structures in Python: the keys are
-the column names, and the values are the contents of the columns. Note
-that if we want to turn a single `Series` object into a
-`DataFrame` object, we can use its `to_frame()`
-method.
+Next, we have the `_sanitize_label()` function, which will
+clean up a single label. Note that we prefix the function name with an
+underscore because we don\'t intend for the users of our package to use
+this directly---it is for our decorator to use:
+
+```
+def _sanitize_label(label):
+    """
+    Clean up a label by removing non-letter, non-space 
+    characters and putting in all lowercase with underscores
+    replacing spaces.
+    Parameters:
+        - label: The text you want to fix.
+    Returns: 
+        The sanitized label.
+    """
+    return re.sub(r'[^\w\s]', '', label)\
+        .lower().replace(' ', '_')
+```
+
+
+Finally, we define the `@label_sanitizer` decorator, which is
+a function that cleans up the column and index
+names in the data we get from the Internet. Without this decorator, the
+column names in our collected data could have unexpected characters such
+as asterisks or spaces in them, making them unwieldy. By using the
+decorator, the methods will always return a dataframe with the names
+cleaned, saving us a step:
+
+```
+def label_sanitizer(method):
+    """
+    Decorator around a method that returns a dataframe to
+    clean up all labels in said dataframe (column names and 
+    index name) by using `_sanitize_label()`.
+    Parameters:
+        - method: The method to wrap.
+    Returns: 
+        A decorated method or function.
+    """
+    @wraps(method) # keep original docstring for help()
+    def method_wrapper(self, *args, **kwargs):
+        df = method(self, *args, **kwargs)
+        # fix the column names
+        df.columns = [
+            _sanitize_label(col) for col in df.columns
+        ]
+        # fix the index name
+        df.index.rename(
+            _sanitize_label(df.index.name), inplace=True
+        )
+        return df
+    return method_wrapper
+```
+
+
+Note that there is also a decorator inside the
+definition of the `label_sanitizer()` function. The
+`@wraps` decorator from the `functools` module in
+the standard library gives the decorated function/method the same
+docstring it had beforehand; this is necessary because decoration
+actually creates a new function/method, thus rendering
+`help()` pretty useless unless we intervene.
 
 **Tip:** 
 
-In computer science, a **constructor** is a piece of code that
-initalizes new instances of a class, preparing them for use. Python
-classes implement this with the `__init__()` method. When we
-run `pd.Series()`, Python calls
-`pd.Series.__init__()`, which contains instructions for
-instantiating a new `Series` object.
+Using the `@label_sanitizer` syntax is **syntactic sugar**,
+meaning that it makes it easier to express, compared to defining the
+method and then writing `method = label_sanitizer(method)`.
+However, both are valid.
 
-Since columns can all be different data types, let\'s get a little fancy
-with this example. We are going to create a `DataFrame` object
-containing three columns, with five observations each:
+Now that we understand decorators, we are ready to finish building the
+`StockReader` class. Note that we will be using and creating
+additional decorators for the other classes in the
+`stock_analysis` package as well, so make sure that you are
+comfortable with them before moving on.
 
--   `random`: Five random numbers between `0` and
-    `1` as a NumPy array
--   `text`: A list of five strings or `None`
--   `truth`: A list of five random Booleans
 
-We will also create a `DatetimeIndex` object with the
-`pd.date_range()` function. The index will contain five dates
-(`periods=5`), all one day apart (`freq='1D'`),
-ending with April 21, 2019 (`end`), and will be called
-`date`.
 
-All we have to do is package the columns in a
-dictionary using the desired column names as the keys and pass this in
-when we call the `pd.DataFrame()` constructor. The index gets
-passed as the `index` argument:
+Collecting historical data from Yahoo! Finance
+----------------------------------------------
+
+The foundation of our data
+collection will be the
+`get_ticker_data()` method. It uses the
+`pandas_datareader` package to grab the data from Yahoo!
+Finance:
 
 ```
->>> np.random.seed(0) # set seed so result is reproducible
->>> pd.DataFrame(
-...     {
-...         'random': np.random.rand(5),
-...         'text': ['hot', 'warm', 'cool', 'cold', None],
-...         'truth': [np.random.choice([True, False]) 
-...                   for _ in range(5)]
-...     }, 
-...     index=pd.date_range(
-...         end=dt.date(2019, 4, 21),
-...         freq='1D', periods=5, name='date'
+@label_sanitizer
+def get_ticker_data(self, ticker):
+    """
+    Get historical OHLC data for given date range and ticker.
+    Parameter:
+        - ticker: The stock symbol to lookup as a string.
+    Returns: A `pandas.DataFrame` object with the stock data.
+    """
+    return web.get_data_yahoo(ticker, self.start, self.end)
+```
+
+
+**Important note:**
+
+There have been issues with `pandas_datareader` and the Yahoo!
+Finance API in the past, causing the `pandas_datareader`
+developers to deprecate support for it via the
+`web.DataReader()` function
+(<https://pandas-datareader.readthedocs.io/en/latest/whatsnew.html#v0-6-0-january-24-2018>);
+instead, we have to use their workaround:
+`web.get_data_yahoo()`.
+
+To collect data for a stock market index, we can use the
+`get_index_data()` method, which first looks up the index\'s
+ticker and then calls the `get_ticker_data()` method we just
+defined. Note that since the `get_ticker_data()` method
+is decorated with `@label_sanitizer`,
+the `get_index_data()` method doesn\'t
+need the `@label_sanitizer` decorator:
+
+```
+def get_index_data(self, index):
+    """
+    Get historical OHLC data from Yahoo! Finance
+    for the chosen index for given date range.
+    Parameter:
+        - index: String representing the index you want
+          data for, supported indices include:
+            - 'S&P 500' for S&P 500,
+            - 'Dow Jones' for Dow Jones Industrial Average,
+            - 'NASDAQ' for NASDAQ Composite Index
+    Returns: 
+        A `pandas.DataFrame` object with the index data.
+    """
+    if index not in self.available_tickers:
+        raise ValueError(
+            'Index not supported. Available tickers'
+            f"are: {', '.join(self.available_tickers)}"
+        )
+    return self.get_ticker_data(self.get_index_ticker(index))
+```
+
+
+Yahoo! Finance also provides data for bitcoin;
+however, we must pick a currency to use. The
+`get_bitcoin_data()` method accepts a currency code to create
+the symbol for the search on Yahoo! Finance (for instance, BTC-USD for
+bitcoin data in USD). The actual collection of the
+data is once again handled by the
+`get_ticker_data()` method:
+
+```
+def get_bitcoin_data(self, currency_code):
+    """
+    Get bitcoin historical OHLC data for given date range. 
+    Parameter:
+        - currency_code: The currency to collect the bitcoin
+          data in, e.g. USD or GBP.
+    Returns: 
+        A `pandas.DataFrame` object with the bitcoin data.
+    """
+    return self\
+        .get_ticker_data(f'BTC-{currency_code}')\
+        .loc[self.start:self.end] # clip dates
+```
+
+
+At this point, the `StockReader` class is ready for use, so
+let\'s get started in the `financial_analysis.ipynb` notebook
+and import the `stock_analysis` package that will be used for
+the rest of this lab:
+
+```
+>>> import stock_analysis
+```
+
+
+Python runs the `stock_analysis/__init__.py` file when we
+import the `stock_analysis` package:
+
+```
+"""Classes for making technical stock analysis easier."""
+from .stock_analyzer import StockAnalyzer, AssetGroupAnalyzer
+from .stock_modeler import StockModeler
+from .stock_reader import StockReader
+from .stock_visualizer import \
+    StockVisualizer, AssetGroupVisualizer
+```
+
+
+**Important note:**
+
+The code in the `stock_analysis/__init__.py` file makes it
+easier for us to access the package\'s classes---for example, rather
+than having to run
+`stock_analysis.stock_reader.StockReader()`, we only have to
+run `stock_analysis.StockReader()`to create a
+`StockReader` object.
+
+Next, we will an
+instance of the `StockReader` class by providing the start and
+(optionally) end dates for the data it will collect. We will work with
+2019-2020 data. Note that when we run this code, Python is calling the
+`StockReader.__init__()` method:
+
+```
+>>> reader = \
+...     stock_analysis.StockReader('2019-01-01', '2020-12-31')
+```
+
+
+Now, we will collect the **Facebook, Apple, Amazon, Netflix, and
+Google** (**FAANG**), S&P 500, and bitcoin data.
+Since all the stocks we are working with are priced in USD, we will ask
+for the bitcoin data in USD. Note that we are using a generator
+expression and multiple assignment to get dataframes for each FAANG
+stock:
+
+```
+>>> fb, aapl, amzn, nflx, goog = (
+...     reader.get_ticker_data(ticker)
+...     for ticker in ['FB', 'AAPL', 'AMZN', 'NFLX', 'GOOG']
+... )
+>>> sp = reader.get_index_data('S&P 500')
+>>> bitcoin = reader.get_bitcoin_data('USD') 
+```
+
+
+**Tip:** 
+
+Be sure to run `help(stock_analysis.StockReader)` or
+`help(reader)` to see all the methods
+and properties that are defined. The output
+clearly denotes which methods are class methods in a different section,
+and the properties will be listed at the bottom in the **data
+descriptors** section. This is an important step to take in order to get
+familiar with new code.
+
+
+Exploratory data analysis
+=========================
+
+Just as we did with the `StockReader` class, we want to make it easier to visualize
+both individual assets and groups of assets, so rather than expecting
+users of our package (and, perhaps, our collaborators) to be proficient
+with `matplotlib` and `seaborn`, we will create
+wrappers around this functionality. This means that users of this
+package only have to be able to use the `stock_analysis`
+package to visualize their financial data. In addition, we are able to
+set a standard for how the visualizations look and avoid copying and
+pasting large amounts of code for each new analysis we want to conduct,
+which brings consistency and efficiency gains.
+
+To make all of this possible, we have the `Visualizer` classes
+in `stock_analysis/stock_visualizer.py`. There are three
+classes in this file:
+
+-   `Visualizer`: This is the base class for defining the
+    functionality of a `Visualizer` object. Most of the
+    methods are **abstract**, meaning that the subclasses (children)
+    that inherit from this superclass (parent) will need to override
+    them and implement the code; these define what an object should do,
+    without getting into the specifics.
+-   `StockVisualizer`: This is the subclass we will use to
+    visualize a single asset.
+-   `AssetGroupVisualizer`: This is the subclass we will use
+    to visualize multiple assets using `groupby()` operations.
+
+Before we discuss the code for these classes,
+let\'s go over some additional functions in the
+`stock_analysis/utils.py` file, which will help create these
+asset groups and describe them for EDA purposes. For these functions, we
+need to import `pandas`:
+
+```
+import pandas as pd
+```
+
+
+The `group_stocks()` function takes in a dictionary that maps
+the name of the asset to the dataframe for that asset and outputs a new
+dataframe with all the data from the input dataframes and a new column,
+denoting which asset the data belongs to:
+
+```
+def group_stocks(mapping):
+    """
+    Create a new dataframe with many assets and a new column 
+    indicating the asset that row's data belongs to.
+    Parameters:
+        - mapping: A key-value mapping of the form 
+                   {asset_name: asset_df}
+    Returns: 
+        A new `pandas.DataFrame` object
+    """
+    group_df = pd.DataFrame()
+    for stock, stock_data in mapping.items():
+        df = stock_data.copy(deep=True)
+        df['name'] = stock
+        group_df = group_df.append(df, sort=True)
+    group_df.index = pd.to_datetime(group_df.index)
+    return group_df
+```
+
+
+Let\'s take a look at how this is defined in the
+`stock_analysis/utils.py` file:
+
+```
+def validate_df(columns, instance_method=True):
+    """
+    Decorator that raises a `ValueError` if input isn't a
+    `DataFrame` or doesn't contain the proper columns. Note 
+    the `DataFrame` must be the first positional argument
+    passed to this method.
+    Parameters:
+        - columns: A set of required column names.
+          For example, {'open', 'high', 'low', 'close'}.
+        - instance_method: Whether or not the item being
+          decorated is an instance method. Pass `False` to 
+          decorate static methods and functions.
+    Returns:
+        A decorated method or function.
+    """
+    def method_wrapper(method):
+        @wraps(method)
+        def validate_wrapper(self, *args, **kwargs):
+            # functions and static methods don't pass self so
+            # self is the 1st positional argument in that case
+            df = (self, *args)[0 if not instance_method else 1]
+            if not isinstance(df, pd.DataFrame):
+                raise ValueError(
+                    'Must pass in a pandas `DataFrame`'
+                )
+            if columns.difference(df.columns):
+                raise ValueError(
+                    'Dataframe must contain the following'
+                    f' columns: {columns}'
+                )
+            return method(self, *args, **kwargs)
+        return validate_wrapper
+    return method_wrapper
+```
+
+
+Groups made with the `group_stocks()` function can be
+described in a single output using the
+`describe_group()` function. The `group_stocks()`
+function adds a column called `name` that
+`describe_group()` looks for, so we use the
+`@validate_df` decorator to make sure that the format is
+correct before trying to run the function:
+
+```
+@validate_df(columns={'name'}, instance_method=False)
+def describe_group(data):
+    """
+    Run `describe()` on the asset group.
+    Parameters:
+        - data: Grouped data resulting from `group_stocks()`
+    Returns: 
+        The transpose of the grouped description statistics.
+    """
+    return data.groupby('name').describe().T
+```
+
+
+Let\'s use the `group_stocks()` function
+to make some asset groups for our analysis:
+
+```
+>>> from stock_analysis.utils import \
+...     group_stocks, describe_group
+>>> faang = group_stocks({
+...     'Facebook': fb, 'Apple': aapl, 'Amazon': amzn, 
+...     'Netflix': nflx, 'Google': goog
+... })
+>>> faang_sp = group_stocks({
+...     'Facebook': fb, 'Apple': aapl, 'Amazon': amzn, 
+...     'Netflix': nflx, 'Google': goog, 'S&P 500': sp
+... })
+>>> all_assets = group_stocks({
+...     'Bitcoin': bitcoin, 'S&P 500': sp, 'Facebook': fb, 
+...     'Apple': aapl, 'Amazon': amzn, 'Netflix': nflx, 
+...     'Google': goog
+... })
+```
+
+
+Using these groups, the output of `describe()` can be much
+more informative for comparison purposes compared to running it on each
+dataframe separately. The `describe_group()` function handles
+running `describe()` with `groupby()`. This makes it
+easier to look at the summary for the closing price across assets:
+
+```
+>>> describe_group(all_assets).loc['close',]
+```
+
+
+At a glance, we can see that we have more data for bitcoin than the
+rest. This is because the prices change daily, whereas for stocks, we
+only see the data for trading days. Another thing we can glean from this
+is scale; bitcoin is not only much more volatile but is much higher in
+value than everything else:
+
+
+](./images/Figure_7.6_B16834.jpg)
+
+
+If we don\'t want to look at the assets
+individually, we can combine them into a portfolio, which we can treat
+as a single asset. The `make_portfolio()` function from
+`stock_analysis/utils.py` groups the data by date and sums all
+the columns, giving us the total stock price and volume traded of our
+portfolio:
+
+```
+@validate_df(columns=set(), instance_method=False)
+def make_portfolio(data, date_level='date'):
+    """
+    Make a portfolio of assets by grouping by date and 
+    summing all columns.
+    Note: the caller is responsible for making sure the 
+    dates line up across assets and handling when they don't.
+    """
+    return data.groupby(level=date_level).sum()
+```
+
+
+
+The Visualizer class family
+---------------------------
+
+As we learned from previous labs,
+visualization will make our analysis much easier,
+so let\'s begin our discussion of the `Visualizer` classes in
+`stock_analysis/stock_visualizer.py`. First, we will define
+our base class, `Visualizer`. The following UML diagram tells
+us this is our base class because it has arrows pointing to it. These
+arrows originate from the subclasses (`AssetGroupVisualizer`
+and `StockVisualizer`):
+
+
+![](./images/Figure_7.7_B16834.jpg)
+
+
+We start the module with our docstring and imports. For our
+visualizations, we will need `matplotlib`, `numpy`,
+`pandas`, and `seaborn`, along with
+`mplfinance` (a `matplotlib` derivative package for
+financial visualizations):
+
+```
+"""Visualize financial instruments."""
+import math
+import matplotlib.pyplot as plt
+import mplfinance as mpf
+import numpy as np
+import pandas as pd
+import seaborn as sns
+from .utils import validate_df
+```
+
+
+Next, we begin by defining the `Visualizer` class. This class
+will hold the data it will be used to
+visualize, so we put this in the
+`__init__()` method:
+
+```
+class Visualizer:
+    """Base visualizer class not intended for direct use."""
+    @validate_df(columns={'open', 'high', 'low', 'close'})
+    def __init__(self, df):
+        """Store the input data as an attribute."""
+        self.data = df
+```
+
+
+This base class will provide us with **static
+methods** for adding reference lines to plots and also adding shaded
+regions, without needing to remember which `matplotlib`
+function we need to call for the orientation; static methods don\'t
+depend on the class for data. We define the
+`add_reference_line()` method for adding horizontal or
+vertical lines (and anything in between) using the
+`@staticmethod` decorator; notice we don\'t have
+`self` or `cls` as the first argument:
+
+```
+    @staticmethod
+    def add_reference_line(ax, x=None, y=None, **kwargs):
+        """
+        Static method for adding reference lines to plots.
+        Parameters:
+            - ax: `Axes` object to add the reference line to.
+            - x, y: The x, y value to draw the line at as a 
+              single value or numpy array-like structure.
+                - For horizontal: pass only `y`
+                - For vertical: pass only `x`
+                - For AB line: pass both `x` and `y`
+            - kwargs: Additional keyword args. to pass down.
+        Returns:
+            The matplotlib `Axes` object passed in.
+        """
+        try:
+            # numpy array-like structures -> AB line
+            if x.shape and y.shape:
+                ax.plot(x, y, **kwargs)
+        except:
+            # error triggers if x or y isn't array-like
+            try:
+                if not x and not y:
+                    raise ValueError(
+                        'You must provide an `x` or a `y`'
+                    )
+                elif x and not y:
+                    ax.axvline(x, **kwargs) # vertical line
+                elif not x and y:
+                    ax.axhline(y, **kwargs) # horizontal line
+            except:
+                raise ValueError(
+                    'If providing only `x` or `y`, '
+                    'it must be a single value'
+                )
+        ax.legend()
+        return ax
+```
+
+
+**Tip:** 
+
+See the *Further reading* section for more information on class methods,
+static methods, and abstract methods.
+
+The `shade_region()` static method for
+adding shaded regions to a plot is similar to the
+`add_reference_line()` static method:
+
+```
+    @staticmethod
+    def shade_region(ax, x=tuple(), y=tuple(), **kwargs):
+        """
+        Static method for shading a region on a plot.
+        Parameters:
+            - ax: `Axes` object to add the shaded region to.
+            - x: Tuple with the `xmin` and `xmax` bounds for 
+              the rectangle drawn vertically.
+            - y: Tuple with the `ymin` and `ymax` bounds for 
+              the rectangle drawn horizontally.
+            - kwargs: Additional keyword args. to pass down.
+        Returns: 
+            The matplotlib `Axes` object passed in.
+        """
+        if not x and not y:
+            raise ValueError(
+                'You must provide an x or a y min/max tuple'
+            )
+        elif x and y:
+            raise ValueError('You can only provide x or y.')
+        elif x and not y:
+            ax.axvspan(*x, **kwargs) # vertical region
+        elif not x and y:
+            ax.axhspan(*y, **kwargs) # horizontal region
+        return ax
+```
+
+
+Since we want our plotting capabilities to
+be flexible, we are going to define a static
+method that will make it easy for us to plot one or many items without
+needing to check the number of items beforehand. This will be utilized
+in the classes we build using the `Visualizer` class as our
+base:
+
+```
+    @staticmethod
+    def _iter_handler(items):
+        """
+        Static method for making a list out of an item if 
+        it isn't a list or tuple already.
+        Parameters:
+            - items: The variable to make sure it is a list.
+        Returns: The input as a list or tuple.
+        """
+        if not isinstance(items, (list, tuple)):
+            items = [items]
+        return items
+```
+
+
+We want to support window functions for
+single assets and groups of them; however, the
+implementation of this will vary, so we will
+define an **abstract method** (a method without implementation) in the
+superclass, and the subclasses will override it to provide the
+implementation:
+
+```
+    def _window_calc(self, column, periods, name, func, 
+                     named_arg, **kwargs):
+        """
+        To be implemented by subclasses. Defines how to add 
+        lines resulting from window calculations.
+        """
+        raise NotImplementedError('To be implemented by '
+                                  'subclasses.')
+```
+
+
+This allows us to define functionality that depends on
+`_window_calc()` but doesn\'t need to know the
+exact implementation, just the result. The
+`moving_average()` method uses
+`_window_calc()` to add moving average lines to the plot:
+
+```
+    def moving_average(self, column, periods, **kwargs):
+        """
+        Add line(s) for the moving average of a column.
+        Parameters:
+            - column: The name of the column to plot.
+            - periods: The rule or list of rules for 
+              resampling, like '20D' for 20-day periods.
+            - kwargs: Additional arguments to pass down.
+        Returns: A matplotlib `Axes` object.
+        """
+        return self._window_calc(
+            column, periods, name='MA', named_arg='rule',
+            func=pd.DataFrame.resample, **kwargs
+        )
+```
+
+
+In a similar fashion, we define the `exp_smoothing()` method,
+which will use `_window_calc()` to add exponentially smoothed
+moving average lines to the plot:
+
+```
+    def exp_smoothing(self, column, periods, **kwargs):
+        """
+        Add line(s) for the exponentially smoothed moving 
+        average of a column.
+        Parameters:
+            - column: The name of the column to plot.
+            - periods: The span or list of spans for,
+              smoothing like 20 for 20-day periods.
+            - kwargs: Additional arguments to pass down.
+        Returns: 
+            A matplotlib `Axes` object.
+        """
+        return self._window_calc(
+            column, periods, name='EWMA',
+            func=pd.DataFrame.ewm, named_arg='span', **kwargs
+        )
+```
+
+
+Note that while we have methods
+for adding the moving average and the
+exponentially smoothed moving average to a plot of a column, they both
+call `_window_calc()`, which isn\'t defined here. This is
+because each of the subclasses will have its own implementation of
+`_window_calc()`, while they will inherit the top-level method
+without the need to override `moving_average()` or
+`exp_smoothing()`.
+
+**Important note:**
+
+Remember that methods preceded with a single underscore (`_`)
+are Python\'s version of **private methods**---they
+can still be accessed outside this class, but they
+don\'t show up when we run `help()` on objects of that class.
+We created `_window_calc()` as a private method because users
+of the `Visualizer` classes will only need to call
+`moving_average()` and `exp_smoothing()`.
+
+Finally, we will add placeholders for the methods all subclasses will
+have. These are abstract methods that will be defined by each subclass
+individually because the implementation will be
+different depending on if we are visualizing a
+single asset or a group of them. For brevity, the
+following is a subset of the abstract methods defined in this class:
+
+```
+    def evolution_over_time(self, column, **kwargs):
+        """Creates line plots."""
+        raise NotImplementedError('To be implemented by '
+                                  'subclasses.')
+    def after_hours_trades(self):
+        """Show the effect of after-hours trading."""
+        raise NotImplementedError('To be implemented by '
+                                  'subclasses.')
+    def pairplot(self, **kwargs):
+        """Create pairplots."""
+        raise NotImplementedError('To be implemented by '
+                                  'subclasses.')
+```
+
+
+The subclasses will also define any methods that are unique to them
+and/or override the implementation of the `Visualizer` class,
+if necessary. Anything they don\'t override, they will inherit. By using
+**inheritance**, we can define a broad class such as
+`Visualizer` by what all `Visualizers` should do and
+then have more specific versions, such as the
+`StockVisualizer` class, which handles
+single assets only.
+
+
+
+Visualizing a stock
+-------------------
+
+Let\'s start the `StockVisualizer` class
+by inheriting from `Visualizer`; we will choose not to
+override the `__init__()` method because the
+`StockVisualizer` class will only have a dataframe as an
+attribute. Instead, we will provide implementations for the methods that
+need to be added (which are unique to this class) or overridden.
+
+**Important note:**
+
+We will only cover a subset of the functionality in the interest of
+brevity; however, I highly encourage you to both read through the full
+code base and test out the functionality in the notebook.
+
+The first method we will override is
+`evolution_over_time()`, which will create a line plot of a
+column over time:
+
+```
+class StockVisualizer(Visualizer):
+    """Visualizer for a single stock."""
+    def evolution_over_time(self, column, **kwargs):
+        """
+        Visualize the evolution over time of a column.
+        Parameters:
+            - column: The name of the column to visualize.
+            - kwargs: Additional arguments to pass down.
+        Returns:
+            A matplotlib `Axes` object.
+        """
+        return self.data.plot.line(y=column, **kwargs)
+```
+
+
+Next, we will use `mplfinance` to create
+a **candlestick plot**, which is a way to visualize the OHLC data
+together. Each row of the OHLC time series will be plotted as a
+candlestick. When the candlestick is black, the asset\'s closing price
+was smaller than the opening price (it lost
+value); when the candlestick is white, the asset\'s closing price was
+higher than its opening price, as illustrated in the following diagram:
+
+
+![](./images/Figure_7.8_B16834.jpg)
+
+
+
+The `candlestick()` method also provides options to resample
+the data, show volume traded, and plot a specific date range:
+
+```
+    def candlestick(self, date_range=None, resample=None, 
+                    volume=False, **kwargs):
+        """
+        Create a candlestick plot for the OHLC data.
+        Parameters:
+            - date_range: String or `slice()` of dates to 
+              pass to `loc[]`, if `None` the plot will be 
+              for the full range of the data.
+            - resample: The offset to use for resampling 
+              the data, if desired.
+            - volume: Whether to show a bar plot for volume 
+              traded under the candlesticks
+            - kwargs: Keyword args for `mplfinance.plot()`
+        """
+        if not date_range:
+            date_range = slice(
+                self.data.index.min(), self.data.index.max()
+            )
+        plot_data = self.data.loc[date_range]
+        if resample:
+            agg_dict = {
+                'open': 'first', 'close': 'last',
+                'high': 'max', 'low': 'min', 'volume': 'sum'
+            }
+            plot_data = plot_data.resample(resample).agg({
+                col: agg_dict[col] for col in plot_data.columns
+                if col in agg_dict
+            })
+        mpf.plot(
+            plot_data, type='candle', volume=volume, **kwargs
+        )
+```
+
+
+Now, we add the `after_hours_trades()` method, which helps us
+visualize the effect after-hours trading had on an
+individual asset, with bars colored red for losses and green for gains:
+
+```
+    def after_hours_trades(self):
+        """
+        Visualize the effect of after-hours trading.
+        Returns: A matplotlib `Axes` object.
+        """
+        after_hours = self.data.open - self.data.close.shift()
+        monthly_effect = after_hours.resample('1M').sum()
+        fig, axes = plt.subplots(1, 2, figsize=(15, 3))
+        after_hours.plot(
+            ax=axes[0],
+            title='After-hours trading\n'
+                  '(Open Price - Prior Day\'s Close)'
+        ).set_ylabel('price')
+        monthly_effect.index = \
+            monthly_effect.index.strftime('%Y-%b')
+        monthly_effect.plot(
+            ax=axes[1], kind='bar', rot=90,
+            title='After-hours trading monthly effect',
+            color=np.where(monthly_effect >= 0, 'g', 'r')
+        ).axhline(0, color='black', linewidth=1)
+        axes[1].set_ylabel('price')
+        return axes
+```
+
+
+Next, we will add a static method that will allow us to fill the area
+between two curves of our choosing. The
+`fill_between()` method will use
+`plt.fill_between()` to color the area green or red depending
+on which curve is higher:
+
+```
+    @staticmethod
+    def fill_between(y1, y2, title, label_higher, label_lower, 
+                     figsize, legend_x):
+        """
+        Visualize the difference between assets.
+        Parameters:
+            - y1, y2: Data to plot, filling y2 - y1.
+            - title: The title for the plot.
+            - label_higher: Label for when y2 > y1.
+            - label_lower: Label for when y2 <= y1.
+            - figsize: (width, height) for the plot dimensions.
+            - legend_x: Where to place legend below the plot.
+        Returns: A matplotlib `Axes` object.
+        """
+        is_higher = y2 - y1 > 0
+        fig = plt.figure(figsize=figsize)
+        for exclude_mask, color, label in zip(
+            (is_higher, np.invert(is_higher)),
+            ('g', 'r'),
+            (label_higher, label_lower)
+        ):
+            plt.fill_between(
+                y2.index, y2, y1, figure=fig,
+                where=exclude_mask, color=color, label=label
+            )
+        plt.suptitle(title)
+        plt.legend(
+            bbox_to_anchor=(legend_x, -0.1),
+            framealpha=0, ncol=2
+        )
+        for spine in ['top', 'right']:
+            fig.axes[0].spines[spine].set_visible(False)
+        return fig.axes[0]
+```
+
+
+The `open_to_close()` method will help us visualize the daily
+differential between opening and closing price via the
+`fill_between()` static method. We will color the area green
+if the closing price is higher than the opening
+price and red if the opposite is true:
+
+```
+    def open_to_close(self, figsize=(10, 4)):
+        """
+        Visualize the daily change in price from open to close.
+        Parameters:
+            - figsize: (width, height) of plot
+        Returns:
+            A matplotlib `Axes` object.
+        """
+        ax = self.fill_between(
+            self.data.open, self.data.close, 
+            figsize=figsize, legend_x=0.67,
+            title='Daily price change (open to close)',
+            label_higher='price rose', label_lower='price fell'
+        )
+        ax.set_ylabel('price')
+        return ax
+```
+
+
+In addition to visualizing the differential between the opening and
+closing price of an individual asset, we will want to compare prices
+between assets. The `fill_between_other()` method will help us
+visualize the differential between the asset we created the visualizer
+for and another asset, using `fill_between()` again. We will
+color the differential green when the
+visualizer\'s asset is higher than the other asset and red for when it
+is lower:
+
+```
+    def fill_between_other(self, other_df, figsize=(10, 4)):
+        """
+        Visualize difference in closing price between assets.
+        Parameters:
+            - other_df: The other asset's data.
+            - figsize: (width, height) for the plot.
+        Returns: 
+            A matplotlib `Axes` object.
+        """
+        ax = self.fill_between(
+            other_df.open, self.data.close, figsize=figsize, 
+            legend_x=0.7, label_higher='asset is higher', 
+            label_lower='asset is lower', 
+            title='Differential between asset price '
+                  '(this - other)'
+        )
+        ax.set_ylabel('price')
+        return ax 
+```
+
+
+The time has finally come to override the `_window_calc()`
+method, which defines how to add reference lines based on window
+calculations for a single asset. Note how we are able to use the
+`pipe()` method to make our window calculation plots
+work with different functions, and the `_iter_handler()`
+method to make our loop work without having to check if we have more
+than one reference line to plot:
+
+```
+    def _window_calc(self, column, periods, name, func, 
+                     named_arg, **kwargs):
+        """
+        Helper method for plotting a series and adding
+        reference lines using a window calculation.
+        Parameters:
+            - column: The name of the column to plot.
+            - periods: The rule/span or list of them to pass 
+              to the resampling/smoothing function, like '20D'
+              for 20-day periods (resampling) or 20 for a 
+              20-day span (smoothing)
+            - name: The name of the window calculation (to 
+              show in the legend).
+            - func: The window calculation function.
+            - named_arg: The name of the argument `periods` 
+              is being passed as.
+            - kwargs: Additional arguments to pass down.
+        Returns:
+            A matplotlib `Axes` object.
+        """
+        ax = self.data.plot(y=column, **kwargs)
+        for period in self._iter_handler(periods):
+            self.data[column].pipe(
+                func, **{named_arg: period}
+            ).mean().plot(
+                ax=ax, linestyle='--',
+                label=f"""{period if isinstance(
+                    period, str
+                ) else str(period) + 'D'} {name}"""
+            )
+        plt.legend()
+        return ax
+```
+
+
+So far, each visualization concerned data for a
+single asset; however, sometimes we want to be able to visualize the
+relationship between assets, so we will build a wrapper around the
+`jointplot()` function from `seaborn`:
+
+```
+    def jointplot(self, other, column, **kwargs):
+        """
+        Generate a seaborn jointplot for given column in 
+        this asset compared to another asset.
+        Parameters:
+            - other: The other asset's dataframe.
+            - column: Column to use for the comparison.
+            - kwargs: Keyword arguments to pass down.
+        Returns: A seaborn jointplot
+        """
+        return sns.jointplot(
+            x=self.data[column], y=other[column], **kwargs
+        )
+```
+
+
+Another way of viewing the relationship between assets is the
+correlation matrix. `DataFrame` objects have a
+`corrwith()` method that will calculate the correlation
+coefficient between each column and the same column (by name) in another
+dataframe. This doesn\'t fill the matrix that\'s needed for a heatmap,
+as we saw in previous labs; rather, it is the diagonal. The
+`correlation_heatmap()` method creates a matrix for the
+`sns.heatmap()` function and fills in the diagonal with the
+correlation coefficients; then, it makes sure that only the diagonal is
+displayed using a mask. In addition, we will use
+the daily percentage change of each column when calculating the
+correlations to handle the difference in scale (for instance, between
+Apple\'s stock price and Amazon\'s stock price):
+
+```
+    def correlation_heatmap(self, other):
+        """
+        Plot the correlations between this asset and another
+        one with a heatmap.
+        Parameters:
+            - other: The other dataframe.
+        Returns: A seaborn heatmap
+        """
+        corrs = \
+            self.data.pct_change().corrwith(other.pct_change())
+        corrs = corrs[~pd.isnull(corrs)]
+        size = len(corrs)
+        matrix = np.zeros((size, size), float)
+        for i, corr in zip(range(size), corrs):
+            matrix[i][i] = corr
+        # create mask to only show diagonal
+        mask = np.ones_like(matrix)
+        np.fill_diagonal(mask, 0)
+        return sns.heatmap(
+            matrix, annot=True, center=0, vmin=-1, vmax=1,
+            mask=mask, xticklabels=self.data.columns, 
+            yticklabels=self.data.columns
+        )
+```
+
+
+Now that we understand some of the functionality
+available in the `StockVisualizer` class, we can begin our
+exploratory analysis. Let\'s create a `StockVisualizer` object
+to perform some EDA on the Netflix stock data:
+
+```
+>>> %matplotlib inline
+>>> import matplotlib.pyplot as plt
+>>> netflix_viz = stock_analysis.StockVisualizer(nflx)
+```
+
+
+Once we initialize our `StockVisualizer` object with the
+Netflix dataframe, we can generate many different plot types. We won\'t
+go over examples of everything this object lets us do (I will leave that
+up to you to experiment with), but let\'s take a look at the closing
+price over time with some moving averages to study the trend:
+
+```
+>>> ax = netflix_viz.moving_average('close', ['30D', '90D'])
+>>> netflix_viz.shade_region(
+...     ax, x=('2019-10-01', '2020-07-01'), 
+...     color='blue', alpha=0.1
+... )
+>>> ax.set(title='Netflix Closing Price', ylabel='price ($)')
+```
+
+
+These moving averages give us a smoothed version of the stock price
+curve. Notice that, in the shaded region, the 90-day moving average is
+acting like a ceiling for the stock price:
+
+
+![](./images/Figure_7.9_B16834.jpg)
+
+
+
+Below figure shows an example of how support (green) and resistance
+(red) act as lower and upper bounds, respectively, for the stock price;
+once the price hits either of these bounds, it tends to bounce back in
+the opposite direction due to buyers/sellers of the stock taking action:
+
+
+![](./images/Figure_7.10_B16834.jpg)
+
+
+
+Often, the **exponentially weighted moving average** (**EWMA**) can
+provide a better trend
+we can put additional emphasis on more recent values. Let\'s see how
+exponential smoothing looks for our data:
+
+```
+>>> ax = netflix_viz.exp_smoothing('close', [30, 90]) 
+>>> netflix_viz.shade_region(
+...     ax, x=('2020-04-01', '2020-10-01'),
+...     color='blue', alpha=0.1
+... )
+>>> ax.set(title='Netflix Closing Price', ylabel='price ($)')
+```
+
+
+The 90-day EWMA appears to be acting as the support level in the shaded region:
+
+![](./images/Figure_7.11_B16834.jpg)
+
+
+In the exercises for *Lab 5*,
+*Visualizing Data with Pandas and Matplotlib*, we wrote code for
+generating a visualization that represented the effect that after-hours
+trading had on Facebook; the `StockVisualizer` class also has
+this functionality. Let\'s use the `after_hours_trades()`
+method to see how Netflix fared:
+
+```
+>>> netflix_viz.after_hours_trades()
+```
+
+
+Netflix had a rough third quarter in 2019 in terms of after-hours
+trades:
+
+
+![](./images/Figure_7.12_B16834.jpg)
+
+
+
+We can use candlestick plots to study the OHLC data. Let\'s create one
+for Netflix, along with a bar plot for volume traded, by using the
+`candlestick()` method. We will also resample
+the data into 2-week intervals to improve the
+visibility of the candlesticks:
+
+```
+>>> netflix_viz.candlestick(
+...     resample='2W', volume=True, xrotation=90, 
+...     datetime_format='%Y-%b –'
+... )
+```
+
+
+
+**Tip:** 
+
+Traders use candlestick plots to look for and
+analyze patterns in an asset\'s performance, which can be used to make
+trading decisions. Check out this article for an introduction to
+candlestick plots and some common patterns traders look for:
+<https://www.investopedia.com/trading/candlestick-charting-what-is-it/>.
+
+Before moving on, we need to reset our plot styles. The
+`mplfinance` package sets many of the available styling
+options for its plots, so let\'s return to the style we are familiar
+with for now:
+
+```
+>>> import matplotlib as mpl
+>>> mpl.rcdefaults()
+>>> %matplotlib inline
+```
+
+
+We have already taken a look at a stock in isolation (Facebook) in prior
+labs, so let\'s take this in a different direction and compare
+Netflix to others. Let\'s use the `jointplot()` method to see
+how Netflix compares to the S&P 500:
+
+```
+>>> netflix_viz.jointplot(sp, 'close')
+```
+
+
+If we take a look at the plot, they appear to be weakly positively
+correlated. With financial analysis, we can
+calculate a metric called **beta** that indicates
+an asset\'s correlation to an index, such as the
+S&P 500. We will calculate beta in the *Technical analysis of financial
+instruments* section later in this lab:
+
+
+![](./images/Figure_7.14_B16834.jpg)
+
+
+
+We can use the `correlation_heatmap()` method to visualize the
+correlations between Netflix and Amazon as a heatmap, using the daily
+percentage change of each of the columns:
+
+```
+>>> netflix_viz.correlation_heatmap(amzn)
+```
+
+
+Netflix and Amazon are weakly positively
+correlated, but only on the OHLC data:
+
+
+![](./images/Figure_7.15_B16834.jpg)
+
+
+
+Lastly, we can use the `fill_between_other()` method to see
+how another asset grew (or fell) in price compared to Netflix. We will
+compare Netflix to Tesla here to see an example of one stock surpassing
+another:
+
+```
+>>> tsla = reader.get_ticker_data('TSLA')
+>>> change_date = (tsla.close > nflx.close).idxmax()
+>>> ax = netflix_viz.fill_between_other(tsla)
+>>> netflix_viz.add_reference_line(
+...     ax, x=change_date, color='k', linestyle=':', alpha=0.5,
+...     label=f'TSLA > NFLX {change_date:%Y-%m-%d}'
+... )
+```
+
+
+Notice that the shaded region shrinks in height as it approaches the
+reference line---this is the difference between the values in Netflix
+stock and Tesla stock decreasing over time. On
+November 11, 2020, as Tesla overtakes Netflix, the shaded region changes
+in color (from green to red) and begins to increase in height as Tesla
+widens the gap:
+
+
+![](./images/Figure_7.16_B16834.jpg)
+
+
+
+Up until this point, we have discussed visualizing a single asset---in
+this case, Netflix---so let\'s move on and see how we can perform some
+EDA across asset groups with the `AssetGroupVisualizer` class.
+
+
+
+Visualizing multiple assets
+---------------------------
+
+As we did previously, we will start by inheriting
+from the `Visualizer` class and writing our docstring. Note
+that the `AssetGroupVisualizer` class also keeps track of the
+column to use for `groupby()` operations, so we override the
+`__init__()` method; since this change was meant to be in
+addition to what was already there, we call the `__init__()`
+method of the superclass as well:
+
+```
+class AssetGroupVisualizer(Visualizer):
+    """Visualizes groups of assets in a single dataframe."""
+    # override for group visuals
+    def __init__(self, df, group_by='name'):
+        """This object keeps track of the group by column."""
+        super().__init__(df)
+        self.group_by = group_by
+```
+
+
+Next, we define the `evolution_over_time()` method to plot the
+same column for all the assets in the group in a
+single plot for comparison purposes. Since our data is of a different
+shape, we will use `seaborn` this time:
+
+```
+    def evolution_over_time(self, column, **kwargs):
+        """
+        Visualize the evolution over time for all assets.
+        Parameters:
+            - column: The name of the column to visualize.
+            - kwargs: Additional arguments to pass down.
+        Returns: A matplotlib `Axes` object.
+        """
+        if 'ax' not in kwargs:
+            fig, ax = plt.subplots(1, 1, figsize=(10, 4))
+        else:
+            ax = kwargs.pop('ax')
+        return sns.lineplot(
+            x=self.data.index, y=column, hue=self.group_by,
+            data=self.data, ax=ax, **kwargs
+        )
+```
+
+
+When using `seaborn` or only plotting a single asset, we
+didn\'t have to worry about the layout of our
+subplots; however, for some of the other asset group visualizations, we
+need a way to automatically determine a reasonable subplot layout. For
+this, we will add the `_get_layout()` method, which will
+generate the `Figure` and `Axes` objects we need for
+a given number of subplots (determined by the number of unique assets in
+the group):
+
+```
+    def _get_layout(self):
+        """
+        Helper method for getting an autolayout of subplots.
+        Returns: `Figure` and `Axes` objects to plot with.
+        """
+        subplots_needed = self.data[self.group_by].nunique()
+        rows = math.ceil(subplots_needed / 2)
+        fig, axes = \
+            plt.subplots(rows, 2, figsize=(15, 5 * rows))
+        if rows > 1:
+            axes = axes.flatten()
+        if subplots_needed < len(axes):
+            # remove excess axes from autolayout
+            for i in range(subplots_needed, len(axes)):
+                # can't use comprehension here
+                fig.delaxes(axes[i])
+        return fig, axes
+```
+
+
+Now, we need to define how
+`_window_calc()` will work with groups. We will need to use
+our `_get_layout()` method to build subplots for each of the
+assets in the group:
+
+```
+    def _window_calc(self, column, periods, name, func,  
+                     named_arg, **kwargs):
+        """
+        Helper method for plotting a series and adding
+        reference lines using a window calculation.
+        Parameters:
+            - column: The name of the column to plot.
+            - periods: The rule/span or list of them to pass 
+              to the resampling/smoothing function, like '20D' 
+              for 20-day periods (resampling) or 20 for a 
+              20-day span (smoothing)
+            - name: The name of the window calculation (to 
+              show in the legend).
+            - func: The window calculation function.
+            - named_arg: The name of the argument `periods` 
+              is being passed as.
+            - kwargs: Additional arguments to pass down.
+        Returns: 
+            A matplotlib `Axes` object.
+        """
+        fig, axes = self._get_layout()
+        for ax, asset_name in zip(
+            axes, self.data[self.group_by].unique()
+        ):
+            subset = self.data.query(
+                f'{self.group_by} == "{asset_name}"'
+            )
+            ax = subset.plot(
+                y=column, ax=ax, label=asset_name, **kwargs
+            )
+            for period in self._iter_handler(periods):
+                subset[column].pipe(
+                    func, **{named_arg: period}
+                ).mean().plot(
+                    ax=ax, linestyle='--',
+                    label=f"""{period if isinstance(
+                        period, str
+                    ) else str(period) + 'D'} {name}"""
+                )
+            ax.legend()
+         plt.tight_layout()
+         return ax
+```
+
+
+We can override `after_hours_trades()`
+to visualize the effect of after-hours trading on
+a group of assets using subplots and iterating over the assets in the
+group:
+
+```
+    def after_hours_trades(self):
+        """
+        Visualize the effect of after-hours trading.
+        Returns: A matplotlib `Axes` object.
+        """
+        num_categories = self.data[self.group_by].nunique()
+        fig, axes = plt.subplots(
+            num_categories, 2, figsize=(15, 3 * num_categories)
+        )
+        for ax, (name, data) in zip(
+            axes, self.data.groupby(self.group_by)
+        ):
+            after_hours = data.open - data.close.shift()
+            monthly_effect = after_hours.resample('1M').sum()
+            after_hours.plot(
+                ax=ax[0], 
+                title=f'{name} Open Price - Prior Day\'s Close'
+            ).set_ylabel('price')
+            monthly_effect.index = \
+                monthly_effect.index.strftime('%Y-%b')
+            monthly_effect.plot(
+                ax=ax[1], kind='bar', rot=90,
+                color=np.where(monthly_effect >= 0, 'g', 'r'),
+                title=f'{name} after-hours trading '
+                      'monthly effect'
+            ).axhline(0, color='black', linewidth=1)
+            ax[1].set_ylabel('price')
+        plt.tight_layout()
+        return axes
+```
+
+
+With the `StockVisualizer` class, we
+were able to generate a joint plot between two assets\' closing prices,
+but here we can override `pairplot()` to allow us to see the
+relationships between the closing prices across assets in the group:
+
+```
+    def pairplot(self, **kwargs):
+        """
+        Generate a seaborn pairplot for this asset group.
+        Parameters:
+            - kwargs: Keyword arguments to pass down.
+        Returns: A seaborn pairplot
+        """
+        return sns.pairplot(
+            self.data.pivot_table(
+                values='close', index=self.data.index, 
+                columns=self.group_by
+            ), diag_kind='kde', **kwargs
+        )
+```
+
+
+Finally, we add the `heatmap()` method,
+which generates a heatmap of the correlations between the closing prices
+of all the assets in the group:
+
+```
+    def heatmap(self, pct_change=True, **kwargs):
+        """
+        Generate a heatmap for correlations between assets.
+        Parameters:
+            - pct_change: Whether to show the correlations 
+              of the daily percent change in price.
+            - kwargs: Keyword arguments to pass down.
+        Returns: A seaborn heatmap
+        """
+        pivot = self.data.pivot_table(
+            values='close', index=self.data.index, 
+            columns=self.group_by
+        )
+        if pct_change:
+            pivot = pivot.pct_change()
+        return sns.heatmap(
+            pivot.corr(), annot=True, center=0, 
+            vmin=-1, vmax=1, **kwargs
+        )
+```
+
+
+We can use the `heatmap()` method to see
+how the daily percentage change across assets compares. This will handle
+the difference in scale between the assets (Google and Amazon have much
+higher stock prices than Facebook and Apple, meaning that gains of a few
+dollars mean more to Facebook and Apple):
+
+```
+>>> all_assets_viz = \
+...     stock_analysis.AssetGroupVisualizer(all_assets)
+>>> all_assets_viz.heatmap()
+```
+
+
+Apple-S&P 500 and Facebook-Google have the strongest correlations, with
+bitcoin having no correlation with anything:
+
+
+![](./images/Figure_7.17_B16834.jpg)
+
+
+
+In the interest of brevity, rather than show all
+the methods for visualizing an asset group, which will result in large
+plots, I will leave that to you to view and try out in the notebook.
+However, let\'s combine these `Visualizers` to see how all of
+our assets evolved over time:
+
+```
+>>> faang_sp_viz = \
+...     stock_analysis.AssetGroupVisualizer(faang_sp)
+>>> bitcoin_viz = stock_analysis.StockVisualizer(bitcoin)
+>>> fig, axes = plt.subplots(1, 2, figsize=(15, 5))
+>>> faang_sp_viz.evolution_over_time(
+...     'close', ax=axes[0], style=faang_sp_viz.group_by
+... )
+>>> bitcoin_viz.evolution_over_time(
+...     'close', ax=axes[1], label='Bitcoin'
+... )
+```
+
+
+Note that bitcoin had huge gains to close out 2020 (check out the scale
+on the *y*-axis), and Amazon also saw a lot of
+growth in 2020:
+
+
+![](./images/Figure_7.18_B16834.jpg)
+
+
+
+Now that we have a good feel for our data, we are ready to look at some
+metrics. Note that, while we only looked at and used a subset of the
+code, I encourage you to try out all the methods in the
+`Visualizer` classes using the notebook for this lab; the
+exercises will also offer an additional occasion to use them.
+
+
+Technical analysis of financial instruments
+===========================================
+
+
+With technical analysis of assets, metrics (such
+as cumulative returns and volatility) are calculated to compare various
+assets to each other. As with the previous two sections in this lab,
+we will be writing a module with classes to help us. We will need the
+`StockAnalyzer` class for technical analysis of a single asset
+and the `AssetGroupAnalyzer` class for technical analysis of a
+group of assets. These classes are in the
+`stock_analysis/stock_analyzer.py` file.
+
+As with the other modules, we will start with our
+docstring and imports:
+
+```
+"""Classes for technical analysis of assets."""
+import math
+from .utils import validate_df
+```
+
+
+
+
+The StockAnalyzer class
+-----------------------
+
+For individual
+assets, we will build the `StockAnalyzer` class, which
+calculates metrics for a given asset. The following UML diagram shows
+all the metrics that it provides:
+
+
+![](./images/Figure_7.19_B16834.jpg)
+
+
+
+A `StockAnalyzer` instance will be
+initialized with the data for the asset on which we want to
+perform a technical analysis. This means that our
+`__init__()` method will need to accept the data as a
+parameter:
+
+```
+class StockAnalyzer:
+    """Provides metrics for technical analysis of a stock."""
+    @validate_df(columns={'open', 'high', 'low', 'close'})
+    def __init__(self, df):
+        """Create a `StockAnalyzer` object with OHLC data"""
+        self.data = df
+```
+
+
+Most of the calculations for our technical analysis will rely on the
+closing price of the stock, so rather than needing to write
+`self.data.close` in all of our methods, we will create a
+property so that we can access it with `self.close` instead.
+This makes our code cleaner and easier to follow:
+
+```
+    @property
+    def close(self):
+        """Get the close column of the data."""
+        return self.data.close
+```
+
+
+A few calculations will also need the percent
+change of the `close` column, so we will
+make a property for easier access to that as well:
+
+```
+    @property
+    def pct_change(self):
+        """Get the percent change of the close column."""
+        return self.close.pct_change()
+```
+
+
+Since we will be calculating support and
+resistance levels using the **pivot point**, which is the average of the
+high, low, and close on the last day in the data, we will make a
+property for it, as well:
+
+```
+    @property
+    def pivot_point(self):
+        """Calculate the pivot point."""
+        return (self.last_close + self.last_high
+                + self.last_low) / 3
+```
+
+
+Note that we are also using other
+properties---`self.last_close`, `self.last_high`,
+and `self.last_low`---which we define using the
+`last()` method on the data, before selecting the column in
+question and using `iat[]` to get just the price:
+
+```
+    @property
+    def last_close(self):
+        """Get the value of the last close in the data."""
+        return self.data.last('1D').close.iat[0]
+    @property
+    def last_high(self):
+        """Get the value of the last high in the data."""
+        return self.data.last('1D').high.iat[0]
+    @property
+    def last_low(self):
+        """Get the value of the last low in the data."""
+        return self.data.last('1D').low.iat[0]
+```
+
+
+Now, we have everything we need to calculate
+support and resistance. We will be calculating
+each at three different levels, where the first level is the closest to
+the closing price and the third level is the farthest. The first level
+will therefore be the most restrictive level, and the third will be the
+least restrictive. We define the `resistance()` method as
+follows, allowing the caller to specify the level to calculate:
+
+```
+    def resistance(self, level=1):
+        """Calculate the resistance at the given level."""
+        if level == 1:
+            res = (2 * self.pivot_point) - self.last_low
+        elif level == 2:
+            res = self.pivot_point \
+                  + (self.last_high - self.last_low)
+        elif level == 3:
+            res = self.last_high \
+                  + 2 * (self.pivot_point - self.last_low)
+        else:
+            raise ValueError('Not a valid level.')
+        return res
+```
+
+
+The `support()` method is
+defined in a similar fashion:
+
+```
+    def support(self, level=1):
+        """Calculate the support at the given level."""
+        if level == 1:
+            sup = (2 * self.pivot_point) - self.last_high
+        elif level == 2:
+            sup = self.pivot_point \
+                  - (self.last_high - self.last_low)
+        elif level == 3:
+            sup = self.last_low \
+                  - 2 * (self.last_high - self.pivot_point)
+        else:
+            raise ValueError('Not a valid level.')
+        return sup
+```
+
+
+Next, we will work on creating methods for analyzing asset volatility.
+First, we will calculate the daily standard deviation of the percent
+change in the closing price, for which we will need to specify the
+number of trading periods. In order to make sure that we can\'t use more
+trading periods than we have in the data, we will define a property with
+the maximum value we can use for this argument:
+
+```
+    @property
+    def _max_periods(self):
+        """Get the number of trading periods in the data."""
+        return self.data.shape[0]
+```
+
+
+Now that we have our maximum, we can define the
+`daily_std()` method, which calculates
+the daily standard deviation of the daily
+percentage change:
+
+```
+    def daily_std(self, periods=252):
+        """
+        Calculate daily standard deviation of percent change.
+        Parameters:
+            - periods: The number of periods to use for the
+              calculation; default is 252 for the trading days 
+              in a year. Note if you provide a number greater  
+              than the number of trading periods in the data,
+              `self._max_periods` will be used instead.
+        Returns: The standard deviation
+        """
+        return self.pct_change\
+            [min(periods, self._max_periods) * -1:].std()
+```
+
+
+While `daily_std()` is useful on its own, we can take this a
+step further and calculate annualized volatility by multiplying the
+daily standard deviation by the square root of the number of trading
+periods in the year, which we assume to be 252:
+
+```
+    def annualized_volatility(self):
+        """Calculate the annualized volatility."""
+        return self.daily_std() * math.sqrt(252)
+```
+
+
+In addition, we  look at
+rolling volatility by using the `rolling()` method:
+
+```
+    def volatility(self, periods=252):
+        """Calculate the rolling volatility.
+        Parameters:
+            - periods: The number of periods to use for the 
+              calculation; default is 252 for the trading  
+              days in a year. Note if you provide a number  
+              greater than the number of trading periods in the
+              data, `self._max_periods` will be used instead.
+        Returns: A `pandas.Series` object.
+        """
+        periods = min(periods, self._max_periods)
+        return self.close.rolling(periods).std()\
+               / math.sqrt(periods)
+```
+
+
+We often want to compare assets, so we provide the
+`corr_with()` method to calculate the correlations between
+them using daily percentage change:
+
+```
+    def corr_with(self, other):
+        """Calculate the correlations between dataframes.
+        Parameters:
+            - other: The other dataframe.
+        Returns: A `pandas.Series` object
+        """
+        return \
+            self.data.pct_change().corrwith(other.pct_change())
+```
+
+
+Next, we some metrics
+for comparing the level of dispersion of assets. In Lab 1, we discussed the coefficient of
+variation (the `cv()` method) and the quantile coefficient of
+dispersion (the `qcd()` method), which we can use to achieve
+this, both of which we will add here:
+
+```
+    def cv(self):
+        """
+        Calculate the coefficient of variation for the asset.
+        The lower this is, the better the risk/return tradeoff.
+        """
+        return self.close.std() / self.close.mean()
+    def qcd(self):
+        """Calculate the quantile coefficient of dispersion."""
+        q1, q3 = self.close.quantile([0.25, 0.75])
+        return (q3 - q1) / (q3 + q1) 
+```
+
+
+In addition, we want a way to quantify the volatility of an asset
+compared to an index, such as the S&P 500, for which we calculate
+**beta**---the ratio of the covariance of the asset\'s return
+ the index\'s return to
+the variance of the asset\'s return. We add the `beta()`
+method, which allows the user to specify the index to use as a
+benchmark:
+
+```
+    def beta(self, index):
+        """
+        Calculate the beta of the asset.
+        Parameters:
+            - index: The data for the index to compare to.
+        Returns: 
+            Beta, a float.
+        """
+        index_change = index.close.pct_change()
+        beta = self.pct_change.cov(index_change)\
+               / index_change.var()
+        return beta
+```
+
+
+Next, we define a method for calculating the cumulative returns of an
+asset as a series. This is defined as the cumulative product of one plus
+the percent change in closing price:
+
+```
+    def cumulative_returns(self):
+        """Calculate cumulative returns for plotting."""
+        return (1 + self.pct_change).cumprod()
+```
+
+
+The next few metrics we want to support require calculating the return
+of the portfolio. To make things simpler, we will assume that there is
+no distribution per share so that the return of
+the portfolio is the percent change from the
+starting price to the ending price over the time
+period covered by the data. We will define this as a static method since
+we will need to calculate this for an index, and not just the data
+stored in `self.data`:
+
+```
+    @staticmethod
+    def portfolio_return(df):
+        """
+        Calculate return assuming no distribution per share.
+        Parameters:
+            - df: The asset's dataframe.
+        Returns: The return, as a float.
+        """
+        start, end = df.close[0], df.close[-1]
+        return (end - start) / start
+```
+
+
+While beta allows us to compare an asset\'s
+volatility to an index, **alpha** allows us to compare the returns of
+the asset to those of an index. To do so, we also need the risk-free
+rate of return, which is the rate of return of an investment that has no
+risk of financial loss; in practice, we use US Treasury bills for this.
+Calculating alpha requires calculating the
+portfolio return of the index and the asset, along
+with beta:
+
+```
+    def alpha(self, index, r_f):
+        """
+        Calculates the asset's alpha.
+        Parameters:
+            - index: The index to compare to.
+            - r_f: The risk-free rate of return.
+        Returns: Alpha, as a float.
+        """
+        r_f /= 100
+        r_m = self.portfolio_return(index)
+        beta = self.beta(index)
+        r = self.portfolio_return(self.data)
+        alpha = r - r_f - beta * (r_m - r_f)
+        return alpha
+```
+
+
+**Tip:** 
+
+`r_f /= 100` in the previous code snippet divides
+`r_f` by `100` before storing the result back in
+`r_f`. It\'s shorthand for `r_f = r_f / 100`. Python
+also has these operators for other arithmetic functions---for example,
+`+=`, `-=`, `*=`, and `%=`.
+
+We also want to add methods
+that will tell us whether the asset is in a **bear
+market** or a **bull market**, meaning that it had a decline or increase
+in stock price of 20% or more
+in the last 2 months, respectively:
+
+```
+    def is_bear_market(self):
+        """
+        Determine if a stock is in a bear market, meaning its
+        return in the last 2 months is a decline of 20% or more
+        """
+        return \
+            self.portfolio_return(self.data.last('2M')) <= -.2
+    def is_bull_market(self):
+        """
+        Determine if a stock is in a bull market, meaning its
+        return in the last 2 months is an increase of >= 20%.
+        """
+        return \
+            self.portfolio_return(self.data.last('2M')) >= .2
+```
+
+
+Lastly, we will add a method for calculating the
+**Sharpe ratio**, which tells us the return we receive in excess of the
+risk-free rate of return for the volatility we take on with the
+investment:
+
+```
+    def sharpe_ratio(self, r_f):
+        """
+        Calculates the asset's Sharpe ratio.
+        Parameters:
+            - r_f: The risk-free rate of return.
+        Returns: 
+            The Sharpe ratio, as a float.
+        """
+        return (
+            self.cumulative_returns().last('1D').iat[0] - r_f
+        ) / self.cumulative_returns().std()
+```
+
+
+Take some time to digest the code in this module
+as we are continuing to build upon what we have
+discussed. We won\'t be using all of these metrics for our technical
+analysis, but I encourage you to try them out in the notebook for this
+lab.
+
+
+
+The AssetGroupAnalyzer class
+----------------------------
+
+All the calculations we will work with in this
+section are defined on the
+`StockAnalyzer` class; however, rather than having to run
+these for each of the assets we want to compare, we will also create the
+`AssetGroupAnalyzer` class (in the same module) that\'s
+capable of providing these metrics for a group of assets.
+
+The `StockAnalyzer` and `AssetGroupAnalyzer` classes
+will share much of their functionality, which makes a strong argument
+for designing them with inheritance; however, sometimes---as in this
+case---composition can make more sense. When objects contain instances
+of other classes, it is referred to as **composition**. This design
+decision leaves us with the following very simple UML diagram for the
+`AssetGroupAnalyzer` class:
+
+
+![](./images/Figure_7.20_B16834.jpg)
+
+
+
+We create an `AssetGroupAnalyzer`
+instance by providing the dataframe for the assets and the name of the
+grouping column (if not `name`). Upon initialization, the
+`_composition_handler()` method is called to create a
+dictionary of `StockAnalyzer` objects (one for each asset):
+
+```
+class AssetGroupAnalyzer:
+    """Analyzes many assets in a dataframe."""
+    @validate_df(columns={'open', 'high', 'low', 'close'})
+    def __init__(self, df, group_by='name'):
+        """
+        Create an `AssetGroupAnalyzer` object with a 
+        dataframe of OHLC data and column to group by.
+        """
+        self.data = df 
+        if group_by not in self.data.columns:
+            raise ValueError(
+                f'`group_by` column "{group_by}" not in df.'
+            ) 
+        self.group_by = group_by
+        self.analyzers = self._composition_handler()
+    def _composition_handler(self):
+        """
+        Create a dictionary mapping each group to its analyzer,
+        taking advantage of composition instead of inheritance.
+        """
+        return {
+            group: StockAnalyzer(data)
+            for group, data in self.data.groupby(self.group_by)
+        }
+```
+
+
+The `AssetGroupAnalyzer` class has only
+one public method, `analyze()`---all the
+actual calculations are delegated to the `StockAnalyzer`
+objects stored in the `analyzers` attribute:
+
+```
+    def analyze(self, func_name, **kwargs):
+        """
+        Run a `StockAnalyzer` method on all assets.
+        Parameters:
+            - func_name: The name of the method to run.
+            - kwargs: Additional arguments to pass down.
+        Returns: 
+            A dictionary mapping each asset to the result 
+            of the calculation of that function.
+        """
+        if not hasattr(StockAnalyzer, func_name):
+            raise ValueError(
+                f'StockAnalyzer has no "{func_name}" method.'
+            )
+        if not kwargs:
+            kwargs = {}
+        return {
+            group: getattr(analyzer, func_name)(**kwargs)
+            for group, analyzer in self.analyzers.items()
+        }
+```
+
+
+With inheritance, in this case, all the methods
+would have to be overridden because they can\'t
+handle the `groupby()` operation. Conversely, with
+composition, all that\'s necessary is to create
+`StockAnalyzer` objects for each asset and use dictionary
+comprehensions for the calculations. Another neat thing is that, by
+using `getattr()`, there is no need to mirror the methods in
+the `AssetGroupAnalyzer` class because `analyze()`
+can grab the method by name using the `StockAnalyzer` objects.
+
+
+
+Comparing assets
+----------------
+
+Let\'s use the `AssetGroupAnalyzer`
+class to compare all the assets we have collected data for. As with
+prior sections, we won\'t use all the methods in the
+`StockAnalyzer` class here, so be sure to try them out on your
+own:
+
+```
+>>> all_assets_analyzer = \
+...     stock_analysis.AssetGroupAnalyzer(all_assets)
+```
+
+
+Remember from *Lab 1* that the **coefficient of variation**
+(**CV**) is the ratio of the standard deviation to
+the mean; this helps us compare the variation of asset closing prices,
+even though their means are of different magnitudes (for instance,
+Amazon and Apple). The CV can also be used to compare the volatility to
+the expected return of an investment and quantify the risk-return
+trade-off. Let\'s use the CV to see which asset\'s closing price is the
+most widely dispersed:
+
+```
+>>> all_assets_analyzer.analyze('cv')
+{'Amazon': 0.2658012522278963,
+ 'Apple': 0.36991905161737615,
+ 'Bitcoin': 0.43597652683008137,
+ 'Facebook': 0.19056336194852783,
+ 'Google': 0.15038618497328074,
+ 'Netflix': 0.20344854330432688,
+ 'S&P 500': 0.09536374658108937}
+```
+
+
+It\'s probably not a surprise that bitcoin has the widest spread. Rather
+than use the closing price, percent change daily can be used to
+calculate the annualized volatility. This involves calculating the
+standard deviations of percent change over the last year and
+multiplying it by the square root of the number of
+trading days in the year (the code assumes 252). By using percent
+change, large changes in price (relative to the asset\'s price) will be
+penalized more severely. Using annualized volatility, Facebook looks
+much more volatile compared to when we used the CV (although still not
+the most volatile):
+
+```
+>>> all_assets_analyzer.analyze('annualized_volatility')
+{'Amazon': 0.3851099077041784,
+ 'Apple': 0.4670809643500882,
+ 'Bitcoin': 0.4635140114227397,
+ 'Facebook': 0.45943066572169544,
+ 'Google': 0.3833720603377728,
+ 'Netflix': 0.4626772090887299,
+ 'S&P 500': 0.34491195196047003}
+```
+
+
+Given that all the assets have gained value toward the end of our
+dataset, let\'s check if any of them have entered a **bull market**,
+meaning that the asset\'s return in the last 2 months is a 20% or
+greater gain:
+
+```
+>>> all_assets_analyzer.analyze('is_bull_market')
+{'Amazon': False,
+ 'Apple': True,
+ 'Bitcoin': True,
+ 'Facebook': False,
+ 'Google': False,
+ 'Netflix': False,
+ 'S&P 500': False}
+```
+
+
+It looks like Apple and bitcoin had quite a November and December in
+2020. The other assets appear to not have fared as well; however, none
+of them are in a bear market (we can confirm this by passing
+`'is_bear_market'` to `analyze()`). Yet another way
+to analyze volatility is to compare the assets to an index by
+calculating **beta**. Positive values greater than
+1 indicate volatility higher than the index, while negative values less
+than -1 indicate inverse relationships to the index:
+
+```
+>>> all_assets_analyzer.analyze('beta', index=sp)
+{'Amazon': 0.7563691182389207,
+ 'Apple': 1.173273501105916,
+ 'Bitcoin': 0.3716024282483362,
+ 'Facebook': 1.024592821854751,
+ 'Google': 0.98620762504024,
+ 'Netflix': 0.7408228073823271,
+ 'S&P 500': 1.0000000000000002}
+```
+
+
+Using the betas from the previous result, we can see that Apple is the
+most volatile compared to the S&P 500, meaning that if this was our
+portfolio (leaving out bitcoin for the moment), adding Apple would have
+increased the portfolio risk. However, we know that bitcoin is not
+correlated to the S&P 500 (see the correlation heatmap in *Figure
+7.17*), so this low beta is misleading.
+
+The last metric we will take a look at is **alpha**, which is used to
+compare the return of an investment to the market. Calculating alpha
+requires that we pass in the risk-free rate of return (`r_f`);
+we typically use the return of a US Treasury bill for this number. Rates
+can be looked up at
+<https://www.treasury.gov/resource-center/data-chart-center/interest-rates/pages/TextView.aspx?data=yield>;
+alternatively, we can use our `StockReader` object
+(`reader`) to collect this for us. Let\'s compare the alphas
+for the assets using the S&P 500 as our index:
+
+```
+>>> r_f = reader.get_risk_free_rate_of_return() # 0.93
+>>> all_assets_analyzer.analyze('alpha', index=sp, r_f=r_f)
+{'Amazon': 0.7383391908270172,
+ 'Apple': 1.7801122522388666,
+ 'Bitcoin': 6.355297988074054,
+ 'Facebook': 0.5048625273190841,
+ 'Google': 0.18537197824248092,
+ 'Netflix': 0.6500392764754642,
+ 'S&P 500': -1.1102230246251565e-16}
+```
+
+
+Everything beat the S&P 500, which essentially being a portfolio of 500
+stocks has lower risk and lower
+ due to
+**diversification**. This brings us to cumulative returns, which shows
+the return for each dollar we invested. To make this plot a little
+easier to interpret in the black and white text, we will create a custom
+`Cycler` object (<https://matplotlib.org/cycler/>) that varies
+the color and line styles:
+
+```
+>>> from cycler import cycler
+>>> bw_viz_cycler = (
+...     cycler(color=[plt.get_cmap('tab10')(x/10)
+...                   for x in range(10)])
+...     + cycler(linestyle=['dashed', 'solid', 'dashdot',
+...                         'dotted', 'solid'] * 2))
+>>> fig, axes = plt.subplots(1, 2, figsize=(15, 5))
+>>> axes[0].set_prop_cycle(bw_viz_cycler)
+>>> cumulative_returns = \
+...     all_assets_analyzer.analyze('cumulative_returns')
+>>> for name, data in cumulative_returns.items():
+...     data.plot(
+...         ax=axes[1] if name == 'Bitcoin' else axes[0], 
+...         label=name, legend=True
 ...     )
-... )
+>>> fig.suptitle('Cumulative Returns')
 ```
 
 
-Having dates in the index makes it easy to select entries by date (or even in a date range):
-
-![](./images/Figure_2.6_B16834.jpg)
-
-
-
-In cases where the data isn\'t a dictionary, but rather a list of
-dictionaries, we can still use `pd.DataFrame()`. Data in this
-format is what we would expect when consuming from an API. Each entry in
-the list will be a dictionary, where the keys of the dictionary are the
-column names and the values of the dictionary are the values for that
-column at that index:
-
-```
->>> pd.DataFrame([
-...     {'mag': 5.2, 'place': 'California'},
-...     {'mag': 1.2, 'place': 'Alaska'},
-...     {'mag': 0.2, 'place': 'California'},
-... ])
-```
+Despite the struggles in early 2020, all of the
+assets gained value. Notice that the bitcoin subplot\'s *y*-axis goes
+from 0 to 7 (right subplot), while the stock market subplot (left)
+covers half of that range:
 
 
-This gives us a dataframe of three rows (one for each entry in the list)
-with two columns (one for each key in the dictionaries):
-
-
-![](./images/Figure_2.7_B16834.jpg)
+![](./images/Figure_7.21_B16834.jpg)
 
 
 
-In fact, `pd.DataFrame()` also works for lists of tuples. Note
-that we can also pass in the column names as a
-list through the `columns` argument:
-
-```
->>> list_of_tuples = [(n, n**2, n**3) for n in range(5)]
->>> list_of_tuples
-[(0, 0, 0), (1, 1, 1), (2, 4, 8), (3, 9, 27), (4, 16, 64)]
->>> pd.DataFrame(
-...     list_of_tuples,
-...     columns=['n', 'n_squared', 'n_cubed']
-... )
-```
+Now that we have a good understanding of how to analyze financial
+instruments, let\'s try our hand at forecasting future performance.
 
 
-Each tuple is treated like a record and becomes a row in the dataframe:
+Modeling performance using historical data
+==========================================
 
 
-![](./images/Figure_2.8_B16834.jpg)
-
-
-
-We also have the option of using `pd.DataFrame()` with NumPy
-arrays:
-
-```
->>> pd.DataFrame(
-...     np.array([
-...         [0, 0, 0],
-...         [1, 1, 1],
-...         [2, 4, 8],
-...         [3, 9, 27],
-...         [4, 16, 64]
-...     ]), columns=['n', 'n_squared', 'n_cubed']
-... )
-```
-
-
-This will have the effect of stacking each entry
-in the array as rows in a dataframe, giving us a result that\'s
-identical to *Figure 2.8*.
-
-
-
-From a file
------------
-
-The data we want to analyze will most often come from outside Python. In
-many cases, we may obtain a **data dump** from a
-database or website and bring it into Python to sift through it. A data
-dump gets its name from containing a large amount of data (possibly at a
-very granular level) and often not discriminating against any of it
-initially; for this reason, they can be unwieldy.
-
-Often, these data dumps will come in the form of a text file
-(`.txt`) or a CSV file (`.csv`). Pandas provides
-many methods for reading in different types of files, so it is simply a
-matter of looking up the one that matches our file format. Our
-earthquake data is a CSV file; therefore, we use the
-`pd.read_csv()` function to read it in. However, we should
-always do an initial inspection of the file before attempting to read it
-in; this will inform us of whether we need to pass additional arguments,
-such as `sep` to specify the delimiter or `names` to
-provide the column names ourselves in the absence of a header row in the
-file.
+The goal of this section is to give us a taste of
+how to build some models; as such, the following examples are not meant
+to be the best possible model, but rather a simple
+and relatively quick implementation for learning purposes. Once again,
+the `stock_analysis` package has a class for this section\'s
+task: `StockModeler`.
 
 **Important note:**
 
-**Windows users**: Depending on your setup, the commands in the next few
-code blocks may not work. The notebook contains alternatives if you
-encounter issues.
+To fully understand the statistical elements of this section and
+modeling in general, we need a solid understanding of statistics;
+however, the purpose of this discussion is to show how modeling
+techniques can be applied to financial data without dwelling on the
+underlying mathematics.
 
-We can perform our due diligence directly in our Jupyter Notebook thanks
-to IPython, provided we prefix our commands with `!` to
-indicate they are to be run as shell commands. First, we should check
-how big the file is, both in terms of lines and in terms of bytes. To
-check the number of lines, we use the `wc` utility (word
-count) with the `–l` flag to count the number of lines. We
-have 9,333 rows in the file:
 
-```
->>> !wc -l data/earthquakes.csv
-9333 data/earthquakes.csv
-```
 
-
-Now, let\'s check the file\'s size. For this task, we will use
-`ls` on the `data` directory. This will show
-us the list of files in that directory. We can add
-the `-lh` flag to get information about the files in a
-human-readable format. Finally, we send this output to the
-`grep` utility, which will help us isolate the files we want.
-This tells us that the `earthquakes.csv` file is 3.4 MB:
-
-```
->>> !ls -lh data | grep earthquakes.csv
--rw-r--r-- 1 stefanie stefanie 3.4M ... earthquakes.csv
-```
-
-
-Note that IPython also lets us capture the result of the command in a
-Python variable, so if we aren\'t comfortable with pipes (`|`)
-or `grep`, we can do the following:
-
-```
->>> files = !ls -lh data
->>> [file for file in files if 'earthquake' in file]
-['-rw-r--r-- 1 stefanie stefanie 3.4M ... earthquakes.csv']
-```
-
-
-Now, let\'s take a look at the top few rows to see if the file comes
-with headers. We will use the `head` utility and specify the
-number of rows with the `-n` flag. This tells us that the
-first row contains the headers for the data and that the data is
-delimited with commas (just because the file has the `.csv`
-extension does not mean it is comma-delimited):
-
-```
->>> !head -n 2 data/earthquakes.csv
-alert,cdi,code,detail,dmin,felt,gap,ids,mag,magType,mmi,net,nst,place,rms,sig,sources,status,time,title,tsunami,type,types,tz,updated,url
-,,37389218,https://earthquake.usgs.gov/[...],0.008693,,85.0,",ci37389218,",1.35,ml,,ci,26.0,"9km NE of Aguanga, CA",0.19,28,",ci,",automatic,1539475168010,"M 1.4 - 9km NE of Aguanga, CA",0,earthquake,",geoserve,nearby-cities,origin,phase-data,",-480.0,1539475395144,https://earthquake.usgs.gov/earthquakes/eventpage/ci37389218
-```
-
-
-Note that we should also check the bottom rows to make sure there is no
-extraneous data that we will need to ignore by using the
-`tail` utility. This file is fine, so the result won\'t be
-reproduced here; however, the notebook contains the result.
-
-Lastly, we may be interested in seeing the column count in our data.
-While we could just count the fields in the first row of the result of
-`head`, we have the option of using the `awk`
-utility (for pattern scanning and processing) to count our columns. The
-`-F` flag allows us to specify the
-delimiter (a comma, in this case). Then, we specify what to do for each
-record in the file. We choose to print `NF`, which is a
-predefined variable whose value is the number of fields in the current
-record. Here, we say `exit` immediately after the print so
-that we print the number of fields in the first row of the file; then,
-we stop. This will look a little complicated, but this is by no means
-something we need to memorize:
-
-```
->>> !awk -F',' '{print NF; exit}' data/earthquakes.csv
-26
-```
-
-
-Since we know that the first line of the file contains headers and that
-the file is comma-separated, we can also count the columns by using
-`head` to get the headers and Python to parse them:
-
-```
->>> headers = !head -n 1 data/earthquakes.csv
->>> len(headers[0].split(','))
-26
-```
-
-
-**Important note:**
-
-The ability to run shell commands directly from our Jupyter Notebook
-dramatically streamlines our workflow. However, if we don\'t have past
-experience with the command line, it may be complicated to learn these
-commands initially. IPython has some helpful information on running
-shell commands in their documentation at
-<https://ipython.readthedocs.io/en/stable/interactive/reference.html#system-shell-access>.
-
-To summarize, we now know that the file is 3.4 MB and is comma-delimited
-with 26 columns and 9,333 rows, with the first one being the header.
-This means that we can use the `pd.read_csv()` function with
-the defaults:
-
-```
->>> df = pd.read_csv('earthquakes.csv')
-```
-
-
-Note that we aren\'t limited to reading in data from files on our local
-machines; file paths can be URLs as well. As an example, let\'s read in
-the same CSV file from GitHub:
-
-```
->>> df = pd.read_csv(
-...     'https://github.com/fenago/'
-...     'machine-learning-essentials-module1'
-...     '/blob/master/lab_07/data/earthquakes.csv?raw=True'
-... )
-```
-
-
-Pandas is usually very good at figuring out which
-options to use based on the input data, so we often won\'t need to add
-arguments to this call; however, there are many options available should
-we need them, some of which include the following:
-
-
-![](./images/Figure_2.9_B16834.jpg)
-
-
-To write our dataframe to a
-CSV file, we call its `to_csv()` method. We have to be careful
-here; if our dataframe\'s index is just row numbers, we probably don\'t
-want to write that to our file (it will have no meaning to the consumers
-of the data), but it is the default. We can write our data without the
-index by passing in `index=False`:
-
-```
->>> df.to_csv('output.csv', index=False)
-```
-
-
-As with reading from files, `Series` and `DataFrame`
-objects have methods to write data to Excel (`to_excel()`) and
-JSON files (`to_json()`). Note that, while we use functions
-from `pandas` to read our data in, we must use methods to
-write our data; the reading functions create the `pandas`
-objects that we want to work with, but the writing methods are actions
-that we take using the `pandas` object.
-
-
-
-
-From a database
----------------
-
-Before we read from a database, let\'s write to one. We simply call
-`to_sql()` on our dataframe, telling it which table to write
-to, which database connection to use, and how to handle if the table
-already exists. There is already a SQLite database in the folder for
-this lab in this course\'s GitHub repository:
-`data/quakes.db`. Note that, to create a new database, we can
-change `'data/quakes.db'` to the path for the new database
-file. Let\'s write the tsunami data from the
-`data/tsunamis.csv` file to a table in the database called
-`tsunamis`, replacing the table if it already exists:
-
-```
->>> import sqlite3
->>> with sqlite3.connect('data/quakes.db') as connection:
-...     pd.read_csv('data/tsunamis.csv').to_sql(
-...         'tsunamis', connection, index=False,
-...         if_exists='replace'
-...     )
-```
-
-
-Let\'s query our database for the full `tsunamis` table. When
-we write a SQL query, we first state the columns that we want to select,
-which in our case is all of them, so we write `"SELECT *"`.
-Next, we state the table to select the data from, which for us is
-`tsunamis`, so we add `"FROM tsunamis"`. This is our
-full query now (of course, it can get much more complicated than this).
-To actually query the database, we use `pd.read_sql()`,
-passing in our query and the database connection:
-
-```
->>> import sqlite3
->>> with sqlite3.connect('data/quakes.db') as connection:
-...     tsunamis = \
-...         pd.read_sql('SELECT * FROM tsunamis', connection)
->>> tsunamis.head()
-```
-
-
-We now have the tsunamis data in a dataframe:
-
-
-![](./images/Figure_2.10_B16834.jpg)
-
-
-From an API
------------
-
-For this section, we will be working in the
-`3-making_dataframes_from_api_requests.ipynb` notebook, so we
-have to import the packages we need once again. As with the previous
-notebook, we need `pandas` and `datetime`, but we
-also need the `requests` package to make API requests:
-
-```
->>> import datetime as dt
->>> import pandas as pd
->>> import requests
-```
-
-
-Next, we will make a `GET` request to the USGS API for a JSON
-payload (a dictionary-like response containing the data that\'s sent
-with a request or response) by specifying the format of
-`geojson`. We will ask for earthquake data for the last 30
-days (we can use `dt.timedelta` to perform arithmetic on
-`datetime` objects). Note that we are using
-`yesterday` as the end of our date
-range, since the API won\'t have complete information for today yet:
-
-```
->>> yesterday = dt.date.today() - dt.timedelta(days=1)
->>> api = 'https://earthquake.usgs.gov/fdsnws/event/1/query'
->>> payload = {
-...     'format': 'geojson',
-...     'starttime': yesterday - dt.timedelta(days=30),
-...     'endtime': yesterday
-... }
->>> response = requests.get(api, params=payload)
-```
-
-
-Before we try to create a dataframe out of this, we should make sure
-that our request was successful. We can do this by checking the
-`status_code` attribute of the `response` object. A
-listing of status codes and their meanings can be found at
-<https://en.wikipedia.org/wiki/List_of_HTTP_status_codes>. A
-`200` response will indicate that everything is OK:
-
-```
->>> response.status_code
-200
-```
-
-
-Our request was successful, so let\'s see what the data we got looks
-like. We asked the API for a JSON payload, which is essentially a
-dictionary, so we can use dictionary methods on it to get more
-information about its structure. This is going to be a lot of data;
-hence, we don\'t want to print it to the screen just to inspect it. We
-need to isolate the JSON payload from the HTTP response (stored in the
-`response` variable), and then look at the keys to view the
-main sections of the resulting data:
-
-```
->>> earthquake_json = response.json()
->>> earthquake_json.keys()
-dict_keys(['type', 'metadata', 'features', 'bbox'])
-```
-
-
-We can inspect what kind of data we have as values
-for each of these keys; one of them will be the data we are after. The
-`metadata` portion tells us some information about our
-request. While this can certainly be useful, it isn\'t what we are after
-right now:
-
-```
->>> earthquake_json['metadata']
-{'generated': 1604267813000,
- 'url': 'https://earthquake.usgs.gov/fdsnws/event/1/query?
-format=geojson&starttime=2020-10-01&endtime=2020-10-31',
- 'title': 'USGS Earthquakes',
- 'status': 200,
- 'api': '1.10.3',
- 'count': 13706}
-```
-
-
-The `features` key looks promising; if this does indeed
-contain all our data, we should check what type it is so that we don\'t
-end up trying to print everything to the screen:
-
-```
->>> type(earthquake_json['features'])
-list
-```
-
-
-This key contains a list, so let\'s take a look at the first entry to
-see if this is the data we want. Note that the USGS data may be altered
-or added to for dates in the past as more information on the earthquakes
-comes to light, meaning that querying for the same date range may yield
-a different number of results later on. For this reason, the following
-is an example of what an entry looks like:
-
-```
->>> earthquake_json['features'][0]
-{'type': 'Feature',
- 'properties': {'mag': 1,
-  'place': '50 km ENE of Susitna North, Alaska',
-  'time': 1604102395919, 'updated': 1604103325550, 'tz': None,
-  'url': 'https://earthquake.usgs.gov/earthquakes/eventpage/ak020dz5f85a',
-  'detail': 'https://earthquake.usgs.gov/fdsnws/event/1/query?eventid=ak020dz5f85a&format=geojson',
-  'felt': None, 'cdi': None, 'mmi': None, 'alert': None,
-  'status': 'reviewed', 'tsunami': 0, 'sig': 15, 'net': 'ak',
-  'code': '020dz5f85a', 'ids': ',ak020dz5f85a,',
-  'sources': ',ak,', 'types': ',origin,phase-data,',
-  'nst': None, 'dmin': None, 'rms': 1.36, 'gap': None,
-  'magType': 'ml', 'type': 'earthquake',
-  'title': 'M 1.0 - 50 km ENE of Susitna North, Alaska'},
- 'geometry': {'type': 'Point', 'coordinates': [-148.9807, 62.3533, 5]},
- 'id': 'ak020dz5f85a'} 
-```
-
-
-This is definitely the data we are after, but do we need all of it? Upon
-closer inspection, we only really care about what is inside the
-`properties` dictionary. Now, we have a problem
-because we have a list of dictionaries where we
-only want a specific key from inside them. How can we pull this
-information out so that we can make our dataframe? We can use a list
-comprehension to isolate the `properties` section from each of
-the dictionaries in the `features` list:
-
-```
->>> earthquake_properties_data = [
-...     quake['properties'] 
-...     for quake in earthquake_json['features']
-... ]
-```
-
-
-Finally, we are ready to create our dataframe. Pandas knows how to
-handle data in this format already (a list of dictionaries), so all we
-have to do is pass in the data when we call `pd.DataFrame()`:
-
-```
->>> df = pd.DataFrame(earthquake_properties_data)
-```
-
-
-Now that we know how to create dataframes from a variety of sources, we
-can start learning how to work with them.
-
-
-Inspecting a DataFrame object
-=============================
-
-
-The first thing we should do when we read in our data is inspect it; we
-want to make sure that our dataframe isn\'t empty
-and that the rows look as we would expect. Our main goal is to verify
-that it was read in properly and that all the data is there; however,
-this initial inspection will also give us ideas with regard to where we
-should direct our data wrangling efforts. In this section, we will
-explore ways in which we can inspect our dataframes in the
-`4-inspecting_dataframes.ipynb` notebook.
-
-Since this is a new notebook, we must once again handle our setup. This
-time, we need to import `pandas` and `numpy`, as
-well as read in the CSV file with the earthquake data:
-
-```
->>> import numpy as np
->>> import pandas as pd
->>> df = pd.read_csv('data/earthquakes.csv')
-```
-
-
-
-
-Examining the data
-------------------
-
-First, we want to make sure that we actually have
-data in our dataframe. We can check the `empty` attribute to
-find out:
-
-```
->>> df.empty
-False
-```
-
-
-So far, so good; we have data. Next, we should check how much data we
-read in; we want to know the number of observations (rows) and the
-number of variables (columns) we have. For this task, we use the
-`shape` attribute. Our data contains 9,332 observations of 26
-variables, which matches our initial inspection of the file:
-
-```
->>> df.shape
-(9332, 26)
-```
-
-
-Now, let\'s use the `columns` attribute to see the names of
-the columns in our dataset:
-
-```
->>> df.columns
-Index(['alert', 'cdi', 'code', 'detail', 'dmin', 'felt', 'gap', 
-       'ids', 'mag', 'magType', 'mmi', 'net', 'nst', 'place', 
-       'rms', 'sig', 'sources', 'status', 'time', 'title', 
-       'tsunami', 'type', 'types', 'tz', 'updated', 'url'],
-      dtype='object')
-```
-
-
-We know the dimensions of our data, but what does
-it actually look like? For this task, we can use the `head()`
-and `tail()` methods to look at the top and bottom rows,
-respectively. This will default to five rows, but we can change this by
-passing a different number to the method. Let\'s take a look at the
-first few rows:
-
-```
->>> df.head()
-```
-
-
-The following are the first five rows we get using `head()`:
-
-
-![](./images/Figure_2.11_B16834.jpg)
-
-
-
-To get the last two rows, we use the `tail()` method and pass
-`2` as the number of rows:
-
-```
->>> df.tail(2)
-```
-
-
-The following is the result:
-
-
-![](./images/Figure_2.12_B16834.jpg)
-
-
-
-We can use the `dtypes` attribute to see
-the data types of the columns, which makes it easy to see when columns
-are being stored as the wrong type. (Remember that strings will be
-stored as `object`.) Here, the `time` column is
-stored as an integer, which is something we will learn how to fix in
-upcoming lab:
-
-```
->>> df.dtypes
-alert       object
-...
-mag        float64
-magType     object
-...
-time         int64
-title       object
-tsunami      int64
-...
-tz         float64
-updated      int64
-url         object
-dtype: object
-```
-
-
-Lastly, we can use the `info()` method to see how many
-non-null entries of each column we have and get
-information on our index. **Null** values are missing values, which, in
-`pandas`, will typically be represented as `None`
-for objects and `NaN` (**Not a Number**) for
-non-numeric values in a `float` or
-`integer` column:
-
-```
->>> df.info()
-<class 'pandas.core.frame.DataFrame'>
-RangeIndex: 9332 entries, 0 to 9331
-Data columns (total 26 columns):
- #   Column   Non-Null Count  Dtype  
----  ------   --------------  -----  
- 0   alert    59 non-null     object 
- ... 
- 8   mag      9331 non-null   float64
- 9   magType  9331 non-null   object 
- ... 
- 18  time     9332 non-null   int64  
- 19  title    9332 non-null   object 
- 20  tsunami  9332 non-null   int64  
- ... 
- 23  tz       9331 non-null   float64
- 24  updated  9332 non-null   int64  
- 25  url      9332 non-null   object 
-dtypes: float64(9), int64(4), object(13)
-memory usage: 1.9+ MB
-```
-
-
-After this initial inspection, we know a lot about
-the structure of our data and can now begin to try and make sense of it.
-
-
-
-Describing and summarizing the data
------------------------------------
-
-So far, we\'ve examined the structure of the `DataFrame`
-object we created from the earthquake data, but we
-don\'t know anything about the data other than
-what a couple of rows look like. The next step is to calculate summary
-statistics, which will help us get to know our data better. Pandas
-provides several methods for easily doing so; one such method is
-`describe()`, which also works on `Series` objects
-if we are only interested in a particular column. Let\'s get a summary
-of the numeric columns in our data:
-
-```
->>> df.describe()
-```
-
-
-This gives us the 5-number summary, along with the count, mean, and
-standard deviation of the numeric columns:
-
-
-![](./images/Figure_2.13_B16834.jpg)
-
-
-
-**Tip:** 
-
-If we want different percentiles, we can pass them in with the
-`percentiles` argument. For example, if we wanted only the
-5[th]{.superscript} and 95[th]{.superscript} percentiles, we would run
-`df.describe(percentiles=[0.05, 0.95])`. Note we will still
-get the 50[th]{.superscript} percentile back because that is the median.
-
-By default, `describe()` won\'t give us any information about
-the columns of type `object`, but we can either provide
-`include='all'` as an argument or run it separately for the
-data of type `np.object`:
-
-```
->>> df.describe(include=np.object)
-```
-
-
-When describing non-numeric data, we still get the
-count of non-null occurrences (**count**);
-however, instead of the other summary statistics, we get the number of
-unique values (**unique**), the mode (**top**), and the number of times
-the mode was observed (**freq**):
-
-
-![](./images/Figure_2.14_B16834.jpg)
-
-
-
-**Important note:**
-
-The `describe()` method only gives us summary statistics for
-non-null values. This means that, if we had 100 rows and half of our
-data was null, then the average would be calculated as the sum of the 50
-non-null rows divided by 50.
-
-It is easy to get a snapshot of our data using the
-`describe()` method, but sometimes, we just want a particular
-statistic, either for a specific column or for all the columns. Pandas
-makes this a cinch as well. The following table includes methods that
-will work for both `Series` and `DataFrame` objects:
-
-
-![](./images/Figure_2.15_B16834.jpg)
-
-
-
-**Tip:** 
-
-Python makes it easy to count how many times
-something is `True`. Under the hood,
-`True` evaluates to `1` and `False`
-evaluates to `0`. Therefore, we can run the `sum()`
-method on a series of Booleans and get the count of `True`
-outputs.
-
-With `Series` objects, we have some additional methods for
-describing our data:
-
--   `unique()`: Returns the distinct values of the column.
--   `value_counts()`: Returns a frequency table of the number
-    of times each unique value in a given column appears, or,
-    alternatively, the percentage of times each unique value appears
-    when passed `normalize=True`.
--   `mode()`: Returns the most common value of the column.
-
-Consulting the USGS API documentation for the
-`alert` field (which can be found at
-<https://earthquake.usgs.gov/data/comcat/data-eventterms.php#alert>)
-tells us that it can be `'green'`, `'yellow'`,
-`'orange'`, or `'red'` (when populated), and
-that it is the alert level from the **Prompt
-Assessment of Global Earthquakes for Response** (**PAGER**) earthquake
-impact scale. According to the USGS
-(<https://earthquake.usgs.gov/data/pager/>), \"*the PAGER system
-provides fatality and economic loss impact estimates following
-significant earthquakes worldwide*.\" From our initial inspection of the
-data, we know that the `alert` column is a string of two
-unique values and that the most common value is `'green'`,
-with many null values. What is the other unique value, though?
-
-```
->>> df.alert.unique()
-array([nan, 'green', 'red'], dtype=object)
-```
-
-
-Now that we understand what this field means and the values we have in
-our data, we expect there to be far more `'green'` than
-`'red'`; we can check our intuition with a frequency table by
-using `value_counts()`. Notice that we only get counts for the
-non-null entries:
-
-```
->>> df.alert.value_counts()
-green    58
-red       1
-Name: alert, dtype: int64
-```
-
-
-Note that `Index` objects also have several methods that can
-help us describe and summarize our data:
-
-
-![](./images/Figure_2.16_B16834.jpg)
-
-
-
-When we used `unique()` and
-`value_counts()`, we got a preview of
-how to select subsets of our data. Now, let\'s go into more detail and
-cover selection, slicing, indexing, and filtering.
-
-Grabbing subsets of the data
-============================
-
-
-So far, we have learned how to work with and summarize the data as a
-whole; however, we will often be interested in
-performing operations and/or analyses on subsets of our data. There are
-many types of subsets we may look to isolate from our data, such as
-selecting only specific columns or rows as a whole or when a specific
-criterion is met. In order to obtain subsets of the data, we need to be
-familiar with selection, slicing, indexing, and filtering.
-
-For this section, we will work in the
-`5-subsetting_data.ipynb` notebook. Our setup is as follows:
-
-```
->>> import pandas as pd
->>> df = pd.read_csv('data/earthquakes.csv')
-```
-
-
-
-
-Selecting columns
------------------
-
-In the previous section, we saw an example of column selection when we
-looked at the unique values in the
-`alert` column; we accessed the column as an attribute of the
-dataframe. Remember that a column is a `Series` object, so,
-for example, selecting the `mag` column in the earthquake data
-gives us the magnitudes of the earthquakes as a `Series`
-object:
-
-```
->>> df.mag
-0       1.35
-1       1.29
-2       3.42
-3       0.44
-4       2.16
-        ... 
-9327    0.62
-9328    1.00
-9329    2.40
-9330    1.10
-9331    0.66
-Name: mag, Length: 9332, dtype: float64
-```
-
-
-Pandas provides us with a few ways to select columns. An alternative to
-using attribute notation to select a column is to access it with a
-dictionary-like notation:
-
-```
->>> df['mag']
-0       1.35
-1       1.29
-2       3.42
-3       0.44
-4       2.16
-        ... 
-9327    0.62
-9328    1.00
-9329    2.40
-9330    1.10
-9331    0.66
-Name: mag, Length: 9332, dtype: float64
-```
-
-
-**Tip:** 
-
-We can also select columns using the `get()` method. This has
-the benefits of not raising an error if the column doesn\'t exist and
-allowing us to provide a backup value---the default is `None`.
-For example, if we call `df.get('event', False)`, it will
-return `False` since we don\'t have an `event`
-column.
-
-Note that we aren\'t limited to selecting one
-column at a time. By passing a list to the dictionary lookup, we can
-select many columns, giving us a `DataFrame` object that is a
-subset of our original dataframe:
-
-```
->>> df[['mag', 'title']]
-```
-
-
-This gives us the full `mag` and `title` columns
-from the original dataframe:
-
-
-![](./images/Figure_2.17_B16834.jpg)
-
-
-
-String methods are a very powerful way to select
-columns. For example, if we wanted to select all the columns that start
-with `mag`, along with the `title` and
-`time` columns, we would do the following:
-
-```
->>> df[
-...     ['title', 'time'] 
-...     + [col for col in df.columns if col.startswith('mag')]
-... ]
-```
-
-
-We get back a dataframe composed of the four columns that matched our
-criteria. Notice how the columns were returned in the order we
-requested, which is not the order they originally appeared in. This
-means that if we want to reorder our columns, all we have to do is
-select them in the order we want them to appear:
-
-
-![](./images/Figure_2.18_B16834.jpg)
-
-
-
-Let\'s break this example down. We used a list
-comprehension to go through each of the columns in the dataframe and
-only keep the ones whose names started with `mag`:
-
-```
->>> [col for col in df.columns if col.startswith('mag')]
-['mag', 'magType']
-```
-
-
-Then, we added this result to the other two columns we wanted to keep
-(`title` and `time`):
-
-```
->>> ['title', 'time'] \
-... + [col for col in df.columns if col.startswith('mag')]
-['title', 'time', 'mag', 'magType']
-```
-
-
-Finally, we were able to use this list to run the actual column
-selection on the dataframe, resulting in the dataframe in *Figure 2.18*:
-
-```
->>> df[
-...     ['title', 'time'] 
-...     + [col for col in df.columns if col.startswith('mag')]
-... ]
-```
-
-
-**Tip:** 
-
-A complete list of string methods can be found in
-the Python 3 documentation at
-<https://docs.python.org/3/library/stdtypes.html#string-methods>.
-
-
-
-Slicing
--------
-
-When we want to extract certain rows (slices) from
-our dataframe, we use **slicing**. `DataFrame` slicing works
-similarly to slicing with other Python objects, such
-as lists and tuples, with the first index being
-inclusive and the last index being exclusive:
-
-```
->>> df[100:103]
-```
-
-
-When specifying a slice of `100:103`, we get back rows
-`100`, `101`, and `102`:
-
-
-![](./images/Figure_2.19_B16834.jpg)
-
-
-
-We can combine our row and column selections by
-using what is known as **chaining**:
-
-```
->>> df[['title', 'time']][100:103]
-```
-
-
-First, we selected the `title` and `time` columns
-for all the rows, and then we pulled out rows with indices
-`100`, `101`, and `102`:
-
-
-![](./images/Figure_2.20_B16834.jpg)
-
-
-
-In the preceding example, we selected the columns and then sliced the
-rows, but the order doesn\'t matter:
-
-```
->>> df[100:103][['title', 'time']].equals(
-...     df[['title', 'time']][100:103]
-... )
-True
-```
-
-If we decide to use chaining to update the values
-in our data, we will find `pandas` complaining that we aren\'t
-doing so correctly (even if it works). This is to warn us that setting
-data with a sequential selection may not give us the result we
-anticipate.
-
-Let\'s trigger this warning to understand it better. We will try to
-update the entries in the `title` column for a few earthquakes
-so that they\'re in lowercase:
-
-```
->>> df[110:113]['title'] = df[110:113]['title'].str.lower()
-/.../book_env/lib/python3.7/[...]:1: SettingWithCopyWarning:  
-A value is trying to be set on a copy of a slice from a DataFrame.
-Try using .loc[row_indexer,col_indexer] = value instead
-See the caveats in the documentation: https://pandas.pydata.org/pandas-docs/stable/user_guide/indexing.html#returning-a-view-versus-a-copy
-  """Entry point for launching an IPython kernel.
-```
-
-
-As indicated by the warning, to be an effective
-`pandas` user, it\'s not enough to know selection and
-slicing---we must also master **indexing**. Since this is just a
-warning, our values have been updated, but this may not always be the
-case:
-
-```
->>> df[110:113]['title']
-110               m 1.1 - 35km s of ester, alaska
-111    m 1.9 - 93km wnw of arctic village, alaska
-112      m 0.9 - 20km wsw of smith valley, nevada
-Name: title, dtype: object
-```
-
-
-Now, let\'s discuss how to use indexing to set values properly.
-
-
-
-Indexing
---------
-
-Pandas indexing operations provide us with a one-method way to select
-both the rows and the columns we want. We can use
-`loc[]` and `iloc[]` to subset our dataframe using
-label-based or integer-based lookups, respectively. A good way to
-remember the difference is to think of them as **loc**ation versus
-**i**nteger **loc**ation. For all indexing methods, we provide the row
-indexer first and then the column indexer, with a comma separating them:
-
-```
-df.loc[row_indexer, column_indexer]
-```
-
-
-Note that by using `loc[]`, as indicated in the warning
-message, we no longer trigger any warnings from `pandas` for
-this operation. We also changed the end index from `113` to
-`112` because `loc[]` is inclusive of endpoints:
-
-```
->>> df.loc[110:112, 'title'] = \
-...     df.loc[110:112, 'title'].str.lower()
->>> df.loc[110:112, 'title']
-110               m 1.1 - 35km s of ester, alaska
-111    m 1.9 - 93km wnw of arctic village, alaska
-112      m 0.9 - 20km wsw of smith valley, nevada
-Name: title, dtype: object
-```
-
-
-We can select all the rows (columns) if we use
-`:` as the row (column) indexer, just like with regular Python
-slicing. Let\'s grab all the rows of the `title` column with
-`loc[]`:
-
-```
->>> df.loc[:,'title']
-0                  M 1.4 - 9km NE of Aguanga, CA
-1                  M 1.3 - 9km NE of Aguanga, CA
-2                  M 3.4 - 8km NE of Aguanga, CA
-3                  M 0.4 - 9km NE of Aguanga, CA
-4                  M 2.2 - 10km NW of Avenal, CA
-                          ...                   
-9327        M 0.6 - 9km ENE of Mammoth Lakes, CA
-9328                 M 1.0 - 3km W of Julian, CA
-9329    M 2.4 - 35km NNE of Hatillo, Puerto Rico
-9330               M 1.1 - 9km NE of Aguanga, CA
-9331               M 0.7 - 9km NE of Aguanga, CA
-Name: title, Length: 9332, dtype: object
-```
-
-
-We can select multiple rows and columns at the same time with
-`loc[]`:
-
-```
->>> df.loc[10:15, ['title', 'mag']]
-```
-
-
-This leaves us with rows `10` through `15` for the
-`title` and `mag` columns only:
-
-
-![](./images/Figure_2.21_B16834.jpg)
-
-
-
-As we have seen, when using `loc[]`, our
-end index is inclusive. This isn\'t the case with `iloc[]`:
-
-```
->>> df.iloc[10:15, [19, 8]]
-```
-
-
-Observe how we had to provide a list of integers to select the same
-columns; these are the column numbers (starting from `0`).
-Using `iloc[]`, we lost the row at index `15`; this
-is because the integer slicing that `iloc[]` employs is
-exclusive of the end index, as with Python slicing syntax:
-
-
-![](./images/Figure_2.22_B16834.jpg)
-
-
-
-We aren\'t limited to using the slicing syntax for the rows, though;
-columns work as well:
-
-```
->>> df.iloc[10:15, 6:10]
-```
-
-
-By using slicing, we can easily grab adjacent rows and columns:
-
-
-![](./images/Figure_2.23_B16834.jpg)
-
-
-
-When using `loc[]`, this slicing can be done on the column
-names as well. This gives us many ways to achieve the same result:
-
-```
->>> df.iloc[10:15, 6:10].equals(df.loc[10:14, 'gap':'magType'])
-True
-```
-
-
-To look up scalar values, we use `at[]`
-and `iat[]`, which are faster. Let\'s select the magnitude
-(the `mag` column) of the earthquake that was recorded in the
-row at index `10`:
-
-```
->>> df.at[10, 'mag']
-0.5
-```
-
-
-The magnitude column has a column index of `8`; therefore, we
-can also look up the magnitude with `iat[]`:
-
-```
->>> df.iat[10, 8]
-0.5
-```
-
-
-So far, we have seen how to get subsets of our data using row/column
-names and ranges, but how do we only take the data that meets some
-criteria? For this, we need to learn how to filter our data.
-
-
-
-Filtering
----------
-
-Pandas gives us a few options for filtering our
-data, including **Boolean masks** and some special
-methods. With Boolean masks, we test our data against some value and get
-a structure of the same shape back, except it is filled with
-`True`/`False` values; `pandas` can use
-this to select the appropriate rows/columns for us. There are endless
-possibilities for creating Boolean masks---all we need is some code that
-returns one Boolean value for each row. For example, we can see which
-entries in the `mag` column had a magnitude greater than two:
-
-```
->>> df.mag > 2
-0       False
-1       False
-2        True
-3       False
-        ...  
-9328    False
-9329     True
-9330    False
-9331    False
-Name: mag, Length: 9332, dtype: bool
-```
-
-
-While we can run this on the entire dataframe, it
-wouldn\'t be too useful with our earthquake data since we have columns
-of various data types. However, we can use this strategy to get the
-subset of the data where the magnitude of the earthquake was greater
-than or equal to 7.0:
-
-```
->>> df[df.mag >= 7.0]
-```
-
-
-Our resulting dataframe has just two rows:
-
-
-![](./images/Figure_2.24_B16834.jpg)
-
-
-
-We got back a lot of columns we didn\'t need, though. We could have
-chained a column selection to the end of the last
-code snippet; however, `loc[]` can handle Boolean masks as
-well:
-
-```
->>> df.loc[
-...     df.mag >= 7.0, 
-...     ['alert', 'mag', 'magType', 'title', 'tsunami', 'type']
-... ]
-```
-
-
-The following dataframe has been filtered so that it only contains
-relevant columns:
-
-
-![](./images/Figure_2.25_B16834.jpg)
-
-
-
-We aren\'t limited to just one criterion, either. Let\'s grab the
-earthquakes with a red alert and a tsunami. To combine masks, we need to
-surround each of our conditions with parentheses and
-use the **bitwise AND operator** (`&`)
-to require *both* to be true:
-
-```
->>> df.loc[
-...     (df.tsunami == 1) & (df.alert == 'red'), 
-...     ['alert', 'mag', 'magType', 'title', 'tsunami', 'type']
-... ]
-```
-
-
-There was only a single earthquake in the data that met our criteria:
-
-
-![](./images/Figure_2.26_B16834.jpg)
-
-
-
-If, instead, we want *at least one* of our conditions
-to be true, we can use the **bitwise OR operator**
-(`|`):
-
-```
->>> df.loc[
-...     (df.tsunami == 1) | (df.alert == 'red'), 
-...     ['alert', 'mag', 'magType', 'title', 'tsunami', 'type']
-... ]
-```
-
-
-Notice that this filter is much less restrictive
-since, while both conditions can be true, we only require that one of
-them is:
-
-
-![](./images/Figure_2.27_B16834.jpg)
-
-
-
-**Important note:**
-
-When creating Boolean masks, we must use bitwise operators
-(`&`, `|`, `~`) instead of logical
-operators (`and`, `or`, `not`). A good way
-to remember this is that we want a Boolean for each item in the series
-we are testing rather than a single Boolean. For example, with the
-earthquake data, if we want to select the rows where the magnitude is
-greater than 1.5, then we want one Boolean value for each row,
-indicating whether the row should be selected. In cases where we want a
-single value for the data, perhaps to summarize it, we can use
-`any()`/`all()` to condense a Boolean series into a
-single Boolean value that can be used with logical operators.
-
-In the previous two examples, our conditions
-involved equality; however, we are by no means limited to this. Let\'s
-select all the earthquakes in Alaska where we have a non-null value for
-the `alert` column:
-
-```
->>> df.loc[
-...     (df.place.str.contains('Alaska')) 
-...     & (df.alert.notnull()), 
-...     ['alert', 'mag', 'magType', 'title', 'tsunami', 'type']
-... ]
-```
-
-
-All the earthquakes in Alaska that have a value for `alert`
-are `green`, and some were accompanied by tsunamis, with the
-highest magnitude being 5.1:
-
-
-![](./images/Figure_2.28_B16834.jpg)
-
-
-
-Let\'s break down how we got this. `Series` objects have some
-string methods that can be accessed via the `str` attribute.
-Using this, we can create a Boolean mask of all the rows where the
-`place` column contained the word `Alaska`:
-
-```
-df.place.str.contains('Alaska')
-```
-
-
-To get all the rows where the `alert`
-column was not null, we used the `Series` object\'s
-`notnull()` method (this works for `DataFrame`
-objects as well) to create a Boolean mask of all the rows where the
-`alert` column was not null:
-
-```
-df.alert.notnull()
-```
-
-
-**Tip:** 
-
-We can use the **bitwise negation operator**
-(`~`), also called **NOT**, to negate
-all the Boolean values, which makes all
-`True` values `False` and vice versa. So,
-`df.alert.notnull()` and `~df.alert.isnull()`are
-equivalent.
-
-Then, like we did previously, we combine the two conditions with the
-`&` operator to complete our mask:
-
-```
-(df.place.str.contains('Alaska')) & (df.alert.notnull())
-```
-
-
-Note that we aren\'t limited to checking if each row contains text; we
-can use regular expressions as well. **Regular expressions** (often
-called *regex*, for short) are very powerful
-because they allow us to define a search pattern
-rather than the exact content we want to find. This means that we can do
-things such as find all the words or digits in a string without having
-to know what all the words or digits are beforehand (or go through one
-character at a time). To do so, we simply pass in a string preceded by
-an `r` character outside the quotes; this lets Python know it
-is a **raw string**, which means that we can
-include backslash (`\`) characters in the string without
-Python thinking we are trying to escape the character immediately
-following it (such as when we use `\n` to mean a new line
-character instead of the letter `n`). This makes it perfect
-for use with regular expressions. The `re` module in the
-Python standard library (<https://docs.python.org/3/library/re.html>)
-handles regular expression operations; however, `pandas` lets
-us use regular expressions directly.
-
-Using a regular expression, let\'s select all the earthquakes in
-California that have magnitudes of at least 3.8. We need to select
-entries in the `place` column that end in `CA` or
-`California` because the data isn\'t consistent (we will look
-at how to fix this in the next section). The `$` character
-means *end* and `'CA$'` gives us entries that end in
-`CA`, so we can use `'CA|California$'` to get
-entries that end in either:
-
-```
->>> df.loc[
-...     (df.place.str.contains(r'CA|California$'))
-...     & (df.mag > 3.8),         
-...     ['alert', 'mag', 'magType', 'title', 'tsunami', 'type']
-... ]
-```
-
-
-There were only two earthquakes in California with
-magnitudes greater than 3.8 during the time period we are studying:
-
-
-![](./images/Figure_2.29_B16834.jpg)
-
-
-
-**Tip:** 
-
-Regular expressions are extremely powerful, but unfortunately, also
-difficult to get right. It is often helpful to grab some sample lines
-for parsing and use a website to test them. Note that regular
-expressions come in many flavors, so be sure to select Python. This
-website supports Python flavor regular expressions, and also provides a
-nice cheat sheet on the side: https://regex101.com/.
-
-What if we want to get all earthquakes with magnitudes between 6.5 and
-7.5? We could use two Boolean masks---one to check for magnitudes
-greater than or equal to 6.5, and another to check for magnitudes less
-than or equal to 7.5---and then combine them with the `&`
-operator. Thankfully, `pandas` makes this type of mask much
-easier to create by providing us with the `between()` method:
-
-```
->>> df.loc[
-...     df.mag.between(6.5, 7.5), 
-...     ['alert', 'mag', 'magType', 'title', 'tsunami', 'type']
-... ]
-```
-
-
-The result contains all the earthquakes with magnitudes in the range
-\[6.5, 7.5\]---it\'s inclusive of both ends by default, but we can pass
-in `inclusive=False` to change this:
-
-
-![](./images/Figure_2.30_B16834.jpg)
-
-
-
-We can use the `isin()` method to create a Boolean mask for
-values that match one of a list of values. This means that we don\'t
-have to write one mask for each of the values that we could
-match and then use `|` to join them.
-Let\'s utilize this to filter on the `magType` column, which
-indicates the measurement technique that was used to quantify the
-earthquake\'s magnitude. We will take a look at earthquakes measured
-with either the `mw` or `mwb` magnitude type:
-
-```
->>> df.loc[
-...     df.magType.isin(['mw', 'mwb']), 
-...     ['alert', 'mag', 'magType', 'title', 'tsunami', 'type']
-... ]
-```
-
-
-We have two earthquakes that were measured with the `mwb`
-magnitude type and four that were measured with the `mw`
-magnitude type:
-
-
-![](./images/Figure_2.31_B16834.jpg)
-
-
-
-So far, we have been filtering on specific values, but suppose we wanted
-to see all the data for the lowest-magnitude and highest-magnitude
-earthquakes. Rather than finding the minimum and
-maximum of the `mag` column first and then creating a Boolean
-mask, we can ask `pandas` to give us the index where these
-values occur, and easily filter to grab the full rows. We can use
-`idxmin()` and `idxmax()` for the indices of the
-minimum and maximum, respectively. Let\'s grab the row numbers for the
-lowest-magnitude and highest-magnitude earthquakes:
-
-```
->>> [df.mag.idxmin(), df.mag.idxmax()]
-[2409, 5263]
-```
-
-
-We can use these indices to grab the rows themselves:
-
-```
->>> df.loc[
-...     [df.mag.idxmin(), df.mag.idxmax()], 
-...     ['alert', 'mag', 'magType', 'title', 'tsunami', 'type']
-... ]
-```
-
-
-The minimum magnitude earthquake occurred in Alaska and the highest
-magnitude earthquake occurred in Indonesia, accompanied by a tsunami:
-
-![](./images/Figure_2.32_B16834.jpg)
-
-
-
-
-Adding and removing data
-========================
-
-Before we begin adding and removing data, it\'s important to understand
-that while most methods will return a new `DataFrame` object,
-some will be in-place and change our data. If we write a function where
-we pass in a dataframe and change it, it will change our original
-dataframe as well. Should we find ourselves in a situation where we
-don\'t want to change the original data, but rather want to return a new
-copy of the data that has been modified, we must be sure to copy our
-dataframe before making any changes:
-
-```
-df_to_modify = df.copy()
-```
-
-
-**Important note:**
-
-By default, `df.copy()` makes a **deep copy** of the
-dataframe, which allows us to make changes to
-either the copy or the original without
-repercussions. If we pass in `deep=False`, we can obtain a
-**shallow copy**---changes to the shallow copy affect the original and
-vice versa. We will almost always want the deep copy, since we can
-change it without affecting the original.
-
-
-Now, let\'s turn to the final notebook,
-`6-adding_and_removing_data.ipynb`, and get set up for the
-remainder of this lab. We will once again be
-working with the earthquake data, but this time, we will only read in a
-subset of the columns:
-
-```
->>> import pandas as pd
->>> df = pd.read_csv(
-...     'data/earthquakes.csv', 
-...     usecols=[
-...         'time', 'title', 'place', 'magType', 
-...         'mag', 'alert', 'tsunami'
-...     ]
-... )
-```
-
-
-
-
-Creating new data
------------------
-
-Creating new columns can be achieved in the same fashion as variable
-assignment. For example, we can create a column to
-indicate the source of our data; since all our data came from the same
-source, we can take advantage of **broadcasting** to set every row of
-this column to the same value:
-
-```
->>> df['source'] = 'USGS API'
->>> df.head()
-```
-
-
-The new column is created to the right of the original columns, with a
-value of `USGS API` for every row:
-
-
-![](./images/Figure_2.33_B16834.jpg)
-
-
-
-**Important note:**
-
-We cannot create the column with attribute notation
-(`df.source`) because the dataframe doesn\'t have that
-attribute yet, so we must use dictionary notation
-(`df['source']`).
-
-We aren\'t limited to broadcasting one value to the entire column; we
-can have the column hold the result of Boolean
-logic or a mathematical equation. For example, if we had data on
-distance and time, we could create a speed column that is the result of
-dividing the distance column by the time column. With our earthquake
-data, let\'s create a column that tells us whether the earthquake\'s
-magnitude was negative:
-
-```
->>> df['mag_negative'] = df.mag < 0
->>> df.head()
-```
-
-
-Note that the new column has been added to the right:
-
-
-![](./images/Figure_2.34_B16834.jpg)
-
-
-
-In the previous section, we saw that the `place` column has
-some data consistency issues---we have multiple names for the same
-entity. In some cases, earthquakes occurring in California are marked as
-`CA` and as `California` in others. Needless to say,
-this is confusing and can easily cause issues for us if we don\'t
-carefully inspect our data beforehand. For example, by just selecting
-`CA`, we miss out on 124 earthquakes marked as
-`California`. This isn\'t the only place
-with an issue either (`Nevada` and `NV` are also
-both present). By using a regular expression to extract everything in
-the `place` column after the comma, we can see some of the
-issues firsthand:
-
-```
->>> df.place.str.extract(r', (.*$)')[0].sort_values().unique()
-array(['Afghanistan', 'Alaska', 'Argentina', 'Arizona',
-       'Arkansas', 'Australia', 'Azerbaijan', 'B.C., MX',
-       'Barbuda', 'Bolivia', ..., 'CA', 'California', 'Canada',
-       'Chile', ..., 'East Timor', 'Ecuador', 'Ecuador region',
-       ..., 'Mexico', 'Missouri', 'Montana', 'NV', 'Nevada', 
-       ..., 'Yemen', nan], dtype=object)
-```
-
-
-If we want to treat countries and anything near them as a single entity,
-we have some additional work to do (see `Ecuador` and
-`Ecuador region`). In addition, our naive attempt at parsing
-the location by looking at the information after the comma appears to
-have failed; this is because, in some cases, we don\'t have a comma. We
-will need to change our approach to parsing.
-
-This is an **entity recognition problem**, and it\'s not trivial to
-solve. With a relatively small list of unique
-values (which we can view with `df.place.unique()`), we can
-simply look through and infer how to properly match up these names.
-Then, we can use the `replace()` method to replace patterns in
-the `place` column as we see fit:
-
-```
->>> df['parsed_place'] = df.place.str.replace(
-...     r'.* of ', '', regex=True # remove <x> of <x> 
-... ).str.replace(
-...     'the ', '' # remove "the "
-... ).str.replace(
-...     r'CA$', 'California', regex=True # fix California
-... ).str.replace(
-...     r'NV$', 'Nevada', regex=True # fix Nevada
-... ).str.replace(
-...     r'MX$', 'Mexico', regex=True # fix Mexico
-... ).str.replace(
-...     r' region$', '', regex=True # fix " region" endings
-... ).str.replace(
-...     'northern ', '' # remove "northern "
-... ).str.replace(
-...     'Fiji Islands', 'Fiji' # line up the Fiji places
-... ).str.replace( # remove anything else extraneous from start 
-...     r'^.*, ', '', regex=True 
-... ).str.strip() # remove any extra spaces
-```
-
-
-Now, we can check the parsed places we are left
-with. Notice that there is arguably still more to fix here with
-`South Georgia and South Sandwich Islands` and
-`South Sandwich Islands`. We could address this with another
-call to `replace()`; however, this goes to show that entity
-recognition can be quite challenging:
-
-```
->>> df.parsed_place.sort_values().unique()
-array([..., 'California', 'Canada', 'Carlsberg Ridge', ...,
-       'Dominican Republic', 'East Timor', 'Ecuador',
-       'El Salvador', 'Fiji', 'Greece', ...,
-       'Mexico', 'Mid-Indian Ridge', 'Missouri', 'Montana',
-       'Nevada', 'New Caledonia', ...,
-       'South Georgia and South Sandwich Islands', 
-       'South Sandwich Islands', ..., 'Yemen'], dtype=object)
-```
-
-Pandas also provides us with a way to make many
-new columns at once in one method call. With the `assign()`
-method, the arguments are the names of the columns we want to create (or
-overwrite), and the values are the data for the columns. Let\'s create
-two new columns; one will tell us if the earthquake happened in
-California, and the other will tell us if it happened in Alaska. Rather
-than just show the first five entries (which are all in California), we
-will use `sample()` to randomly select five rows:
-
-```
->>> df.assign(
-...     in_ca=df.parsed_place.str.endswith('California'), 
-...     in_alaska=df.parsed_place.str.endswith('Alaska')
-... ).sample(5, random_state=0)
-```
-
-
-Note that `assign()` doesn\'t change our original dataframe;
-instead, it returns a new `DataFrame` object with these
-columns added. If we want to replace our original dataframe with this,
-we just use variable assignment to store the result of
-`assign()` in `df` (for example,
-`df = df.assign(...)`):
-
-
-![](./images/Figure_2.35_B16834.jpg)
-
-
-
-The `assign()` method also accepts
-**lambda functions** (anonymous functions usually defined in one line
-and for single use); `assign()` will pass the dataframe into
-the `lambda` function as `x`, and we can work from
-there. This makes it possible for us to use the
-columns we are creating in `assign()` to calculate others. For
-example, let\'s once again create the `in_ca` and
-`in_alaska` columns, but this time also create a new column,
-`neither`, which is `True` if both `in_ca`
-and `in_alaska` are `False`:
-
-```
->>> df.assign(
-...     in_ca=df.parsed_place == 'California', 
-...     in_alaska=df.parsed_place == 'Alaska',
-...     neither=lambda x: ~x.in_ca & ~x.in_alaska
-... ).sample(5, random_state=0)
-```
-
-
-Remember that `~` is the bitwise negation operator, so this
-allows us to create a column with the result of
-`NOT in_ca AND NOT in_alaska` per row:
-
-
-![](./images/Figure_2.36_B16834.jpg)
-
-
-Now that we have seen how to add new columns,
-let\'s take a look at adding new rows. Say we were working with two
-separate dataframes; one with earthquakes accompanied by tsunamis and
-the other with earthquakes without tsunamis:
-
-```
->>> tsunami = df[df.tsunami == 1]
->>> no_tsunami = df[df.tsunami == 0]
->>> tsunami.shape, no_tsunami.shape
-((61, 10), (9271, 10))
-```
-
-
-If we wanted to look at earthquakes as a whole, we would want to
-concatenate the dataframes into a single one. To append rows to the
-bottom of our dataframe, we can either use `pd.concat()` or
-the `append()` method of the dataframe itself. The
-`concat()` function allows us to specify the axis that the
-operation will be performed along---`0` for appending rows to
-the bottom of the dataframe, and `1` for appending to the
-right of the last column with respect to the leftmost `pandas`
-object in the concatenation list. Let\'s use `pd.concat()`
-with the default `axis` of `0` for rows:
-
-```
->>> pd.concat([tsunami, no_tsunami]).shape
-(9332, 10) # 61 rows + 9271 rows
-```
-
-
-Note that the previous result is equivalent to running the
-`append()` method on the dataframe. This still returns a new
-`DataFrame` object, but it saves us from having to remember
-which axis is which, since `append()` is actually a wrapper
-around the `concat()` function:
-
-```
->>> tsunami.append(no_tsunami).shape
-(9332, 10) # 61 rows + 9271 rows
-```
-
-
-So far, we have been working with a subset of the
-columns from the CSV file, but suppose that we now want to work with
-some of the columns we ignored when we read in the data. Since we have
-added new columns in this notebook, we won\'t want to read in the file
-and perform those operations again. Instead, we will concatenate along
-the columns (`axis=1`) to add back what we are missing:
-
-```
->>> additional_columns = pd.read_csv(
-...     'data/earthquakes.csv', usecols=['tz', 'felt', 'ids']
-... )
->>> pd.concat([df.head(2), additional_columns.head(2)], axis=1)
-```
-
-
-Since the indices of the dataframes align, the additional columns are
-placed to the right of our original columns:
-
-
-![](./images/Figure_2.37_B16834.jpg)
-
-
-
-The `concat()` function uses the index to determine how to
-concatenate the values. If they don\'t align, this will generate
-additional rows because `pandas` won\'t know how to align
-them. Say we forgot that our original dataframe
-had the row numbers as the index, and we read in the additional columns
-by setting the `time` column as the index:
-
-```
->>> additional_columns = pd.read_csv(
-...     'data/earthquakes.csv',
-...     usecols=['tz', 'felt', 'ids', 'time'], 
-...     index_col='time'
-... )
->>> pd.concat([df.head(2), additional_columns.head(2)], axis=1)
-```
-
-
-Despite the additional columns containing data for the first two rows,
-`pandas` creates a new row for them because the index doesn\'t
-match. In the next lab, *Data Wrangling with Pandas*, we will see how to reset the index and set the
-index, both of which could resolve this issue:
-
-
-![](./images/Figure_2.38_B16834.jpg)
-
-
-Say we want to concatenate the `tsunami` and
-`no_tsunami` dataframes, but the `no_tsunami`
-dataframe has an additional column (suppose we added a new column to it
-called `type`). The `join` parameter
-specifies how to handle any overlap in column
-names (when appending to the bottom) or in row names (when concatenating
-to the right). By default, this is `outer`, so we keep
-everything; however, if we use `inner`, we will only keep what
-they have in common:
-
-```
->>> pd.concat(
-...     [
-...         tsunami.head(2),
-...         no_tsunami.head(2).assign(type='earthquake')
-...     ], 
-...     join='inner'
-... )
-```
-
-
-Notice that the `type` column from the `no_tsunami`
-dataframe doesn\'t show up because it wasn\'t present in the
-`tsunami` dataframe. Take a look at the index, though; these
-were the row numbers from the original dataframe before we divided it
-into `tsunami` and `no_tsunami`:
-
-
-![](./images/Figure_2.39_B16834.jpg)
-
-
-
-If the index is not meaningful, we can also pass in
-`ignore_index` to get sequential values in the index:
-
-```
->>> pd.concat(
-...     [
-...         tsunami.head(2), 
-...         no_tsunami.head(2).assign(type='earthquake')
-...     ],
-...     join='inner', ignore_index=True
-... )
-```
-
-
-The index is now sequential, and the row numbers
-no longer match the original dataframe:
-
-
-![](./images/Figure_2.40_B16834.jpg)
-
-
-
-Be sure to consult the `pandas` documentation for more
-information on the `concat()` function and other operations
-for combining data, which we will discuss in *Lab 4*, *Aggregating
-Pandas DataFrames*:
-http://pandas.pydata.org/pandas-docs/stable/user\_guide/merging.html\#concatenating-objects.
-
-
-
-Deleting unwanted data
+The StockModeler class
 ----------------------
 
-After adding that data to our dataframe, we can
-see the need to delete unwanted data. We need a way to undo our mistakes
-and get rid of data that we aren\'t going to use. Like adding data, we
-can use dictionary syntax to delete unwanted columns, just as we would
-when removing keys from a dictionary. Both
-`del df['<column_name>']` and
-`df.pop('<column_name>')` will work, provided that there is
-indeed a column with that name; otherwise, we will get a
-`KeyError`. The difference here is that while `del`
-removes it right away, `pop()` will return the column that we
-are removing. Remember that both of these operations will change our
-original dataframe, so use them with care.
-
-Let\'s use dictionary notation to delete the
-`source` column. Notice that it no longer appears in the
-result of `df.columns`:
-
-```
->>> del df['source']
->>> df.columns
-Index(['alert', 'mag', 'magType', 'place', 'time', 'title', 
-       'tsunami', 'mag_negative', 'parsed_place'],
-      dtype='object')
-```
+The `StockModeler` class will
+make it easier for us to build and evaluate some
+simple financial models without needing to interact directly with the
+`statsmodels` package. In addition, we will reduce the number
+of steps that are needed to generate a model with the methods we create.
+The following UML diagram shows that this is a rather simple class.
+Notice that we have no attributes because `StockModeler` is a
+**static class** (meaning that we don\'t instantiate it):
 
 
-Note that if we aren\'t sure whether the column exists, we should put
-our column deletion code in a `try...except` block:
+![](./images/Figure_7.22_B16834.jpg)
+
+
+
+The `StockModeler` class is defined in
+`stock_analysis/stock_modeler.py` and has methods for both
+building models and doing some preliminary
+analysis of their performance. As usual, we start the module with our
+docstring and imports:
 
 ```
-try:
-    del df['source']
-except KeyError:
-    pass # handle the error here
+"""Simple time series modeling for stocks."""
+import matplotlib.pyplot as plt
+import pandas as pd
+from statsmodels.tsa.arima.model import ARIMA
+from statsmodels.tsa.seasonal import seasonal_decompose
+import statsmodels.api as sm
+from .utils import validate_df
 ```
 
 
-Earlier, we created the `mag_negative` column for filtering
-our dataframe; however, we no longer want this column as part of our
-dataframe. We can use `pop()` to grab the series for the
-`mag_negative` column, which we can use as a Boolean mask
-later without having it in our dataframe:
+Next, we will start the `StockModeler` class and raise an
+error if someone tries to instantiate it:
 
 ```
->>> mag_negative = df.pop('mag_negative')
->>> df.columns
-Index(['alert', 'mag', 'magType', 'place', 'time', 'title', 
-       'tsunami', 'parsed_place'],
-      dtype='object')
-```
-
-
-We now have a Boolean mask in the `mag_negative` variable that
-used to be a column in `df`:
-
-```
->>> mag_negative.value_counts()
-False    8841
-True      491
-Name: mag_negative, dtype: int64
+class StockModeler:
+    """Static methods for modeling stocks."""
+    def __init__(self):
+        raise NotImplementedError(
+            "This class must be used statically: " 
+            "don't instantiate it."
+        )
 ```
 
 
-Since we used `pop()` to remove the
-`mag_negative` series rather than deleting it, we can still
-use it to filter our dataframe:
+One of the tasks we want this class to support is
+time series decomposition, which we discussed
+back in *lab 1*. We imported the
+`seasonal_decompose()` function from `statsmodels`,
+so we just have to call it on the closing price in our
+`decompose()` method:
 
 ```
->>> df[mag_negative].head()
-```
-
-
-This leaves us with the earthquakes that had negative magnitudes. Since
-we also called `head()`, we get back the first five such
-earthquakes:
-
-
-![](./images/Figure_2.41_B16834.jpg)
-
-
-
-`DataFrame` objects have a `drop()` method for
-removing multiple rows or columns either in-place (overwriting the
-original dataframe without having to reassign it) or returning a new
-`DataFrame` object. To remove rows, we pass the list of
-indices. Let\'s remove the first two rows:
-
-```
->>> df.drop([0, 1]).head(2)
-```
-
-
-Notice that the index starts at `2` because we dropped
-`0` and `1`:
-
-
-![](./images/Figure_2.42_B16834.jpg)
-
-
-
-By default, `drop()` assumes that we want to delete rows
-(`axis=0`). If we want to drop columns, we can
-either pass `axis=1` or specify our list
-of column names using the `columns` argument. Let\'s delete
-some more columns:
-
-```
->>> cols_to_drop = [
-...     col for col in df.columns
-...     if col not in [
-...         'alert', 'mag', 'title', 'time', 'tsunami'
-...     ]
-... ]
->>> df.drop(columns=cols_to_drop).head()
+    @staticmethod
+    @validate_df(columns={'close'}, instance_method=False)
+    def decompose(df, period, model='additive'):
+        """
+        Decompose the closing price of the stock into 
+        trend, seasonal, and remainder components.
+        Parameters:
+            - df: The dataframe containing the stock closing
+              price as `close` and with a time index.
+            - period: The number of periods in the frequency.
+            - model: How to compute the decomposition
+              ('additive' or 'multiplicative')
+        Returns:
+            A `statsmodels` decomposition object.
+        """
+        return seasonal_decompose(
+            df.close, model=model, period=period
+        )
 ```
 
 
-This drops all the columns that aren\'t in the list we wanted to keep:
-
-
-![](./images/Figure_2.43_B16834.jpg)
-
-
-
-Whether we decide to pass `axis=1` to `drop()` or
-use the `columns` argument, our result will be equivalent:
+Notice that we have two decorators for the
+`decompose()` method. The topmost decorator is
+applied on the result of the ones below it. In
+this example, we have the following:
 
 ```
->>> df.drop(columns=cols_to_drop).equals(
-...     df.drop(cols_to_drop, axis=1)
+staticmethod(
+    validate_df(
+        decompose, columns={'close'}, instance_method=False
+    )
+)
+```
+
+
+The `StockModeler.arima()` method doesn\'t support the seasonal
+components (for simplicity) and takes *p*, *d*, and *q* as parameters,
+but to avoid confusion we will name them after the ARIMA feature they
+represent---for example, `ar` for autoregressive (*p*). In
+addition, we are going to have our static method
+provide the option of fitting the model before
+returning it:
+
+```
+    @staticmethod
+    @validate_df(columns={'close'}, instance_method=False)
+    def arima(df, *, ar, i, ma, fit=True, freq='B'):
+        """
+        Create an ARIMA object for modeling time series.
+        Parameters:
+            - df: The dataframe containing the stock closing
+              price as `close` and with a time index.
+            - ar: The autoregressive order (p).
+            - i: The differenced order (q).
+            - ma: The moving average order (d).
+            - fit: Whether to return the fitted model
+            - freq: Frequency of the time series
+        Returns: 
+            A `statsmodels` ARIMA object which you can use 
+            to fit and predict.
+        """
+        arima_model = ARIMA(
+            df.close.asfreq(freq).fillna(method='ffill'), 
+            order=(ar, i, ma)
+        )
+        return arima_model.fit() if fit else arima_model
+```
+
+
+**Tip:** 
+
+Note that the method signature (`df, *, ar, i, ma, ...`) has
+an asterisk (`*`) in it. This forces the parameters listed
+after it to be supplied as keyword arguments when calling the method.
+It\'s a nice way to make sure that whoever uses this is explicit about
+what they want.
+
+To go along with this, we want a way to evaluate the ARIMA model\'s
+predictions, so we will add the `arima_predictions()` static
+method. We will also provide the option of
+back the
+predictions as a `Series` object or as a plot:
+
+```
+    @staticmethod
+    @validate_df(columns={'close'}, instance_method=False)
+    def arima_predictions(df, arima_model_fitted, start, end,       
+                          plot=True, **kwargs):
+        """
+        Get ARIMA predictions as a `Series` object or plot.
+        Parameters:
+            - df: The dataframe for the stock.
+            - arima_model_fitted: The fitted ARIMA model.
+            - start: The start date for the predictions.
+            - end: The end date for the predictions.
+            - plot: Whether to plot the result, default is
+              `True` meaning the plot is returned instead of
+              the `Series` object containing the predictions.
+            - kwargs: Additional arguments to pass down.
+        Returns: 
+            A matplotlib `Axes` object or predictions 
+            depending on the value of the `plot` argument.
+        """
+        predictions = \
+            arima_model_fitted.predict(start=start, end=end)
+        if plot:
+            ax = df.close.plot(**kwargs)
+            predictions.plot(
+                ax=ax, style='r:', label='arima predictions'
+            )
+            ax.legend()
+        return ax if plot else predictions
+```
+
+
+Similar towe built
+for ARIMA models, we will also provide the `regression()`
+method for building a linear regression model of the closing price with
+a lag of 1. For this, we will once again use `statsmodels`:
+
+```
+    @staticmethod
+    @validate_df(columns={'close'}, instance_method=False)
+    def regression(df):
+        """
+        Create linear regression of time series with lag=1.
+        Parameters:
+            - df: The dataframe with the stock data.
+        Returns: 
+            X, Y, and the fitted model
+        """
+        X = df.close.shift().dropna()
+        Y = df.close[1:]
+        return X, Y, sm.OLS(Y, X).fit()
+```
+
+
+As with the `arima_predictions()` method, we want to provide a
+way to review the
+predictions from the model, either as a
+`Series` object or as a plot. Unlike the ARIMA model, it will
+only predict one value at a time. Therefore, we will start our
+predictions on the day after the last closing price and iteratively use
+the previous prediction to predict the next one. To handle all this, we
+will write the `regression_predictions()` method:
+
+```
+    @staticmethod
+    @validate_df(columns={'close'}, instance_method=False)
+    def regression_predictions(df, model, start, end, 
+                               plot=True, **kwargs):
+        """
+        Get linear regression predictions as a `pandas.Series`
+        object or plot.
+        Parameters:
+            - df: The dataframe for the stock.
+            - model: The fitted linear regression model.
+            - start: The start date for the predictions.
+            - end: The end date for the predictions.
+            - plot: Whether to plot the result, default is
+              `True` meaning the plot is returned instead of
+              the `Series` object containing the predictions.
+            - kwargs: Additional arguments to pass down.
+        Returns: 
+            A matplotlib `Axes` object or predictions 
+            depending on the value of the `plot` argument.
+        """
+        predictions = pd.Series(
+            index=pd.date_range(start, end), name='close'
+        )
+        last = df.last('1D').close
+        for i, date in enumerate(predictions.index):
+            if not i:
+                pred = model.predict(last)
+            else:
+                pred = model.predict(predictions.iloc[i - 1])
+            predictions.loc[date] = pred[0]
+        if plot:
+            ax = df.close.plot(**kwargs)
+            predictions.plot(
+                ax=ax, style='r:', 
+                label='regression predictions'
+            )
+            ax.legend()
+        return ax if plot else predictions
+```
+
+
+Lastly, for both the ARIMA and linear regression
+models, we want to visualize the errors in the
+predictions, or **residuals**. The fitted models both have a
+`resid` attribute, which will give us the residuals; we simply
+need to plot them as a scatter plot to check their variance and a KDE to
+check their mean. For this, we will add the `plot_residuals()`
+method:
+
+```
+    @staticmethod
+    def plot_residuals(model_fitted, freq='B'):
+        """
+        Visualize the residuals from the model.
+        Parameters:
+            - model_fitted: The fitted model
+            - freq: Frequency that the predictions were 
+              made on. Default is 'B' (business day).
+        Returns: 
+            A matplotlib `Axes` object.
+        """
+        fig, axes = plt.subplots(1, 2, figsize=(15, 5))
+        residuals = pd.Series(
+            model_fitted.resid.asfreq(freq), name='residuals'
+        )
+        residuals.plot(
+            style='bo', ax=axes[0], title='Residuals'
+        )
+        axes[0].set(xlabel='Date', ylabel='Residual')
+        residuals.plot(
+            kind='kde', ax=axes[1], title='Residuals KDE'
+        )
+        axes[1].set_xlabel('Residual')
+        return axes
+```
+
+
+Now, let\'s  the
+`StockModeler` class for a spin, once again using the Netflix
+data.
+
+
+
+Time series decomposition
+-------------------------
+
+Time series can be decomposed into
+trend, seasonal, and remainder components utilizing a specified
+frequency. This can be achieved with the `statsmodels`
+package, which `StockModeler.decompose()` is using:
+
+```
+>>> from stock_analysis import StockModeler
+>>> decomposition = StockModeler.decompose(nflx, 20)
+>>> fig = decomposition.plot()
+>>> fig.suptitle(
+...     'Netflix Stock Price Time Series Decomposition', y=1
 ... )
-True
+>>> fig.set_figheight(6)
+>>> fig.set_figwidth(10)
+>>> fig.tight_layout()
 ```
 
 
-By default, `drop()` will return a new `DataFrame`
-object; however, if we really want to remove the data from our original
-dataframe, we can pass in `inplace=True`, which will save us
-from having to reassign the result back to our dataframe. The result is
-the same as in *Figure 2.43*:
+This returns the decomposition plot for Netflix with a frequency of 20 trading days:
+
+
+![](./images/Figure_7.23_B16834.jpg)
+
+
+
+For more complicated models, we could decompose
+and then build our model around the components. That is beyond the scope
+of this lab, however, so let\'s move on to ARIMA models.
+
+
+
+ARIMA
+-----
+ARIMA models
+have autoregressive, difference, and moving average components. They can
+also be built using the `statsmodels` package, which the
+`StockModeler.arima()` method is using; this method returns a
+fitted ARIMA model for the stock according to the specifications
+provided. Here, we will use the `%%capture` magic to avoid
+printing any warnings triggered by the ARIMA model fitting, since we are
+making a simple model to explore functionality:
 
 ```
->>> df.drop(columns=cols_to_drop, inplace=True)
->>> df.head()
+>>> %%capture
+>>> arima_model = StockModeler.arima(nflx, ar=10, i=1, ma=5)
 ```
 
 
-Always be careful with in-place operations. In
-some cases, it may be possible to undo them; however, in others, it may
-require starting over from the beginning and recreating the dataframe.
+**Tip:** 
+
+We\'re picking these values because they run in a reasonable amount of
+time. In practice, we can use the `autocorrelation_plot()`
+function from the `pandas.plotting` module that was introduced
+in *Visualizing Data with Pandas and Matplotlib*, to help find a good value
+for `ar`.
+
+Once the model is fitted, we can obtain information on it with the
+model\'s `summary()` method:
+
+```
+>>> print(arima_model.summary())
+```
+
+
+The summary is quite extensive, and
+we should read the documentation when looking to
+interpret it; however, this article is likely to be a more digestible
+introduction:
+<https://medium.com/analytics-vidhya/interpreting-arma-model-results-in-statsmodels-for-absolute-beginners-a4d22253ad1c>.
+Be advised that interpreting this summary will require a solid
+understanding of statistics:
+
+
+![](./images/Figure_7.24_B16834.jpg)
+
+
+
+For our purposes, a simpler way of analyzing the model is to look at the
+**residuals**, or the discrepancy between the observed values and
+predictions made by the model. The residuals should have a mean of 0 and
+have equal variance throughout, meaning that they should not depend on
+the independent variable (which is the date, in this case). The latter
+requirement is referred to as
+**homoskedasticity**; when this assumption is not met, the estimates
+given by the model are not optimal. The
+`StockModeler.plot_residuals()` method helps check for this
+visually:
+
+```
+>>> StockModeler.plot_residuals(arima_model)
+```
+
+
+While the residuals are centered at 0 (right
+subplot), they are **heteroskedastic**---note how their
+variance appears to increase
+over time (left subplot):
+
+
+![](./images/Figure_7.25_B16834.jpg)
+
+
+
+**Tip:** 
+
+When we looked at the model summary,
+`statsmodels` ran a statistical test for heteroskedasticity
+using the default significance level of 0.05. The value of the test
+statistic is labeled **Heteroskedasticity (H)** and the p-value is
+labeled **Prob(H) (two-sided)**. Note that the result was statistically
+significant (the p-value was less than or equal to the significance
+level), meaning it\'s very unlikely that our residuals are
+homoskedastic.
+
+As an alternative to building an
+ARIMA model, the `StockModeler` class
+also gives us the option of using linear regression to model the closing
+price of a financial instrument.
+
+
+
+Linear regression with statsmodels
+----------------------------------
+
+The `StockModeler.regression()` method
+builds a linear regression model for closing
+as a function of the
+prior day\'s closing price using `statsmodels`:
+
+```
+>>> X, Y, lm = StockModeler.regression(nflx)
+>>> print(lm.summary())
+```
+
+
+Once again, the `summary()` method gives us statistics on the
+model\'s fit:
+
+
+![](./images/Figure_7.26_B16834.jpg)
+
+
+The  makes this model
+look very good; however, we
+know that this is simply because stock data is highly autocorrelated, so
+let\'s look at the residuals again:
+
+```
+>>> StockModeler.plot_residuals(lm)
+```
+
+
+This model also suffers from heteroskedasticity:
+
+
+![](./images/Figure_7.27_B16834.jpg)
+
+
+
+Let\'s now whether the
+ARIMA model or the linear regression model
+performs better at forecasting Netflix stock\'s closing prices.
+
+
+
+Comparing models
+----------------
+
+In order to compare our
+models, we need to test their predictions on some
+new data. Let\'s gather the daily closing price of Netflix stock for the
+first two weeks in January 2021 and use the prediction methods in the
+`StockModeler` class to visualize our model predictions versus
+reality:
+
+```
+>>> import datetime as dt
+>>> start = dt.date(2021, 1, 1)
+>>> end = dt.date(2021, 1, 14)
+>>> jan = stock_analysis.StockReader(start, end)\
+...     .get_ticker_data('NFLX')
+>>> fig, axes = plt.subplots(1, 2, figsize=(15, 5))
+>>> arima_ax = StockModeler.arima_predictions(
+...     nflx, arima_model, start=start, end=end, 
+...     ax=axes[0], title='ARIMA', color='b'
+... )
+>>> jan.close.plot(
+...     ax=arima_ax, style='b--', label='actual close'
+... )
+>>> arima_ax.legend()
+>>> arima_ax.set_ylabel('price ($)')
+>>> linear_reg = StockModeler.regression_predictions(
+...     nflx, lm, start=start, end=end,
+...     ax=axes[1], title='Linear Regression', color='b'
+... )
+>>> jan.close.plot(
+...     ax=linear_reg, style='b--', label='actual close'
+... )
+>>> linear_reg.legend()
+>>> linear_reg.set_ylabel('price ($)')
+```
+
+
+The ARIMA model\'s
+predictions look more in line with the pattern we
+would expect, but, given the unpredictable nature of the stock market,
+both models are far off from what actually happened in the first two
+weeks of January 2021:
+
+
+![](./images/Figure_7.28_B16834.jpg)
+
+
+
+As we can see, forecasting stock performance is
+not easy, even for a few days. There is a lot of data that is not being
+captured by these models, such as news stories,
+regulations, and changes in management, to name a few. No matter how
+well a model appears to fit, be weary of trusting predictions as these
+will be extrapolations, and there is a lot of randomness not being
+accounted for.
+
+To further illustrate this, take a look at the following set of plots
+that have been generated using random walks and stock data. Only one is
+real data, but which one? The answer follows the plots, so be sure to
+take a guess before looking:
+
+
+![](./images/Figure_7.29_B16834.jpg)
+
+
+
+Each of these time series originates at the same
+point (Microsoft\'s closing price on July 1, 2019),
+but only **A** is real stock data --- **B**, **C**,
+and **D** are all random walks. Hard (or impossible) to tell, right?
+
 
 Summary
 =======
 
 
-In this lab, we learned how to use `pandas` for the data
-collection portion of data analysis and to describe our data with
-statistics, which will be helpful when we get to the drawing conclusions
-phase. We learned the main data structures of the `pandas`
-library, along with some of the operations we can perform on them. Next,
-we learned how to create `DataFrame` objects from a variety of
-sources, including flat files and API requests. Using earthquake data,
-we discussed how to summarize our data and calculate statistics from it.
-Subsequently, we addressed how to take subsets of data via selection,
-slicing, indexing, and filtering. Finally, we practiced adding and
-removing both columns and rows from our dataframe.
+In this lab, we saw how building Python packages for our analysis
+applications can make it very easy for others to carry out their own
+analyses and reproduce ours, as well as for us to create repeatable
+workflows for future analyses.
+
+The `stock_analysis` package we created in this lab
+contained classes for gathering stock data from the Internet
+(`StockReader`); visualizing individual assets or groups of
+them (`Visualizer` family); calculating metrics for single
+assets or groups of them for comparisons (`StockAnalyzer` and
+`AssetGroupAnalyzer`, respectively); and time series modeling
+with decomposition, ARIMA, and linear regression
+(`StockModeler`). We also got our first look at using the
+`statsmodels` package in the `StockModeler` class.
+This lab showed us how the `pandas`,
+`matplotlib`, `seaborn`, and `numpy`
+functionality that we\'ve covered so far in this course has come together
+and how these libraries can work harmoniously with other packages for
+custom applications. I strongly encourage you to reread the code in the
+`stock_analysis` package and test out some of the methods we
+didn\'t cover in this lab to make sure you have the concepts down.
 
 Exercises
 =========
 
-Using the `data/parsed.csv` file and the material from this
-lab, complete the following exercises to practice your
-`pandas` skills:
 
-1.  Find the 95[th]{.superscript} percentile of earthquake magnitude in
-    Japan using the `mb` magnitude type.
-2.  Find the percentage of earthquakes in Indonesia that were coupled
-    with tsunamis.
-3.  Calculate summary statistics for earthquakes in Nevada.
-4.  Add a column indicating whether the earthquake happened in a country
-    or US state that is on the Ring of Fire. Use Alaska, Antarctica
-    (look for Antarctic), Bolivia, California, Canada, Chile, Costa
-    Rica, Ecuador, Fiji, Guatemala, Indonesia, Japan, Kermadec Islands,
-    Mexico (be careful not to select New Mexico), New Zealand, Peru,
-    Philippines, Russia, Taiwan, Tonga, and Washington.
-5.  Calculate the number of earthquakes in the Ring of Fire locations
-    and the number outside of them.
-6.  Find the tsunami count along the Ring of Fire.
+Use the `stock_analysis` package to complete the following
+exercises. Unless otherwise noted, use data from 2019 through the end of
+2020. In case there are any issues collecting the data with the
+`StockReader` class, backup CSV files are provided in the
+`exercises/` directory:
+
+1.  Using the `StockAnalyzer` and `StockVisualizer`
+    classes, calculate and plot three levels of support and resistance
+    for Netflix\'s closing price.
+
+2.  With the `StockVisualizer` class, look at the effect of
+    after-hours trading on the FAANG stocks:
+
+    a\) As individual stocks
+
+    b\) As a portfolio using the `make_portfolio()` function
+    from the `stock_analysis.utils` module
+
+3.  Using the `StockVisualizer.open_to_close()` method, create
+    a plot that fills the area between the FAANG stocks\' opening price
+    (as a portfolio) and its closing price each day in red if the price
+    declined and in green if the price increased. As a bonus, do the
+    same for a portfolio of bitcoin and the S&P 500.
+
+4.  Mutual funds and **exchange-traded funds** (**ETFs**) are funds that
+    are composed of many assets. They are built to mitigate risk, so
+    volatility for the fund will be lower than that of the assets that
+    compose it. (Information on how they differ can be found at
+    <https://www.investopedia.com/articles/exchangetradedfunds/08/etf-mutual-fund-difference.asp>.)
+    Compare a mutual fund or ETF of your choice to three of its largest
+    stocks (by composition) using annualized volatility and the
+    `AssetGroupAnalyzer` class.
+
+5.  Write a function that returns a dataframe of one row with columns
+    for `alpha`, `beta`, `sharpe_ratio`,
+    `annualized_volatility`, `is_bear_market`, and
+    `is_bull_market`, which each contain the results of
+    running the respective methods on a given stock using the
+    `StockAnalyzer` class. Dictionary comprehensions and the
+    `getattr()` function, as used in the
+    `AssetGroupAnalyzer.analyze()` method, will be useful.
+
+6.  With the `StockModeler` class, build an ARIMA model fit on
+    the S&P 500 data from January 1, 2019 through November 30, 2020 and
+    use it to predict the performance in December 2020. Be sure to
+    examine the residuals and compare the predicted performance to the
+    actual performance.
+
+7.  Request an API key for AlphaVantage
+    (<https://www.alphavantage.co/support/#api-key>) and collect the
+    daily foreign exchange rate from USD to JPY using the
+    `get_forex_rates()` method on the same
+    `StockReader` object you created to collect the data for
+    the previous exercises. Build a candlestick plot with the data from
+    February 2019 through January 2020, resampled to 1-week intervals.
+    Hint: take a look at the `slice()` function from the
+    standard library
+    (<https://docs.python.org/3/library/functions.html#slice>) in order
+    to provide the date range.
