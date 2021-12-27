@@ -41,10 +41,17 @@ In this lab, we will cover the following topics:
 -   Implementing supervised anomaly detection
 -   Incorporating a feedback loop with online learning
 
+#### Pre-reqs:
+- Google Chrome (Recommended)
+
+#### Lab Environment
+Notebooks are ready to run. All packages have been installed. There is no requirement for any setup.
+
+All examples are present in `~/work/data-analysis-pandas/lab_11` folder. 
+
 
 Lab materials
-=================
-
+=============
 
 The materials for this lab can be found at
 <https://github.com/fenago/data-analysis-pandas/tree/master/lab_11>.

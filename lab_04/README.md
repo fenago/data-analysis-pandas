@@ -21,5 +21,5 @@ In addition to the aforementioned notebooks, we have two additional files:
 - [`0-weather_data_collection.ipynb`](./0-weather_data_collection.ipynb): (optional) contains the code used to collect the weather data used in the lab
 - [`window_calc.py`](./window_calc.py): contains a function that uses pipes to perform a variety of window calculations
 
-All the datasets necessary for the aforementioned notebooks, along with information on them, can be found in the [`data/`](./data) directory. The end-of-lab exercises will use the datasets in the [`exercises/`](./exercises) directory; solutions to these exercises can be found in the repository's [`solutions/lab_09/`](../solutions/lab_09) directory.
+All the datasets necessary for the aforementioned notebooks, along with information on them, can be found in the [`data/`](./data) directory. The end-of-lab exercises will use the datasets in the [`exercises/`](./exercises) directory; solutions to these exercises can be found in the repository's [`solutions/lab_04/`](../solutions/lab_04) directory.
 

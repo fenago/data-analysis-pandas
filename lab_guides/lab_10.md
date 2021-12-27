@@ -14,9 +14,17 @@ In this lab, the following topics will be covered:
 -   Addressing class imbalance
 -   Penalizing high regression coefficients with regularization
 
-Lab materials
-=================
 
+#### Pre-reqs:
+- Google Chrome (Recommended)
+
+#### Lab Environment
+Notebooks are ready to run. All packages have been installed. There is no requirement for any setup.
+
+All examples are present in `~/work/data-analysis-pandas/lab_10` folder. 
+
+Lab materials
+==============
 
 In this lab, we will be working with three datasets. The first two
 come from data on wine quality donated to the UCI Machine Learning Data

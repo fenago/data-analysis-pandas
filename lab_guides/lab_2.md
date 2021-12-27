@@ -26,7 +26,7 @@ performing when conducting our data analyses with `pandas`. The following topics
 #### Lab Environment
 Notebooks are ready to run. All packages have been installed. There is no requirement for any setup.
 
-All examples are present in `~/work/machine-learning-essentials-module1/lab_07` folder. 
+All examples are present in `~/work/data-analysis-pandas/lab_02` folder. 
 
 
 Lab materials
@@ -884,8 +884,8 @@ the same CSV file from GitHub:
 ```
 >>> df = pd.read_csv(
 ...     'https://github.com/fenago/'
-...     'machine-learning-essentials-module1'
-...     '/blob/master/lab_07/data/earthquakes.csv?raw=True'
+...     'data-analysis-pandas'
+...     '/blob/master/lab_02/data/earthquakes.csv?raw=True'
 ... )
 ```
 

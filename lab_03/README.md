@@ -12,5 +12,5 @@ There are five notebooks that we will work through, each numbered according to w
 - [`4-reshaping_data.ipynb`](./4-reshaping_data.ipynb): illustrates how to reshape data with `pandas`
 - [`5-handling_data_issues.ipynb`](./5-handling_data_issues.ipynb): showcases strategies for dealing with duplicate, missing, or invalid data
 
-All the datasets necessary for the aforementioned notebooks, along with information on them, can be found in the [`data/`](./data) directory. The end-of-lab exercises will use the datasets in the [`exercises/`](./exercises) directory; solutions to these exercises can be found in the repository's [`solutions/lab_08/`](../solutions/lab_08) directory.
+All the datasets necessary for the aforementioned notebooks, along with information on them, can be found in the [`data/`](./data) directory. The end-of-lab exercises will use the datasets in the [`exercises/`](./exercises) directory; solutions to these exercises can be found in the repository's [`solutions/lab_03/`](../solutions/lab_03) directory.
 

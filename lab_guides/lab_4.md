@@ -20,7 +20,7 @@ The following topics will be covered in this lab:
 #### Lab Environment
 Notebooks are ready to run. All packages have been installed. There is no requirement for any setup.
 
-All examples are present in `~/work/machine-learning-essentials-module1/lab_09` folder. 
+All examples are present in `~/work/data-analysis-pandas/lab_04` folder. 
 
 Lab materials
 =================
@@ -1368,7 +1368,7 @@ def window_calc(df, func, agg_dict, *args, **kwargs):
         A new `DataFrame` object.
     """
     return df.pipe(func, *args, **kwargs).agg(agg_dict)
-File:      ~/.../lab_09/window_calc.py
+File:      ~/.../lab_04/window_calc.py
 Type:      function
 ```
 

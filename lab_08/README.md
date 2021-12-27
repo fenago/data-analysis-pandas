@@ -13,5 +13,5 @@ All of the aforementioned files are provided in this directory:
 - [`anomaly_detection.ipynb`](./anomaly_detection.ipynb): Jupyter notebook used to perform our analysis
 - [`simulate.py`](./simulate.py): Python script for simulating the data using the [`login_attempt_simulator` package](https://github.com/fenago/login-attempt-simulator)
 
-The end-of-lab exercises will use the [`simulate.py`](./simulate.py) script to generate a new dataset; solutions to these exercises can be found in the repository's [`solutions/lab_13/`](../solutions/lab_13) directory.
+The end-of-lab exercises will use the [`simulate.py`](./simulate.py) script to generate a new dataset; solutions to these exercises can be found in the repository's [`solutions/lab_08/`](../solutions/lab_08) directory.
 

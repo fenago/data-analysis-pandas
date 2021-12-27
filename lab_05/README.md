@@ -10,5 +10,5 @@ There are three notebooks that we will work through, each numbered according to 
 - [`2-plotting_with_pandas.ipynb`](./2-plotting_with_pandas.ipynb): covers plotting with `pandas`
 - [`3-pandas_plotting_module.ipynb`](./3-pandas_plotting_module.ipynb): provides some exposure to additional plot types available in `pandas.plotting`
 
-All the datasets necessary for the aforementioned notebooks, along with information on them, can be found in the [`data/`](./data) directory. The end-of-lab exercises will use these datasets as well; solutions to the exercises can be found in the repository's [`solutions/lab_10/`](../solutions/lab_10) directory.
+All the datasets necessary for the aforementioned notebooks, along with information on them, can be found in the [`data/`](./data) directory. The end-of-lab exercises will use these datasets as well; solutions to the exercises can be found in the repository's [`solutions/lab_05/`](../solutions/lab_05) directory.
 

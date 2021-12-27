@@ -18,5 +18,5 @@ In addition, we have two Python modules that contain functions that we will use 
 - [`color_utils.py`](./color_utils.py): includes various functions for working with colors in Python
 - [`viz.py`](./viz.py): contains one function for generating regression and residuals plots for each pair of variables in the dataset using `seaborn` and another function for generating a KDE with reference lines for 1, 2, and 3 standard deviations from the mean
 
-All the datasets necessary for the aforementioned notebooks, along with information on them, can be found in the [`data/`](./data) directory. The end-of-lab exercises will use these datasets as well; solutions to the exercises can be found in the repository's [`solutions/lab_11/`](../solutions/lab_11) directory.
+All the datasets necessary for the aforementioned notebooks, along with information on them, can be found in the [`data/`](./data) directory. The end-of-lab exercises will use these datasets as well; solutions to the exercises can be found in the repository's [`solutions/lab_06/`](../solutions/lab_06) directory.
 
