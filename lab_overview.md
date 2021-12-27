@@ -20,6 +20,10 @@ Working in a hands-on learning environment, guided by our expert team, attendees
 - Apply pandas to different real-world domains with the help of demonstrations
 - Get accustomed to using pandas as an effective data exploration tool.
 
+### Launch Binder
+[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/fenago/data-analysis-pandas/HEAD)
+
+
 ### Labs
 
 Labs for this course are available at path shared below.

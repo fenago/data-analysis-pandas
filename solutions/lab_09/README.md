@@ -1,4 +1,4 @@
-# Chapter 9 Solutions
+# Lab 9 Solutions
 
 The end-of-chapter exercises focused on building machine learning models with `scikit-learn`. Each exercise has a corresponding solution notebook:
 

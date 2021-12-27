@@ -1,4 +1,4 @@
-# Chapter 10 Solutions
+# Lab 10 Solutions
 
 The end-of-chapter exercises focused on building and tuning machine learning models with `scikit-learn`. Each exercise has a corresponding solution notebook:
 

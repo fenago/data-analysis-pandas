@@ -1,4 +1,4 @@
-# Chapter 9: Getting Started with Machine Learning in Python
+# Lab 9: Getting Started with Machine Learning in Python
 
 This chapter introduces you to machine learning and building models using the `sklearn` library.
 

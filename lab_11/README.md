@@ -1,4 +1,4 @@
-# Chapter 11: Machine Learning Anomaly Detection
+# Lab 11: Machine Learning Anomaly Detection
 
 This chapter revisits anomaly detection on login attempt data, using machine learning techniques, all while giving you a taste of how the workflow looks in practice.
 

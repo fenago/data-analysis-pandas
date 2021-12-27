@@ -1,4 +1,4 @@
-# Chapter 11 Solutions
+# Lab 11 Solutions
 
 The end-of-chapter exercises focused on further practice with the machine learning workflow and exposure to some additional anomaly detection strategies. Each exercise has a corresponding solution notebook:
 

@@ -1,4 +1,4 @@
-# Chapter 10: Making Better Predictions &ndash; Optimizing Models
+# Lab 10: Making Better Predictions &ndash; Optimizing Models
 
 This chapter shows you strategies for improving the performance of your machine learning models.
 
