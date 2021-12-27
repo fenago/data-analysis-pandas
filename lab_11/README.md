@@ -19,5 +19,5 @@ We will work through five notebooks emulating a real-world scenario using the si
 - [`simulate.py`](./simulate.py): Python script for simulating the data using the [`login_attempt_simulator` package](https://github.com/fenago/login-attempt-simulator)
 
 
-The end-of-chapter exercises will use the data in the [`logs/`](./logs) directory to explore additional algorithms for machine learning anomaly detection; solutions to these exercises can be found in the repository's [`solutions/ch_11/`](../solutions/ch_11) directory.
+The end-of-chapter exercises will use the data in the [`logs/`](./logs) directory to explore additional algorithms for machine learning anomaly detection; solutions to these exercises can be found in the repository's [`solutions/lab_11/`](../solutions/lab_11) directory.
 

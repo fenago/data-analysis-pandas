@@ -8,7 +8,7 @@ The first half of the lab will be an overview of the data analysis and statistic
 
 Afterward, we will walk through setting up a virtual environment for working through the course. In order to validate the setup, we will use the [`checking_your_setup.ipynb`](./checking_your_setup.ipynb) Jupyter Notebook. Under the hood, this uses the [`check_environment.py`](./check_environment.py) module.
 
-The end-of-lab exercises will use the [`exercises.ipynb`](./exercises.ipynb) Jupyter Notebook; solutions to these exercises can be found in the repository's [`solutions/ch_01/`](../solutions/ch_01) directory.
+The end-of-lab exercises will use the [`exercises.ipynb`](./exercises.ipynb) Jupyter Notebook; solutions to these exercises can be found in the repository's [`solutions/lab_01/`](../solutions/lab_01) directory.
 
 *Tip: Use the [`python_101.ipynb`](./python_101.ipynb) Jupyter Notebook for a Python crash-course/refresher, if needed.*
 
