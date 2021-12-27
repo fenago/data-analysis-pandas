@@ -18,7 +18,7 @@ In this lab, we will cover the following topics:
 #### Lab Environment
 Notebooks are ready to run. All packages have been installed. There is no requirement for any setup.
 
-All examples are present in `~/work/data-analysis-pandas/lab_06` folder. 
+All examples are present in `~/work/data-analysis-pandas/lab_06` folder. Exercise solution(s) are present in `solutions` folder. 
 
 
 Lab materials
