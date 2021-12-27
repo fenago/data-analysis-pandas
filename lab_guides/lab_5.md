@@ -21,7 +21,7 @@ our natural next step is learning how to visualize our data. In this lab, we wil
 #### Lab Environment
 Notebooks are ready to run. All packages have been installed. There is no requirement for any setup.
 
-All examples are present in `~/work/data-analysis-pandas/lab_05` folder. Exercise solution(s) are present in `solutions` folder. 
+All examples are present in `lab_05` folder. Exercise solution(s) are present in `solutions` folder. 
 
 
 Lab materials

@@ -26,7 +26,7 @@ performing when conducting our data analyses with `pandas`. The following topics
 #### Lab Environment
 Notebooks are ready to run. All packages have been installed. There is no requirement for any setup.
 
-All examples are present in `~/work/data-analysis-pandas/lab_02` folder. Exercise solution(s) are present in `solutions` folder. 
+All examples are present in `lab_02` folder. Exercise solution(s) are present in `solutions` folder. 
 
 
 Lab materials

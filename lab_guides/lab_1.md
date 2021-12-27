@@ -15,7 +15,7 @@ set up properly in lab environment. We will also review python basics.
 #### Lab Environment
 Notebooks are ready to run. All packages have been installed. There is no requirement for any setup.
 
-All examples are present in `~/work/data-analysis-pandas/lab_01` folder. Exercise solution(s) are present in `solutions` folder. 
+All examples are present in `lab_01` folder. Exercise solution(s) are present in `solutions` folder. 
 
 
 #### JupyterLab
