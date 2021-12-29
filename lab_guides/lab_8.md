@@ -19,7 +19,7 @@ The following topics will be covered in this lab:
 #### Lab Environment
 Notebooks are ready to run. All packages have been installed. There is no requirement for any setup.
 
-All examples are present in `lab_08` folder. Exercise solution(s) are present in `solutions` folder. 
+All notebooks are present in `lab_08` folder. Exercise solution(s) are present in `solutions` folder. 
 
 
 Lab materials
@@ -474,21 +474,12 @@ exponential distributions, respectively:
         return hourly_arrivals, interarrival_times
 ```
 
-
-**Important note:**
-
-We are using `numpy` instead of `random` to generate
-random numbers from the exponential distribution because we can ask for
-multiple values at once (one for each of the hourly arrivals determined
-by the Poisson process). Also, note that `random` doesn\'t
-provide a Poisson distribution, so we need `numpy`.
-
 Our simulation uses many different distributions,
 so it can be helpful to see what they look like. The following subplots
 show examples for each of the distributions we are using. Notice that
 the Poisson distribution is drawn differently. This is because the
 Poisson distribution is discrete. For this reason, we often use it to
-model arrivals---here, we use it for modeling the arrivals of users
+model arrivals --- here, we use it for modeling the arrivals of users
 attempting to log in. Discrete distributions have
 a **probability mass function** (**PMF**) instead
 of a **probability density function** (**PDF**):
@@ -798,26 +789,6 @@ duration from the command-line arguments to the start date:
     end = start + dt.timedelta(days=args.days)
 ```
 
-
-**Tip:** 
-
-Check out the `try...except` block in the previous code
-snippet. We have a single `try` clause and multiple
-`except` clauses. We can specify how to handle specific errors
-occurring during code execution (called
-**exceptions**) by stating which exception type belongs to a given
-`except` clause. In this case, we have the `logger`
-object print a more helpful message for the user, and then re-raise the
-same exception (because we don\'t intend to handle it) by simply writing
-`raise`. This ends the program---the user can then try again
-with valid input. Try triggering this exception to see how much more
-useful this is. One thing to keep in mind, though, is that order
-matters---be sure to handle specific exceptions before having a general
-`except` clause; otherwise, the code specific to each
-exception type will never trigger. Also, note that using
-`except` without providing a specific exception will catch
-everything, even exceptions not meant to be caught.
-
 Finally, we run the actual simulation and write
 our results to the files specified (or the default paths). We set the
 probability of attack in a given hour to 10% (`attack_prob`),
@@ -850,21 +821,6 @@ IP address for all of their attempts
         raise
 ```
 
-
-**Tip:** 
-
-Notice that we used the `logger` object to print helpful
-messages to the screen throughout the script; this will help the users
-of this script know how far along in the process it is. These messages
-come in different levels of severity (we are using `INFO`,
-`WARNING`, and `ERROR` here), allowing them to be
-placed for debugging (the `DEBUG` level), and left there once
-the code goes into production, since the minimum level for printing can
-be raised to `INFO`, so that no `DEBUG` messages are
-printed. This is leaps and bounds above simple `print()`
-statements, since we don\'t have to worry about removing them as we move
-to production or adding back these messages as development continues.
-
 Let\'s now take a look at how we can run this
 script. We know that `simulate.py` can be run on the command
 line, but how can we see what arguments we need to pass? Simple---we add
@@ -892,12 +848,6 @@ optional arguments:
                         file to write the hack log to
 ```
 
-
-**Important note:**
-
-Note that we didn\'t specify the `help` argument when we added
-the other arguments with `argparse`; it was automatically
-created by `argparse`.
 
 Once we know which arguments we can pass and have
 decided which of these we want to provide, we can run the simulation.
@@ -1472,12 +1422,6 @@ per column of the data to use as the starting point for the threshold:
 ```
 
 
-**Important note:**
-
-In the previous code snippet, `random_state` is used with
-`sample()` for reproducibility; however, in practice, we will
-probably not want to always pick the same rows.
-
 Notice that we can get equally sized samples for
 all groups (hours, here) if we use `sample()` inside
 `apply()` after grouping by the column we want to sample with.
@@ -1667,14 +1611,6 @@ These rules flagged 73 IP addresses:
 ```
 
 
-**Important note:**
-
-In practice, we probably wouldn\'t run this rule on the entries used to
-calculate the baselines because they influence the definition of the
-baseline with their behavior.
-
-
-
 Tukey fence
 -----------
 
@@ -1731,15 +1667,6 @@ With this method, we flag 83 IP addresses:
 >>> tukey_fence_ips.nunique()
 83
 ```
-
-
-**Important note:**
-
-We used a multiplier of 3 here. However, depending on the application,
-we may see 1.5 used in order to be less restrictive. In reality, we can
-use any number; finding the best one may require some trial and error.
-
-
 
 Z-score
 -------
@@ -1832,22 +1759,7 @@ classes; we want to classify each IP address as either a valid user or a
 nefarious one. This leaves us with four possible outcomes that we can
 visualize using a **confusion matrix**:
 
-
 ![](./images/Figure_8.18_B16834.jpg)
-
-
-
-In this application, these outcomes mean the
-following:
-
--   **True Positive (TP)**: Our method flagged it as malicious, and it
-    was.
--   **True Negative (TN)**: Our method didn\'t flag it, and it wasn\'t
-    malicious.
--   **False Positive (FP)**: Our method flagged it, but it wasn\'t
-    malicious.
--   **False Negative (FN)**: Our method didn\'t flag it, but it was
-    malicious.
 
 True positives and true negatives mean our method did well, but false
 positives and false negatives are possible areas for improvement (bear
@@ -2027,16 +1939,6 @@ the performance metrics:
 ...     }.items()
 ... })
 ```
-
-
-**Tip:** 
-
-The `scores()` function returns a tuple of
-`(tp, fp, tn, fn)`, but the `classification_stats()`
-function expects four arguments. However, since `scores()`
-returns them in the same order that `classification_stats()`
-expects them, we can use `*` to unpack the tuple and send the
-values as four positional arguments.
 
 The mean is affected by outliers, but once we trimmed the data, it
 became a viable method. We didn\'t need to trim the data to work with

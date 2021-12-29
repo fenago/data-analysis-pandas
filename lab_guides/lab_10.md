@@ -21,7 +21,7 @@ In this lab, the following topics will be covered:
 #### Lab Environment
 Notebooks are ready to run. All packages have been installed. There is no requirement for any setup.
 
-All examples are present in `lab_10` folder. Exercise solution(s) are present in `solutions` folder. 
+All notebooks are present in `lab_10` folder. Exercise solution(s) are present in `solutions` folder. 
 
 Lab materials
 ==============
@@ -119,25 +119,8 @@ quality, wine type by chemical properties, and planets models:
 ... )
 ```
 
-Important note
-
-Remember that we will be working in dedicated notebooks for each of the
-datasets, so while the setup code is all in the same code block to make
-it easier to follow in the course, make sure to work in the notebook
-corresponding to the data in question.
-
-
 Hyperparameter tuning with grid search
 ======================================
-
-
-No doubt you have noticed that we can provide various parameters to the
-model classes when we instantiate them. These
-model parameters are not derived from the data itself and are referred
-to as **hyperparameters**. Some examples of these are regularization
-terms, which we will discuss later in this
-lab, and weights. Through the process of **model tuning**, we seek
-to optimize our model\'s performance by tuning these hyperparameters.
 
 How can we know we are picking the best values to
 optimize our model\'s performance? One way is to
@@ -200,7 +183,7 @@ overfitting:
 ...     ))
 ```
 
-Tip
+**Tip**
 
 Here, we are using `np.logspace()` to get our range of values
 to try for `C`. To use this function, we supply starting and
@@ -221,67 +204,9 @@ This is then plotted as follows:
 ... )
 ```
 
-Using the resulting plot, we can pick the value that maximizes our
-performance:
-
+Using the resulting plot, we can pick the value that maximizes our performance:
 
 ![](./images/Figure_10.1_B16834.jpg)
-
-
-
-
-Scikit-learn provides the `GridSearchCV` class in the
-`model_selection` module for carrying out
-this exhaustive search much more easily. Classes
-that end with *CV* utilize **cross-validation**, meaning they divide up
-the training data into subsets, some of which
-will be the validation set for scoring the model (without needing the
-testing data until after the model is fit).
-
-One common method of cross-validation is **k-fold
-cross-validation**, which splits the training data into *k* subsets and
-will train the model *k* times, each time leaving one subset out to use
-as the validation set. The score for the model will be the average
-across the *k* validation sets. Our initial attempt was 1-fold
-cross-validation. When *k*=3, this process looks like the following
-diagram:
-
-
-![](./images/Figure_10.2_B16834.jpg)
-
-
-
-
-Tip
-
-When working with classification problems, `scikit-learn` will
-implement stratified k-fold cross-validation. This ensures that the
-percentage of samples belonging to each class will be preserved across
-folds. Without stratification, it\'s possible some validation sets will
-see a disproportionately low (or high) amount of a given class, which
-can distort the results.
-
-`GridSearchCV` uses cross-validation to find the best
-hyperparameters in the search space, without the need to use the testing
-data. Remember, test data should not influence the training process in
-any way---neither when training the model nor when tuning
-hyperparameters---otherwise, the model will have issues generalizing.
-This happens because we would be picking the
-hyperparameters that give the best performance on the test set, thus
-leaving no way to test on unseen data, and overestimating our
-performance.
-
-In order to use `GridSearchCV`, we need to provide a model (or
-pipeline) and a search space, which will be a dictionary mapping the
-hyperparameter to tune (by name) to a list of values to try. Optionally,
-we can provide a scoring metric to use, as well as the number of folds
-to use with cross-validation. We can tune any step in the pipeline by
-prefixing the hyperparameter name with the name of that step, followed
-by two underscores. For instance, if we have a logistic regression step
-called `lr` and want to tune `C`, we use
-`lr__C` as the key in the search space dictionary. Note that
-if our model has any preprocessing steps, it\'s imperative that we use a
-pipeline.
 
 Let\'s use `GridSearchCV` for the red wine quality logistic
 regression, searching for whether or not to fit our model with an
@@ -1069,14 +994,10 @@ This shows us that the most important chemical
 properties in distinguishing between red and
 white wine are total sulfur dioxide and chlorides:
 
-
 ![](./images/Figure_10.8_B16834.jpg)
 
 
-
-type
-
-Tip
+**Tip**
 
 Using the top features, as indicated by the feature importances, we can
 try to build a simpler model (by using fewer features). If possible, we
@@ -1122,9 +1043,6 @@ number of samples in each class at that node (**values**):
 
 ![](./images/Figure_10.9_B16834.jpg)
 
-
-
-properties
 
 We can also apply decision trees to regression
 problems. Let\'s find the feature importances for the planets data using
@@ -1360,25 +1278,6 @@ in its predictions:
 ... )
 ```
 
-Tip
-
-We can tweak the probability threshold for our model\'s predictions by
-using the `predict_proba()` method, instead of
-`predict()`. This will give us the probabilities that the
-observation belongs to each class. We can then compare that to our
-custom threshold. For example, we could use 75%:
-`white_or_red.predict_proba(w_X_test)[:,1] >= .75`.
-
-One way to identify this threshold is to determine the false positive
-rate we are comfortable with, and then use the data from the
-`roc_curve()` function in the `sklearn.metrics`
-module to find the threshold that results in that false positive rate.
-Another way is to find a satisfactory spot along the precision-recall
-curve, and then get the threshold from the
-`precision_recall_curve()` function. We will work through an
-example in *Lab 11*,
-*Machine Learning Anomaly Detection*.
-
 Let\'s use `seaborn` to make a plot showing the distribution
 of the prediction probabilities when the model
 was correct versus when it was incorrect. The `displot()`
@@ -1414,9 +1313,6 @@ fooled pretty badly:
 
 ![](./images/Figure_10.12_B16834.jpg)
 
-
-
-incorrect
 
 This outcome tells us we may want to look into the chemical properties
 of the wines that were incorrectly classified.
@@ -1475,13 +1371,10 @@ This results in each of the incorrectly
 classified wines being marked with a red **X**. In each subplot, the
 points on the left box plot are white wines and those on the right box
 plot are red wines. It appears that some of them may have been outliers
-for a few characteristics---such as red wines with high residual sugar
+for a few characteristics --- such as red wines with high residual sugar
 or sulfur dioxide, and white wines with high volatile acidity:
 
-
 ![](./images/Figure_10.13_B16834.jpg)
-
-
 
 
 Despite having many more white wines than red
@@ -1647,18 +1540,6 @@ over-sampling the minority class now.
 Over-sampling
 -------------
 
-It\'s clear that with smaller datasets, it won\'t be beneficial to
-under-sample. Instead, we can try over-sampling
-the minority class (the high-quality red wines,
-in this case). Rather than doing random
-over-sampling with the `RandomOverSampler` class, we are going
-to use the **Synthetic Minority Over-sampling Technique** (**SMOTE**) to
-create *new* (synthetic) red wines similar to the high-quality ones
-using the k-NN algorithm. By doing this, we are making a big assumption
-that the data we have collected about the chemical properties of the red
-wine does influence the quality rating of the wine.
-
-
 Let\'s use SMOTE with the five nearest
 neighbors to over-sample the high-quality red
 wines in our training data:
@@ -1780,7 +1661,7 @@ ensemble method to capitalize on its strengths and mitigate its
 weaknesses.
 
 After that, we learned how to use the `imblearn` package to
-implement over- and under-sampling strategies when faced with a class
+implement over and under sampling strategies when faced with a class
 imbalance.
 
 In the next lab, we will revisit the simulated login attempt data

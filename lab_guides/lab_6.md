@@ -18,7 +18,7 @@ In this lab, we will cover the following topics:
 #### Lab Environment
 Notebooks are ready to run. All packages have been installed. There is no requirement for any setup.
 
-All examples are present in `lab_06` folder. Exercise solution(s) are present in `solutions` folder. 
+All notebooks are present in `lab_06` folder. Exercise solution(s) are present in `solutions` folder. 
 
 
 Lab materials
@@ -1575,53 +1575,8 @@ center our annotation in the middle of the arrow:
 ![](./images/fig_6.35.jpg)
 
 
-
-Matplotlib provides a lot of flexibility to
-customize these annotations---we can pass any option that the
-`Text` class in `matplotlib` supports
-(<https://matplotlib.org/api/text_api.html#matplotlib.text.Text>). To
-change colors, simply pass the desired color in the `color`
-argument. We can also control font size, weight, family, and style
-through the `fontsize`, `fontweight`,
-`fontfamily`, and `fontstyle` arguments,
-respectively.
-
-
-
 Colors
 ------
-
-For the sake of consistency, the visualizations we
-produce should stick to a color scheme. Companies and academic
-institutions alike often have custom color palettes for presentations.
-We can easily adopt the same color palette in our visualizations too.
-
-So far, we have either been providing colors to the `color`
-argument with their single character names, such as `'b'` for
-blue and `'k'` for black, or their names (`'blue'`
-or `'black'`). We have also seen that `matplotlib`
-has many colors that can be specified by name; the full list can be
-found in the documentation at
-<https://matplotlib.org/examples/color/named_colors.html>.
-
-**Important note:**
-
-Remember that if we are providing a color with the `style`
-argument, we are limited to the colors that have a single-character
-abbreviation.
-
-In addition, we can provide a hex code for the
-color we want; those who have worked with HTML or CSS in the past will
-no doubt be familiar with these as a way to specify the exact color
-(regardless of what different places call it). For those unfamiliar with
-a hex color code, it specifies the amount of red, green, and blue used
-to make the color in question in the `#RRGGBB` format. Black
-is `#000000` and white is `#FFFFFF`
-(case-insensitive). This may be confusing because `F` is most
-definitely not a number; however, these are hexadecimal numbers (base
-16, not the base 10 we traditionally use), where `0-9` still
-represents `0-9`, but `A-F` represents
-`10-15`.
 
 Matplotlib accepts hex codes as a string to the `color`
 argument. To illustrate this, let\'s plot Facebook\'s opening price in
@@ -1674,25 +1629,6 @@ these colors come from? Well, `matplotlib` has numerous
 colormaps that are used for this purpose.
 
 ### Colormaps
-
-Rather than having to specify all the colors we
-want to use upfront, `matplotlib` can take a colormap and
-cycle through the colors there. When we discussed heatmaps in the
-previous lab, we considered the importance of using the proper class
-of colormap for the given task. There are three types of colormaps, each
-with its own purpose, as shown in the following table:
-
-
-![](./images/fig_6.37.jpg)
-
-
-
-**Tip:** 
-
-Browse colors by name, hex, and RGB values at
-<https://www.color-hex.com/>, and find the full color spectrum for the
-colormaps at
-<https://matplotlib.org/gallery/color/colormap_reference.html>.
 
 In Python, we can obtain a list of all the available colormaps by
 running the following:
@@ -1818,17 +1754,6 @@ def hex_to_rgb_color_list(colors):
         ]
     return colors[0] if len(colors) == 1 else colors
 ```
-
-
-**Tip:** 
-
-Take a look at the `enumerate()` function; this lets us grab
-the index and the value at that index when we iterate, rather than
-looking up the value in the loop. Also, notice how easy it is for Python
-to convert base 10 numbers to hexadecimal numbers with the
-`int()` function by specifying the base. (Remember that
-`//` is integer division---we have to do this since
-`int()` expects an integer and not a float.)
 
 The next function we need is one to take those RGB
 colors and create the values for the colormap. This function will need

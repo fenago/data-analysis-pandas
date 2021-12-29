@@ -23,7 +23,7 @@ The following topics will be covered in this lab:
 #### Lab Environment
 Notebooks are ready to run. All packages have been installed. There is no requirement for any setup.
 
-All examples are present in `lab_09` folder. Exercise solution(s) are present in `solutions` folder. 
+All notebooks are present in `lab_09` folder. Exercise solution(s) are present in `solutions` folder. 
 
 Lab materials
 =================
@@ -3020,9 +3020,6 @@ we can achieve high precision and high recall:
 
 ![](./images/Figure_9.36_B16834.jpg)
 
-
-
-
 As we saw with the red wine quality model, AUPR works very well with
 class imbalance. However, it can\'t be compared
 across datasets, is expensive to compute, and is hard to optimize. Note
@@ -3037,24 +3034,11 @@ This lab served as an introduction to machine learning in Python. We
 discussed the terminology that\'s commonly used to describe learning
 types and tasks. Then, we practiced EDA using the skills we learned
 throughout this course to get a feel for the wine and planet datasets.
-This gave us some ideas about what kinds of models we would want to
-build. A thorough exploration of the data is essential before attempting
-to build a model.
 
- In order to prepare our data efficiently,
+In order to prepare our data efficiently,
 we used pipelines in `scikit-learn` to package up everything
-from our preprocessing through our model.
-
-We used unsupervised k-means to cluster the planets using their
-semi-major axis and period; we also discussed how to use the elbow point
-method to find a good value for *k*. Then, we moved on to supervised
-learning and made a linear regression model to predict the period of a
-planet using its semi-major axis, eccentricity of orbit, and mass. We
-learned how to interpret the model coefficients and how to evaluate the
-model\'s predictions. Finally, we turned to classification to identify
-high-quality red wines (which had a class imbalance) and distinguish
-between red and white wine by their chemical properties.
-
+from our preprocessing through our model. We also used unsupervised k-means to cluster the planets using their
+semi-major axis and period.
 
 In the next lab, we will learn how to tune our models to improve
 their performance, so make sure to complete the exercises to practice

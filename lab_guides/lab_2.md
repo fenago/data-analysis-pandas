@@ -26,11 +26,11 @@ performing when conducting our data analyses with `pandas`. The following topics
 #### Lab Environment
 Notebooks are ready to run. All packages have been installed. There is no requirement for any setup.
 
-All examples are present in `lab_02` folder. Exercise solution(s) are present in `solutions` folder. 
+All notebooks are present in `lab_02` folder. Exercise solution(s) are present in `solutions` folder. 
 
 
 Lab materials
-=================
+=============
 
 We will be working with earthquake data from the **US Geological Survey** (**USGS**) by using the USGS API and CSV files, which can be
 found in the `data/` directory.
@@ -72,13 +72,6 @@ remove data in the `6-adding_and_removing_data.ipynb`
 notebook. Let\'s get started.
 
 
-
-**Important note:**
-
-For the remainder of this course, we will refer to `DataFrame`
-objects as dataframes, `Series` objects as series, and
-`Index` objects as index/indices, unless we are referring to
-the class itself.
 
 For this section, we will work in the
 `1-pandas_data_structures.ipynb` notebook. To begin, we will
@@ -130,15 +123,6 @@ dtype([('time', '<U23'), ('place', '<U37'), ('magType', '<U3'),
 ```
 
 
-Each of the entries in the array is a row from the CSV file. NumPy
-arrays contain a single data type (unlike lists, which allow mixed
-types); this allows for fast, vectorized operations. When we read in the
-data, we got an array of `numpy.void` objects, which are used
-to store flexible types. This is because NumPy had to store several
-different data types per row: four strings, a float, and an integer.
-Unfortunately, this means that we can\'t take advantage of the
-performance improvements NumPy provides for single data type objects.
-
 Say we want to find the maximum magnitude --- we can use a **list comprehension** to select
 the third index of each row, which is represented as a
 `numpy.void` object. This makes a list, meaning that we can
@@ -155,18 +139,8 @@ preceded by `%`) to see how long this implementation takes
 ```
 
 
-Note that we should use a list comprehension whenever we would write a
-`for` loop with just a single line under it or want to run an
-operation against the members of some initial list. This is a rather
-simple list comprehension, but we can make them more complex with the
-addition of `if...else` statements. List comprehensions are an
-extremely powerful tool to have in our arsenal.
 
-
-If we create a NumPy array for each column
-instead, this operation is much easier (and more efficient) to perform.
-To do so, we will use a **dictionary comprehension**
-(https://www.python.org/dev/peps/pep-0274/) to make a dictionary where
+Let's use a **dictionary comprehension** to make a dictionary where
 the keys are the column names and the values are NumPy arrays of the
 data. Again, the important part here is how the data is now represented
 using NumPy:
@@ -228,19 +202,6 @@ array(['2018-10-13 11:10:23.560',
 ```
 
 
-Consider how we would go about sorting the data by magnitude from
-smallest to largest. In the first representation, we would have to sort
-the rows by examining the third index. With the second representation,
-we would have to determine the order of the indices
-from the `mag` column, and then sort all
-the other arrays with those same indices. Clearly, working with several
-NumPy arrays containing different data types at once is a bit
-cumbersome; however, `pandas` builds on top of NumPy arrays to
-make this easier. Let\'s start our exploration of `pandas`
-with an overview of the `Series` data structure.
-
-
-
 Series
 ------
 
@@ -264,60 +225,10 @@ Name: place, dtype: object
 ```
 
 
-Note the numbers on the left of the result; these correspond to the row
-number in the original dataset (offset by 1 since, in Python, we start
-counting at 0). These row numbers form the index, which we will discuss
-in the following section. Next to the row numbers, we have the actual
-value of the row, which, in this example, is a string indicating where
-the earthquake occurred. Notice that we have `dtype: object`
-next to the name of the `Series` object; this is telling us
-that the data type of `place` is `object`. A string
-will be classified as `object` in `pandas`.
-
-To access attributes of the `Series`
-object, we use attribute notation of the form
-`<object>.<attribute_name>`. The following are some common
-attributes we will access. Notice that `dtype` and
-`shape` are available, just as we saw with the NumPy array:
-
-
-![](./images/Figure_2.1_B16834.jpg)
-
-
-
-**Important note:**
-
-For the most part, `pandas` objects use NumPy arrays for their
-internal data representations. However, for some data types,
-`pandas` builds upon NumPy to create its own arrays
-(https://pandas.pydata.org/pandas-docs/stable/reference/arrays.html).
-For this reason, depending on the data type, `values` can
-return either a `pandas.array` or a `numpy.array`
-object. Therefore, if we need to ensure we get a specific type back, it
-is recommended to use the `array` attribute or
-`to_numpy()` method, respectively, instead of
-`values`.
-
-Be sure to bookmark the `pandas.Series` documentation
-(<https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.Series.html>)
-for reference later. It contains more information on how to create a
-`Series` object, the full list of attributes and methods that
-are available, as well as a link to the source code. With this
-high-level introduction to the `Series` class, we are ready to
-move on to the `Index` class.
-
-
 
 Index
 -----
 
-The addition of the `Index` class makes the `Series`
-class significantly more powerful than a NumPy array. The
-`Index` class gives us row labels, which enable selection by
-row. Depending on the type, we can provide a row
-number, a date, or even a string to select our row. It plays a key role
-in identifying entries in the data and is used for a multitude of
-operations in `pandas`, as we will see throughout this course.
 We can access the index through the `index` attribute:
 
 ```
@@ -342,15 +253,6 @@ object is built on top of a NumPy array:
 >>> place_index.values
 array([0, 1, 2, 3, 4], dtype=int64)
 ```
-
-
-Some of the useful attributes of `Index` objects include the
-following:
-
-
-![](./images/Figure_2.2_B16834.jpg)
-
-
 
 Both NumPy and `pandas` support arithmetic operations, which
 will be performed element-wise. NumPy will use the position in the array
@@ -386,13 +288,6 @@ dtype: float64
 ```
 
 
-Now that we have had a primer on both the `Series` and
-`Index` classes, we are ready to learn about the
-`DataFrame` class. Note that more information on the
-`Index` class can be found in the respective documentation at
-<https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.Index.html>.
-
-
 
 DataFrame
 ---------
@@ -415,8 +310,7 @@ This gives us a dataframe of six series. Note the
 column before the `time` column; this is the `Index`
 object for the rows. When creating a `DataFrame` object,
 `pandas` aligns all the series to the same index. In this
-case, it is just the row number, but we could easily use the
-`time` column for this, which would enable some additional
+case, it is just the row number, but we could easily use the `time` column for this, which would enable some additional
 `pandas` features:
 
 
@@ -497,53 +391,9 @@ match. Here, `pandas` concatenated the string columns
 ![](./images/Figure_2.5_B16834.jpg)
 
 
-
-More information on `DataFrame` objects and all the operations
-that can be performed directly on them is available in the official
-documentation at
-<https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html>;
-be sure to bookmark it for future reference. Now, we are ready to begin
-learning how to create `DataFrame` objects from a variety of
-sources.
-
-
 Creating a pandas DataFrame
 ===========================
 
-
-Now that we understand the data structures we will be working with, we
-can discuss the different ways we can create them.
-Before we dive into the code however, it\'s important to know how to get
-help right from Python. Should we ever find ourselves unsure of how to
-use something in Python, we can utilize the built-in `help()`
-function. We simply run `help()`, passing in the package,
-module, class, object, method, or function that we want to read the
-documentation on. We can, of course, look up the documentation online;
-however, in most cases, the **docstrings** (the documentation text
-written in the code) that are returned with `help()` will be
-equivalent to this since they are used to generate the documentation.
-
-Assuming we first ran `import pandas as pd`, we can run
-`help(pd)` to display information about the `pandas`
-package; `help(pd.DataFrame)` for all the methods and
-attributes of `DataFrame` objects (note we can also pass in a
-`DataFrame` object instead); and `help(pd.read_csv)`
-to learn more about the `pandas` function for reading CSV
-files into Python and how to use it. We can also try using the
-`dir()` function and the `__dict__` attribute, which
-will give us a list or dictionary of what\'s available, respectively;
-these might not be as useful as the `help()` function, though.
-
-Additionally, we can use `?` and `??` to get help,
-thanks to IPython, which is part of what makes Jupyter Notebooks so
-powerful. Unlike the `help()` function, we can use question
-marks by putting them after whatever we want to know more about, as if
-we were asking Python a question; for example, `pd.read_csv?`
-and `pd.read_csv??`. These three will yield slightly different
-outputs: `help()` will give us the docstring; `?`
-will give the docstring, plus some additional information, depending on
-what we are inquiring about; and `??` will give us even more
-information and, if possible, the source code behind it.
 
 Let\'s now turn to the next notebook,
 `2-creating_dataframes.ipynb`, and import the packages we will
@@ -556,18 +406,6 @@ from the Python standard library, along with the third-party packages
 >>> import numpy as np
 >>> import pandas as pd
 ```
-
-
-**Important note:**
-
-We have **aliased** each of our imports. This allows us to use the
-`pandas` package by referring to it with the alias we assign
-to be `pd`, which is the most common way of importing it. In
-fact, we can only refer to it as `pd`, since that is what we
-imported into the namespace. Packages need to be imported before we can
-use them; installation puts the files we need on our computer, but, in
-the interest of memory, Python won\'t load every installed package when
-we start it up---just the ones we tell it to.
 
 We are now ready to begin using
 `pandas`. First, we will learn how to create
@@ -621,15 +459,6 @@ the column names, and the values are the contents of the columns. Note
 that if we want to turn a single `Series` object into a
 `DataFrame` object, we can use its `to_frame()`
 method.
-
-**Tip:** 
-
-In computer science, a **constructor** is a piece of code that
-initalizes new instances of a class, preparing them for use. Python
-classes implement this with the `__init__()` method. When we
-run `pd.Series()`, Python calls
-`pd.Series.__init__()`, which contains instructions for
-instantiating a new `Series` object.
 
 Since columns can all be different data types, let\'s get a little fancy
 with this example. We are going to create a `DataFrame` object
@@ -856,16 +685,6 @@ the file is comma-separated, we can also count the columns by using
 >>> len(headers[0].split(','))
 26
 ```
-
-
-**Important note:**
-
-The ability to run shell commands directly from our Jupyter Notebook
-dramatically streamlines our workflow. However, if we don\'t have past
-experience with the command line, it may be complicated to learn these
-commands initially. IPython has some helpful information on running
-shell commands in their documentation at
-<https://ipython.readthedocs.io/en/stable/interactive/reference.html#system-shell-access>.
 
 To summarize, we now know that the file is 3.4 MB and is comma-delimited
 with 26 columns and 9,333 rows, with the first one being the header.
@@ -1331,47 +1150,8 @@ however, instead of the other summary statistics, we get the number of
 unique values (**unique**), the mode (**top**), and the number of times
 the mode was observed (**freq**):
 
-
 ![](./images/Figure_2.14_B16834.jpg)
 
-
-
-**Important note:**
-
-The `describe()` method only gives us summary statistics for
-non-null values. This means that, if we had 100 rows and half of our
-data was null, then the average would be calculated as the sum of the 50
-non-null rows divided by 50.
-
-It is easy to get a snapshot of our data using the
-`describe()` method, but sometimes, we just want a particular
-statistic, either for a specific column or for all the columns. Pandas
-makes this a cinch as well. The following table includes methods that
-will work for both `Series` and `DataFrame` objects:
-
-
-![](./images/Figure_2.15_B16834.jpg)
-
-
-
-**Tip:** 
-
-Python makes it easy to count how many times
-something is `True`. Under the hood,
-`True` evaluates to `1` and `False`
-evaluates to `0`. Therefore, we can run the `sum()`
-method on a series of Booleans and get the count of `True`
-outputs.
-
-With `Series` objects, we have some additional methods for
-describing our data:
-
--   `unique()`: Returns the distinct values of the column.
--   `value_counts()`: Returns a frequency table of the number
-    of times each unique value in a given column appears, or,
-    alternatively, the percentage of times each unique value appears
-    when passed `normalize=True`.
--   `mode()`: Returns the most common value of the column.
 
 Consulting the USGS API documentation for the
 `alert` field (which can be found at
@@ -1424,17 +1204,7 @@ cover selection, slicing, indexing, and filtering.
 Grabbing subsets of the data
 ============================
 
-
-So far, we have learned how to work with and summarize the data as a
-whole; however, we will often be interested in
-performing operations and/or analyses on subsets of our data. There are
-many types of subsets we may look to isolate from our data, such as
-selecting only specific columns or rows as a whole or when a specific
-criterion is met. In order to obtain subsets of the data, we need to be
-familiar with selection, slicing, indexing, and filtering.
-
-For this section, we will work in the
-`5-subsetting_data.ipynb` notebook. Our setup is as follows:
+For this section, we will work in the `5-subsetting_data.ipynb` notebook. Our setup is as follows:
 
 ```
 >>> import pandas as pd
@@ -1492,16 +1262,6 @@ dictionary-like notation:
 Name: mag, Length: 9332, dtype: float64
 ```
 
-
-**Tip:** 
-
-We can also select columns using the `get()` method. This has
-the benefits of not raising an error if the column doesn\'t exist and
-allowing us to provide a backup value---the default is `None`.
-For example, if we call `df.get('event', False)`, it will
-return `False` since we don\'t have an `event`
-column.
-
 Note that we aren\'t limited to selecting one
 column at a time. By passing a list to the dictionary lookup, we can
 select many columns, giving us a `DataFrame` object that is a
@@ -1515,10 +1275,7 @@ subset of our original dataframe:
 This gives us the full `mag` and `title` columns
 from the original dataframe:
 
-
 ![](./images/Figure_2.17_B16834.jpg)
-
-
 
 String methods are a very powerful way to select
 columns. For example, if we wanted to select all the columns that start
@@ -1574,15 +1331,6 @@ selection on the dataframe, resulting in the dataframe in *Figure 2.18*:
 ... ]
 ```
 
-
-**Tip:** 
-
-A complete list of string methods can be found in
-the Python 3 documentation at
-<https://docs.python.org/3/library/stdtypes.html#string-methods>.
-
-
-
 Slicing
 -------
 
@@ -1602,8 +1350,6 @@ When specifying a slice of `100:103`, we get back rows
 
 
 ![](./images/Figure_2.19_B16834.jpg)
-
-
 
 We can combine our row and column selections by
 using what is known as **chaining**:
@@ -1914,24 +1660,7 @@ Notice that this filter is much less restrictive
 since, while both conditions can be true, we only require that one of
 them is:
 
-
 ![](./images/Figure_2.27_B16834.jpg)
-
-
-
-**Important note:**
-
-When creating Boolean masks, we must use bitwise operators
-(`&`, `|`, `~`) instead of logical
-operators (`and`, `or`, `not`). A good way
-to remember this is that we want a Boolean for each item in the series
-we are testing rather than a single Boolean. For example, with the
-earthquake data, if we want to select the rows where the magnitude is
-greater than 1.5, then we want one Boolean value for each row,
-indicating whether the row should be selected. In cases where we want a
-single value for the data, perhaps to summarize it, we can use
-`any()`/`all()` to condense a Boolean series into a
-single Boolean value that can be used with logical operators.
 
 In the previous two examples, our conditions
 involved equality; however, we are by no means limited to this. Let\'s
@@ -1975,16 +1704,6 @@ objects as well) to create a Boolean mask of all the rows where the
 ```
 df.alert.notnull()
 ```
-
-
-**Tip:** 
-
-We can use the **bitwise negation operator**
-(`~`), also called **NOT**, to negate
-all the Boolean values, which makes all
-`True` values `False` and vice versa. So,
-`df.alert.notnull()` and `~df.alert.isnull()`are
-equivalent.
 
 Then, like we did previously, we combine the two conditions with the
 `&` operator to complete our mask:
@@ -2128,18 +1847,6 @@ dataframe before making any changes:
 df_to_modify = df.copy()
 ```
 
-
-**Important note:**
-
-By default, `df.copy()` makes a **deep copy** of the
-dataframe, which allows us to make changes to
-either the copy or the original without
-repercussions. If we pass in `deep=False`, we can obtain a
-**shallow copy**---changes to the shallow copy affect the original and
-vice versa. We will almost always want the deep copy, since we can
-change it without affecting the original.
-
-
 Now, let\'s turn to the final notebook,
 `6-adding_and_removing_data.ipynb`, and get set up for the
 remainder of this lab. We will once again be
@@ -2180,15 +1887,6 @@ value of `USGS API` for every row:
 
 
 ![](./images/Figure_2.33_B16834.jpg)
-
-
-
-**Important note:**
-
-We cannot create the column with attribute notation
-(`df.source`) because the dataframe doesn\'t have that
-attribute yet, so we must use dictionary notation
-(`df['source']`).
 
 We aren\'t limited to broadcasting one value to the entire column; we
 can have the column hold the result of Boolean
@@ -2487,34 +2185,12 @@ If the index is not meaningful, we can also pass in
 The index is now sequential, and the row numbers
 no longer match the original dataframe:
 
-
 ![](./images/Figure_2.40_B16834.jpg)
-
-
-
-Be sure to consult the `pandas` documentation for more
-information on the `concat()` function and other operations
-for combining data, which we will discuss in *Lab 4*, *Aggregating
-Pandas DataFrames*:
-http://pandas.pydata.org/pandas-docs/stable/user\_guide/merging.html\#concatenating-objects.
 
 
 
 Deleting unwanted data
 ----------------------
-
-After adding that data to our dataframe, we can
-see the need to delete unwanted data. We need a way to undo our mistakes
-and get rid of data that we aren\'t going to use. Like adding data, we
-can use dictionary syntax to delete unwanted columns, just as we would
-when removing keys from a dictionary. Both
-`del df['<column_name>']` and
-`df.pop('<column_name>')` will work, provided that there is
-indeed a column with that name; otherwise, we will get a
-`KeyError`. The difference here is that while `del`
-removes it right away, `pop()` will return the column that we
-are removing. Remember that both of these operations will change our
-original dataframe, so use them with care.
 
 Let\'s use dictionary notation to delete the
 `source` column. Notice that it no longer appears in the

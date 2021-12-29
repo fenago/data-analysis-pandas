@@ -20,7 +20,7 @@ The following topics will be covered in this lab:
 #### Lab Environment
 Notebooks are ready to run. All packages have been installed. There is no requirement for any setup.
 
-All examples are present in `lab_04` folder. Exercise solution(s) are present in `solutions` folder. 
+All notebooks are present in `lab_04` folder. Exercise solution(s) are present in `solutions` folder. 
 
 Lab materials
 =================
@@ -269,7 +269,7 @@ operation also kept both the `station` and `id`
 columns, which are identical:
 
 
-!](./images/Figure_4.6_B16834.jpg)
+![](./images/Figure_4.6_B16834.jpg)
 
 
 
@@ -292,16 +292,7 @@ Since the columns shared the name, we only get one back after joining on
 them:
 
 
-!](./images/Figure_4.7_B16834.jpg)
-
-
-
-
-**Tip:** 
-
-We can join on multiple columns by passing the list of column names to
-the `on` parameter or to the `left_on` and
-`right_on` parameters.
+![](./images/Figure_4.7_B16834.jpg)
 
 Remember that we had 279 unique stations in the `station_info`
 dataframe, but only 110 unique stations for the weather data. When we
@@ -882,7 +873,7 @@ capitalization
 (<https://www.marketwatch.com/story/facebook-stock-crushed-after-revenue-user-growth-miss-2018-07-25>):
 
 
-!](./images/Figure_4.18_B16834.jpg)
+![](./images/Figure_4.18_B16834.jpg)
 
 
 
@@ -1160,20 +1151,6 @@ aggregations for each column:
 ![](./images/Figure_4.26_B16834.jpg)
 
 
-
-**Tip:** 
-
-We can also use variable-width windows with a little extra effort: we
-can either create a subclass of `BaseIndexer` and provide the
-logic for determining the window bounds in the
-`get_window_bounds()` method (more information can be found at
-<https://pandas.pydata.org/pandas-docs/stable/user_guide/computation.html#custom-window-rolling>),
-or we can use one of the predefined classes in the
-`pandas.api.indexers` module. The notebook we are currently
-working in contains an example of using the
-`VariableOffsetWindowIndexer` class to perform a 3-business
-day rolling calculation.
-
 With rolling calculations, we have a sliding
 window over which we calculate our functions; however, in some cases, we
 are more interested in the output of a function on all the data up to
@@ -1233,7 +1210,7 @@ Once again, we joined the window calculations with
 the original data for comparison:
 
 
-!](./images/Figure_4.28_B16834.jpg)
+![](./images/Figure_4.28_B16834.jpg)
 
 
 
@@ -1835,7 +1812,7 @@ entries and a different one for the February ones. Note that the value
 for February is the value we found in the previous result:
 
 
-!](./images/Figure_4.40_B16834.jpg)
+![](./images/Figure_4.40_B16834.jpg)
 
 
 
@@ -1863,29 +1840,13 @@ the amount of monthly precipitation they accounted for make up more than
 50% of the rain in April. They were also consecutive days:
 
 
-!](./images/Figure_4.41_B16834.jpg)
+![](./images/Figure_4.41_B16834.jpg)
 
-
-
-
-**Important note:**
-
-The `transform()` method also works on
-`DataFrame` objects, in which case it will return a
-`DataFrame` object. We can use it to easily standardize all
-the columns at once. An example is in the notebook.
 
 
 
 Pivot tables and crosstabs
 --------------------------
-
-To wrap up this section, we will discuss some `pandas`
-functions that will aggregate our data into some common formats. The
-aggregation methods we discussed previously will
-give us the highest level of customization; however, `pandas`
-provides some functions to quickly generate a
-pivot table and a crosstab in a common format.
 
 In order to generate a pivot table, we must
 specify what to group on and, optionally, which subset of columns we
@@ -1906,9 +1867,6 @@ index for the columns has a name (**trading\_volume**):
 
 
 ![](./images/Figure_4.42_B16834.jpg)
-
-
-
 
 With the `pivot()` method, we weren\'t able
 to handle multi-level indices or indices with
@@ -2107,7 +2065,7 @@ January 1, 2018 was a holiday, meaning that the market was closed. It
 was also a Monday, so the week here is only four days long:
 
 
-!](./images/Figure_4.48_B16834.jpg)
+![](./images/Figure_4.48_B16834.jpg)
 
 
 
@@ -2126,7 +2084,7 @@ Since December 31, 2018 was a Monday, the last week only consists of one
 day:
 
 
-!](./images/Figure_4.49_B16834.jpg)
+![](./images/Figure_4.49_B16834.jpg)
 
 
 
@@ -2483,9 +2441,7 @@ selection and filtering* section:
 
 
 
-We can resample to any frequency supported by `pandas` (more
-information can be found in the documentation at
-<http://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html>).
+We can resample to any frequency supported by `pandas`.
 Let\'s resample the daily Facebook stock data to the quarterly average:
 
 ```
@@ -2513,13 +2469,9 @@ from the *Time-based selection and filtering* section:
 ```
 
 
-Facebook\'s stock price declined in all but the
-second quarter:
-
+Facebook\'s stock price declined in all but the second quarter:
 
 ![](./images/Figure_4.59_B16834.jpg)
-
-
 
 
 Consider the melted minute-by-minute stock data in
@@ -2698,20 +2650,6 @@ the times don\'t match exactly, but it will at least sort them for us:
 
 
 ![](./images/Figure_4.64_B16834.jpg)
-
-
-
-**Tip:** 
-
-We can pass `fill_method='ffill'` to
-`pd.merge_ordered()` to forward-fill the first `NaN`
-after a value, but it does not propagate beyond that; alternatively, we
-can chain a call to `fillna()`. There is an example of this in
-the notebook.
-
-The `pd.merge_ordered()` function also makes it possible to
-perform a group-wise merge, so be sure to check out the documentation
-for more information.
 
 
 Summary

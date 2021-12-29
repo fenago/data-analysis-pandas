@@ -47,7 +47,7 @@ In this lab, we will cover the following topics:
 #### Lab Environment
 Notebooks are ready to run. All packages have been installed. There is no requirement for any setup.
 
-All examples are present in `lab_11` folder. Exercise solution(s) are present in `solutions` folder. 
+All notebooks are present in `lab_11` folder. Exercise solution(s) are present in `solutions` folder. 
 
 
 Lab materials
@@ -1655,41 +1655,9 @@ Now, let\'s see how the plots look:
 ... )
 ```
 
-Our AUC for the ROC curve is slightly higher now,
-while it dropped for the precision-recall curve:
-
+Our AUC for the ROC curve is slightly higher now, while it dropped for the precision-recall curve:
 
 ![](./images/Figure_11.20_B16834.jpg)
-
-
-
-
-### Further improvements
-
-The SOC is pleased with our results and now wants us to provide
-predictions each minute. They have also promised
-to provide feedback within an hour. We won\'t implement this request
-here, but we will briefly discuss how we could go about this.
-
-We have been using batch processing to update the model each month;
-however, in order to provide our stakeholders with what they want, we
-will need to shorten our feedback loop by performing the following
-actions:
-
--   Running `predict_proba()` on our model every single minute
-    and having the predictions sent to our stakeholders. This will
-    require setting up a process to pass the logs one minute at a time
-    to a preprocessing function, and then to the model itself.
--   Delivering the results to our stakeholders via an agreed-upon
-    medium. 
--   Updating the model with `partial_fit()` every hour using
-    the feedback we receive from the stakeholders (once we have
-    determined how to have them share this information with us).
-
-After the aforementioned actions are implemented,
-all that remains is for us to put the model into production and
-determine the update and prediction frequencies everyone will be
-accountable for meeting.
 
 
 Summary
@@ -1713,13 +1681,6 @@ received the labeled data and performance requirements from our
 stakeholders, we determined that the isolation forest model was better
 for our data.
 
-However, we didn\'t stop there. Since we had just been given the labeled
-data, we tried our hand at supervised methods. We learned how to build
-baseline models using dummy classifiers and Naive Bayes. Then, we
-revisited logistic regression to see whether it could help us. Our
-logistic regression model performed well; however, since it used a
-closed-form solution to find the coefficients, we were unable to
-incorporate a feedback loop without retraining the model from scratch.
 
 This limitation led us to build an online learning model, which is
 constantly updated. First, we had to make a subclass to allow pipelines
@@ -1729,14 +1690,9 @@ data at once, and then update our model when we received new labeled
 data. This allows the model to adjust to changes in the distributions of
 the features over time.
 
-In the next lab, we will recap what we have learned throughout the
-course and introduce additional resources for finding data, as well as
-working with it in Python.
-
 
 Exercises
 =========
-
 
 Complete the following exercises for some practice with the machine
 learning workflow and exposure to some additional anomaly detection

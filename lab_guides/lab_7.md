@@ -6,21 +6,6 @@
 Lab 7: Financial Analysis -- Bitcoin and the Stock Market
 =============================================================
 
-Up until this point, we have been working with Python as more of a
-functional programming language. However, Python also supports
-**object-oriented programming** (**OOP**). This means we can build
-classes that will carry out the major tasks we need to perform, which in
-this lab are the following: collecting data from the Internet (with
-the `StockReader` class), visualizing financial assets (with
-the `Visualizer` classes), calculating financial metrics (with
-the `StockAnalyzer` class), and modeling financial data (with
-the `StockModeler` class). Since we will need a lot of code to
-make the analysis process clean and easy to reproduce, we will build a
-Python package to house these classes. The code will be reproduced in
-the text and explained as usual; however, we don\'t need to type/run it
-on our own---be sure to read the *Lab materials* section for this
-lab to get set up properly.
-
 The following topics will be covered in this lab:
 
 -   Building a Python package
@@ -36,7 +21,7 @@ The following topics will be covered in this lab:
 #### Lab Environment
 Notebooks are ready to run. All packages have been installed. There is no requirement for any setup.
 
-All examples are present in `lab_07` folder. Exercise solution(s) are present in `solutions` folder. 
+All notebooks are present in `lab_07` folder. Exercise solution(s) are present in `solutions` folder. 
 
 
 Lab materials
@@ -69,18 +54,6 @@ backup files for the exercises.
 Building a Python package
 =========================
 
-Building packages is considered good coding
-practice since it allows for writing modular code and reuse. **Modular code** is code that is written in many smaller pieces for more pervasive
-use, without needing to know the underlying implementation details of
-everything involved in a task. For example, when we use
-`matplotlib` to plot something, we don\'t need to know what
-the code inside the functions we call is doing exactly---it suffices to
-simply know what the input and output will be to build on top of it.
-
-
-
-Package structure
------------------
 
 A **module** is a single
 file of Python code that can
@@ -131,21 +104,6 @@ repo_folder
 |       `-- last_module.py
 `-- setup.py
 ```
-
-
-Some other things to be aware of when building a package include the
-following:
-
--   Writing a **README** file for the repository
-    so that others know what it contains (see
-    <https://www.makeareadme.com/>).
--   **Linting** the code in order to conform to
-    coding standards and analyze the code for possible errors (check out
-    the `pylint` package at <https://www.pylint.org/>).
--   Adding tests that will make sure changes to the code don\'t break
-    anything and that the code does what it is meant to do (take a look
-    at the `pytest` package at
-    <https://docs.pytest.org/en/latest/>).
 
 
 
@@ -3064,31 +3022,12 @@ making a simple model to explore functionality:
 >>> arima_model = StockModeler.arima(nflx, ar=10, i=1, ma=5)
 ```
 
-
-**Tip:** 
-
-We\'re picking these values because they run in a reasonable amount of
-time. In practice, we can use the `autocorrelation_plot()`
-function from the `pandas.plotting` module that was introduced
-in *Visualizing Data with Pandas and Matplotlib*, to help find a good value
-for `ar`.
-
 Once the model is fitted, we can obtain information on it with the
 model\'s `summary()` method:
 
 ```
 >>> print(arima_model.summary())
 ```
-
-
-The summary is quite extensive, and
-we should read the documentation when looking to
-interpret it; however, this article is likely to be a more digestible
-introduction:
-<https://medium.com/analytics-vidhya/interpreting-arma-model-results-in-statsmodels-for-absolute-beginners-a4d22253ad1c>.
-Be advised that interpreting this summary will require a solid
-understanding of statistics:
-
 
 ![](./images/Figure_7.24_B16834.jpg)
 
@@ -3119,23 +3058,10 @@ over time (left subplot):
 ![](./images/Figure_7.25_B16834.jpg)
 
 
-
-**Tip:** 
-
-When we looked at the model summary,
-`statsmodels` ran a statistical test for heteroskedasticity
-using the default significance level of 0.05. The value of the test
-statistic is labeled **Heteroskedasticity (H)** and the p-value is
-labeled **Prob(H) (two-sided)**. Note that the result was statistically
-significant (the p-value was less than or equal to the significance
-level), meaning it\'s very unlikely that our residuals are
-homoskedastic.
-
 As an alternative to building an
 ARIMA model, the `StockModeler` class
 also gives us the option of using linear regression to model the closing
 price of a financial instrument.
-
 
 
 Linear regression with statsmodels
@@ -3258,28 +3184,10 @@ and **D** are all random walks. Hard (or impossible) to tell, right?
 Summary
 =======
 
-
 In this lab, we saw how building Python packages for our analysis
 applications can make it very easy for others to carry out their own
 analyses and reproduce ours, as well as for us to create repeatable
 workflows for future analyses.
-
-The `stock_analysis` package we created in this lab
-contained classes for gathering stock data from the Internet
-(`StockReader`); visualizing individual assets or groups of
-them (`Visualizer` family); calculating metrics for single
-assets or groups of them for comparisons (`StockAnalyzer` and
-`AssetGroupAnalyzer`, respectively); and time series modeling
-with decomposition, ARIMA, and linear regression
-(`StockModeler`). We also got our first look at using the
-`statsmodels` package in the `StockModeler` class.
-This lab showed us how the `pandas`,
-`matplotlib`, `seaborn`, and `numpy`
-functionality that we\'ve covered so far in this course has come together
-and how these libraries can work harmoniously with other packages for
-custom applications. I strongly encourage you to reread the code in the
-`stock_analysis` package and test out some of the methods we
-didn\'t cover in this lab to make sure you have the concepts down.
 
 Exercises
 =========

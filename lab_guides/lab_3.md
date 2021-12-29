@@ -29,7 +29,7 @@ In this lab, we will cover the following topics:
 #### Lab Environment
 Notebooks are ready to run. All packages have been installed. There is no requirement for any setup.
 
-All examples are present in `lab_03` folder. Exercise solution(s) are present in `solutions` folder. 
+All notebooks are present in `lab_03` folder. Exercise solution(s) are present in `solutions` folder. 
 
 Lab materials
 =================
@@ -282,7 +282,7 @@ Exploring an API to find and collect temperature data
 =====================================================
 
 
-In lab 7, *Working with Pandas DataFrames*, we worked on data collection and how
+In lab 7, we worked on data collection and how
 to perform an initial inspection
 and filtering of the data; this
 usually gives us ideas of things that need to be
@@ -376,19 +376,6 @@ as expected:
 True
 ```
 
-
-**Tip:** 
-
-The API limits us to 5 requests per second and 10,000 requests per day.
-If we exceed these limits, the status code will indicate a client error
-(meaning that the error appears to have been caused by us). Client
-errors have status codes in the 400s; for example, 404, if the requested
-resource can\'t be found, or 400, if the server can\'t understand our
-request (or refuses to process it). Sometimes, the server has an issue
-on its side when processing our request, in which case we see status
-codes in the 500s. You can find a listing of
-common status codes and their meanings at
-<https://restfulapi.net/http-status-codes/>.
 
 Once we have our response, we can
 use the `json()` method to get the
@@ -1117,21 +1104,6 @@ numeric at all):
 ![](./images/Figure_3.16_B16834.jpg)
 
 
-
-Lastly, we have two columns with data currently being stored as strings
-that can be represented in a better way for this dataset. The
-`station` and `datatype` columns only have one and
-three distinct values, respectively, meaning that
-we aren\'t being efficient with our memory use since we are storing them
-as strings. We could potentially have issues with analyses further down
-the line. Pandas has the ability to define columns
-as **categorical**; certain statistical operations both within
-`pandas` and other packages will be able to handle this data,
-provide meaningful statistics on them, and use them properly.
-Categorical variables can take on one of a few values; for example,
-blood type would be a categorical variable---people can only have one of
-A, B, AB, or O.
-
 Going back to the temperature data, we only have one value for the
 `station` column and only three distinct values for the
 `datatype` column (`TAVG`, `TMAX`,
@@ -1179,23 +1151,6 @@ The categories we just made don\'t have any order to them, but
 ['med', 'med', 'low', 'high'] 
 Categories (3, object): ['low' < 'med' < 'high']
 ```
-
-
-When the columns in our dataframe are stored in the appropriate type, it
-opens up additional avenues for exploration, such as calculating
-statistics, aggregating the data, and sorting the values. For example,
-depending on our data source, it\'s possible that the numeric
-data is represented as a string, in which case
-attempting to sort on the values will reorder the contents lexically,
-meaning the result could be 1, 10, 11, 2, rather than 1, 2, 10, 11
-(numerical sort). Similarly, if we have dates represented as strings in
-a format other than YYYY-MM-DD, sorting on this information may result
-in non-chronological order; however, by converting the date strings with
-`pd.to_datetime()`, we can chronologically sort dates that are
-provided in any format. Type conversion makes it possible to reorder
-both the numeric data and the dates according to their values, rather
-than their initial string representations.
-
 
 
 Reordering, reindexing, and sorting data
@@ -1251,17 +1206,6 @@ temperature reading:
 ![](./images/Figure_3.19_B16834.jpg)
 
 
-
-**Tip:** 
-
-In `pandas`, the index is tied to the rows---when we drop
-rows, filter, or do anything that returns only some of the rows, our
-index may look out of order (as we saw in the previous examples). At the
-moment, the index just represents the row number in our data, so we may
-be interested in changing the values so that we have the first entry at
-index `0`. To have `pandas` do so automatically, we
-can pass `ignore_index=True` to `sort_values()`.
-
 Pandas also provides an additional way to look at
 a subset of the sorted values; we can use
 `nlargest()` to grab the `n`
@@ -1299,15 +1243,6 @@ Int64Index([2, 30, 55, 16, 13], dtype='int64')
 >>> df.sample(5, random_state=0).sort_index().index
 Int64Index([2, 13, 16, 30, 55], dtype='int64')
 ```
-
-
-**Tip:** 
-
-If we need the result of `sample()` to be reproducible, we can
-pass in a **seed**, set to a number of our choosing (using the
-`random_state` argument). The seed initializes a pseudorandom
-number generator, so, provided that the same seed is used, the results
-will be the same.
 
 When we want to target columns, we must pass in `axis=1`; rows
 will be the default (`axis=0`). Note that this argument is
@@ -2415,17 +2350,7 @@ we know that is the other value; however, we can use
 know that `?` occurs 367 times (765 - 398), without the need
 to use `value_counts()`:
 
-
 ![](./images/Figure_3.49_B16834.jpg)
-
-
-
-In practice, we may not know why the station is sometimes recorded as
-`?`---it could be intentional to show
-that they don\'t have the station, an error in the recording software,
-or an accidental omission that got encoded as `?`. How we deal
-with this would be a judgment call, as we will discuss in the next
-section.
 
 Upon seeing that we had 765 rows of data and two distinct values for the
 station ID, we might have assumed that each day had two entries---one
@@ -2659,14 +2584,6 @@ Index(['PRCP', 'SNOW', 'SNWD', 'TMAX', 'TMIN', 'TOBS',
        'inclement_weather'],
       dtype='object')
 ```
-
-
-Since we have a lot of null values, we will likely be more interested in
-keeping these values, and perhaps finding a better way to represent
-them. If we replace the null data, we must exercise caution when
-deciding what to fill in instead; filling in all the values we don\'t
-have with some other value may yield strange results later on, so we
-must think about how we will use this data first.
 
 To fill in null values with other data, we use the `fillna()`
 method, which gives us the option of specifying a value or a strategy
